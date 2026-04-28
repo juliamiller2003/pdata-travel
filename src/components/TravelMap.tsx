@@ -97,10 +97,25 @@ export default function TravelMap({ trips, mapView, homeCountryCode }: TravelMap
                     const geoId = String(geo.id ?? "");
                     const alpha2 = numericToAlpha2[geoId];
                     const isVisited = alpha2 ? visitedMap.has(alpha2) : false;
+                    const isHome = !!alpha2 && alpha2 === homeCountryCode;
                     const isSelected =
                       selected !== null &&
                       alpha2 !== undefined &&
                       selected.code === alpha2;
+
+                    const defaultFill = isSelected
+                      ? "#0284c7"
+                      : isVisited
+                      ? "#38bdf8"
+                      : isHome
+                      ? "#bae6fd"
+                      : "#cbd5e1";
+
+                    const hoverFill = isVisited
+                      ? "#0284c7"
+                      : isHome
+                      ? "#7dd3fc"
+                      : "#94a3b8";
 
                     return (
                       <Geography
@@ -112,11 +127,7 @@ export default function TravelMap({ trips, mapView, homeCountryCode }: TravelMap
                         onMouseLeave={() => setTooltip(null)}
                         style={{
                           default: {
-                            fill: isSelected
-                              ? "#0284c7"
-                              : isVisited
-                              ? "#38bdf8"
-                              : "#cbd5e1",
+                            fill: defaultFill,
                             stroke: "var(--map-border)",
                             strokeWidth: 0.4,
                             outline: "none",
@@ -124,7 +135,7 @@ export default function TravelMap({ trips, mapView, homeCountryCode }: TravelMap
                             transition: "fill 0.1s",
                           },
                           hover: {
-                            fill: isVisited ? "#0284c7" : "#94a3b8",
+                            fill: hoverFill,
                             stroke: "var(--map-border)",
                             strokeWidth: 0.4,
                             outline: "none",
