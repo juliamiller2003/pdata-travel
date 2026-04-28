@@ -17,6 +17,22 @@ function getCutoff(period: string): Date | null {
   return null; // all time
 }
 
+interface TripRow {
+  id: string;
+  title: string;
+  destination: string;
+  status: string;
+  start_date: string | null;
+  end_date: string | null;
+  country_code: string | null;
+  country_codes: string[] | null;
+}
+
+interface FlightRow {
+  distance_miles: number | null;
+  flight_date: string;
+}
+
 function daysForTrip(trip: { start_date: string | null; end_date: string | null; status: string }, today: Date): number {
   if (!trip.start_date) return 0;
   const start = new Date(trip.start_date + "T00:00:00");
@@ -37,17 +53,15 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
   const cutoff = getCutoff(period);
   const today = new Date();
 
-  const [{ data: trips }, { data: flights }] = await Promise.all([
-    supabase
-      .from("trips")
-      .select("country_code, country_codes, status, start_date, end_date, destination, title, id"),
-    supabase
-      .from("flights")
-      .select("distance_miles, flight_date"),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
+  const [{ data: tripsRaw }, { data: flightsRaw }] = await Promise.all([
+    db.from("trips").select("country_code, country_codes, status, start_date, end_date, destination, title, id"),
+    db.from("flights").select("distance_miles, flight_date"),
   ]);
 
-  const allTrips = trips ?? [];
-  const allFlights = flights ?? [];
+  const allTrips: TripRow[] = tripsRaw ?? [];
+  const allFlights: FlightRow[] = flightsRaw ?? [];
 
   // Filter by period — use start_date for trips, flight_date for flights
   const filteredTrips = cutoff

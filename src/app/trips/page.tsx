@@ -17,10 +17,12 @@ export default async function TripsPage() {
 
   // Auto-update trip statuses based on today's date
   const today = new Date().toISOString().split("T")[0];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
 
   await Promise.all([
     // planning → ongoing when start date has arrived
-    supabase
+    db
       .from("trips")
       .update({ status: "ongoing", updated_at: new Date().toISOString() })
       .eq("status", "planning")
@@ -28,7 +30,7 @@ export default async function TripsPage() {
       .lte("start_date", today),
 
     // ongoing → completed when end date has passed
-    supabase
+    db
       .from("trips")
       .update({ status: "completed", updated_at: new Date().toISOString() })
       .eq("status", "ongoing")
@@ -37,13 +39,13 @@ export default async function TripsPage() {
   ]);
 
   const [{ data: trips }, { data: settings }] = await Promise.all([
-    supabase.from("trips").select("*").order("created_at", { ascending: false }),
-    supabase.from("user_settings").select("*").eq("user_id", user.id).single(),
+    db.from("trips").select("*").order("created_at", { ascending: false }),
+    db.from("user_settings").select("*").eq("user_id", user.id).single(),
   ]);
 
-  const allTrips = trips ?? [];
-  const mapView = settings?.map_view ?? "world";
-  const homeCountryCode = settings?.home_country_code ?? null;
+  const allTrips: import("@/types/database").Trip[] = trips ?? [];
+  const mapView = (settings as import("@/types/database").UserSettings | null)?.map_view ?? "world";
+  const homeCountryCode = (settings as import("@/types/database").UserSettings | null)?.home_country_code ?? null;
 
   // Upcoming trips: planning status with a future start date, soonest first
   const upcomingTrips = allTrips

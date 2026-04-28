@@ -37,6 +37,8 @@ interface TripPageProps {
 export default async function TripDetailPage({ params }: TripPageProps) {
   const { id } = params;
   const supabase = await createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
 
   const {
     data: { user },
@@ -44,7 +46,7 @@ export default async function TripDetailPage({ params }: TripPageProps) {
   if (!user) redirect("/login");
 
   // Fetch trip
-  const { data: trip } = await supabase
+  const { data: trip } = await db
     .from("trips")
     .select("*")
     .eq("id", id)
@@ -53,7 +55,7 @@ export default async function TripDetailPage({ params }: TripPageProps) {
   if (!trip) notFound();
 
   // Fetch itinerary days + activities
-  const { data: days } = await supabase
+  const { data: days } = await db
     .from("itinerary_days")
     .select("*, activities(*)")
     .eq("trip_id", id)
@@ -61,17 +63,17 @@ export default async function TripDetailPage({ params }: TripPageProps) {
 
   // Fetch journal entries, flights, and expenses in parallel
   const [{ data: journal }, { data: flightsData }, { data: expensesData }] = await Promise.all([
-    supabase
+    db
       .from("journal_entries")
       .select("*")
       .eq("trip_id", id)
       .order("created_at", { ascending: false }),
-    supabase
+    db
       .from("flights")
       .select("*")
       .eq("trip_id", id)
       .order("flight_date"),
-    supabase
+    db
       .from("expenses")
       .select("*")
       .eq("trip_id", id)
