@@ -35,6 +35,8 @@ interface ExpensesSectionProps {
 
 export default function ExpensesSection({ tripId, budget, initialExpenses }: ExpensesSectionProps) {
   const supabase = createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
   const [expenses, setExpenses] = useState<Expense[]>(initialExpenses);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -67,7 +69,7 @@ export default function ExpensesSection({ tripId, budget, initialExpenses }: Exp
     setSaving(true);
     setError(null);
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("expenses")
       .insert({
         trip_id: tripId,
@@ -94,7 +96,7 @@ export default function ExpensesSection({ tripId, budget, initialExpenses }: Exp
   }
 
   async function handleDelete(id: string) {
-    await supabase.from("expenses").delete().eq("id", id);
+    await db.from("expenses").delete().eq("id", id);
     setExpenses((prev) => prev.filter((e) => e.id !== id));
   }
 

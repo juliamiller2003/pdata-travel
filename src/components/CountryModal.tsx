@@ -35,6 +35,8 @@ export default function CountryModal({
   onTripSaved,
 }: CountryModalProps) {
   const supabase = createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
   const backdropRef = useRef<HTMLDivElement>(null);
 
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -117,9 +119,9 @@ export default function CountryModal({
 
     let err;
     if (editingTrip) {
-      ({ error: err } = await supabase.from("trips").update(payload).eq("id", editingTrip.id));
+      ({ error: err } = await db.from("trips").update(payload).eq("id", editingTrip.id));
     } else {
-      ({ error: err } = await supabase.from("trips").insert({ ...payload, user_id: user.id }));
+      ({ error: err } = await db.from("trips").insert({ ...payload, user_id: user.id }));
     }
 
     setSaving(false);

@@ -15,7 +15,8 @@ export default function FlightsSection({ tripId, initialFlights }: FlightsSectio
   async function handleDelete(flightId: string) {
     const { createClient } = await import("@/lib/supabase/client");
     const supabase = createClient();
-    await supabase.from("flights").delete().eq("id", flightId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from("flights").delete().eq("id", flightId);
     setFlights((prev) => prev.filter((f) => f.id !== flightId));
   }
 

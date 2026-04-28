@@ -21,6 +21,8 @@ export default function EditTripPage() {
   const params = useParams();
   const id = params.id as string;
   const supabase = createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -45,8 +47,8 @@ export default function EditTripPage() {
   useEffect(() => {
     async function load() {
       const [{ data: trip, error }, { data: flights }] = await Promise.all([
-        supabase.from("trips").select("*").eq("id", id).single(),
-        supabase.from("flights").select("*").eq("trip_id", id).order("flight_date"),
+        db.from("trips").select("*").eq("id", id).single(),
+        db.from("flights").select("*").eq("trip_id", id).order("flight_date"),
       ]);
 
       if (error || !trip) {
@@ -75,7 +77,7 @@ export default function EditTripPage() {
 
   async function handleDelete() {
     setDeleting(true);
-    await supabase.from("trips").delete().eq("id", id);
+    await db.from("trips").delete().eq("id", id);
     router.push("/trips");
   }
 
@@ -84,7 +86,7 @@ export default function EditTripPage() {
     setSaving(true);
     setError(null);
 
-    const { error } = await supabase
+    const { error } = await db
       .from("trips")
       .update({
         title: title.trim(),
