@@ -45,7 +45,7 @@ export interface Database {
           end_date?: string | null;
           cover_photo_url?: string | null;
           photos?: string[];
-          photo_captions?: Record<string, string>;
+          photo_captions?: Json;
           external_link?: string | null;
           notes?: string | null;
           status?: TripStatus;
@@ -64,7 +64,7 @@ export interface Database {
           end_date?: string | null;
           cover_photo_url?: string | null;
           photos?: string[];
-          photo_captions?: Record<string, string>;
+          photo_captions?: Json;
           external_link?: string | null;
           notes?: string | null;
           status?: TripStatus;

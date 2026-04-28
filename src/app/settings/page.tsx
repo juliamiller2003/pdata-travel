@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { SORTED_COUNTRIES } from "@/lib/countries";
-import type { MapView } from "@/types/database";
+import type { MapView, UserSettings } from "@/types/database";
 
 export default function SettingsPage() {
   const [isDark, setIsDark] = useState(false);
@@ -34,13 +34,14 @@ export default function SettingsPage() {
         return;
       }
 
-      const { data, error } = await supabase
+      const { data: rawData, error } = await supabase
         .from("user_settings")
         .select("*")
         .eq("user_id", user.id)
         .single();
 
-      if (!error && data) {
+      if (!error && rawData) {
+        const data = rawData as unknown as UserSettings;
         setMapView(data.map_view);
         setHomeCountry(data.home_country_code ?? "");
       }
