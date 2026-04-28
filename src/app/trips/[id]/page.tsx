@@ -2,6 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import type { TripStatus, Mood } from "@/types/database";
+import FlightsSection from "@/components/FlightsSection";
+import ExpensesSection from "@/components/ExpensesSection";
+import { byAlpha2 } from "@/lib/countries";
 
 const STATUS_STYLES: Record<TripStatus, string> = {
   planning:  "bg-amber-100 text-amber-800",
@@ -28,11 +31,11 @@ function formatDate(d: string | null) {
 }
 
 interface TripPageProps {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }
 
 export default async function TripDetailPage({ params }: TripPageProps) {
-  const { id } = await params;
+  const { id } = params;
   const supabase = await createClient();
 
   const {
@@ -56,23 +59,47 @@ export default async function TripDetailPage({ params }: TripPageProps) {
     .eq("trip_id", id)
     .order("day_number");
 
-  // Fetch journal entries
-  const { data: journal } = await supabase
-    .from("journal_entries")
-    .select("*")
-    .eq("trip_id", id)
-    .order("created_at", { ascending: false });
+  // Fetch journal entries, flights, and expenses in parallel
+  const [{ data: journal }, { data: flightsData }, { data: expensesData }] = await Promise.all([
+    supabase
+      .from("journal_entries")
+      .select("*")
+      .eq("trip_id", id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("flights")
+      .select("*")
+      .eq("trip_id", id)
+      .order("flight_date"),
+    supabase
+      .from("expenses")
+      .select("*")
+      .eq("trip_id", id)
+      .order("date", { ascending: false }),
+  ]);
 
   const itinerary = days ?? [];
   const entries = journal ?? [];
+  const flights = flightsData ?? [];
 
   return (
     <div className="mx-auto max-w-3xl">
       {/* Breadcrumb */}
-      <nav className="mb-6 flex items-center gap-2 text-sm text-gray-500">
-        <Link href="/trips" className="hover:text-brand-600">My Trips</Link>
-        <span>/</span>
-        <span className="text-gray-900 font-medium truncate">{trip.title}</span>
+      <nav className="mb-6 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+          <Link href="/trips" className="hover:text-brand-600">My Trips</Link>
+          <span>/</span>
+          <span className="text-gray-900 font-medium truncate">{trip.title}</span>
+        </div>
+        <Link
+          href={`/trips/${id}/edit`}
+          className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:border-sky-300 hover:text-sky-600 transition-colors"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+          </svg>
+          Edit
+        </Link>
       </nav>
 
       {/* Hero */}
@@ -104,6 +131,20 @@ export default async function TripDetailPage({ params }: TripPageProps) {
             <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">Destination</dt>
             <dd className="mt-1 text-sm text-gray-900 font-medium">{trip.destination}</dd>
           </div>
+          {trip.country_codes && trip.country_codes.length > 0 && (
+            <div className="col-span-2 sm:col-span-4">
+              <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+                {trip.country_codes.length === 1 ? "Country" : "Countries"}
+              </dt>
+              <dd className="flex flex-wrap gap-1.5">
+                {trip.country_codes.map((code) => (
+                  <span key={code} className="rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-medium text-sky-700">
+                    {byAlpha2[code]?.name ?? code}
+                  </span>
+                ))}
+              </dd>
+            </div>
+          )}
           <div>
             <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">Start</dt>
             <dd className="mt-1 text-sm text-gray-900 font-medium">{formatDate(trip.start_date)}</dd>
@@ -133,18 +174,25 @@ export default async function TripDetailPage({ params }: TripPageProps) {
         {trip.photos && trip.photos.length > 0 && (
           <div className="border-t border-gray-100 pt-4">
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Photos</p>
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-              {trip.photos.map((url, i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={i}
-                  src={url}
-                  alt={`Photo ${i + 1}`}
-                  className={`aspect-square w-full rounded-lg object-cover ${url === trip.cover_photo_url ? "ring-2 ring-sky-500" : ""}`}
-                />
-              ))}
+            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+              {trip.photos.map((url, i) => {
+                const caption = (trip.photo_captions as Record<string, string>)?.[url];
+                return (
+                  <div key={i} className="space-y-1">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={url}
+                      alt={caption ?? `Photo ${i + 1}`}
+                      className={`aspect-square w-full rounded-lg object-cover ${url === trip.cover_photo_url ? "ring-2 ring-sky-500" : ""}`}
+                    />
+                    {caption && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 leading-snug">{caption}</p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-            {trip.cover_photo_url && (
+            {trip.cover_photo_url && trip.photos.length > 1 && (
               <p className="mt-1.5 text-xs text-gray-400">Ring = cover photo</p>
             )}
           </div>
@@ -221,6 +269,12 @@ export default async function TripDetailPage({ params }: TripPageProps) {
           </div>
         )}
       </section>
+
+      {/* Flights */}
+      <FlightsSection tripId={id} initialFlights={flights} />
+
+      {/* Budget & Expenses */}
+      <ExpensesSection tripId={id} budget={trip.budget} initialExpenses={expensesData ?? []} />
 
       {/* Journal */}
       <section>

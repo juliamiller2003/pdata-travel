@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import TripCard from "@/components/TripCard";
+import TripCountdown from "@/components/TripCountdown";
 
 const TravelMap = dynamic(() => import("@/components/TravelMap"), { ssr: false });
 
@@ -14,6 +15,27 @@ export default async function TripsPage() {
 
   if (!user) redirect("/login");
 
+  // Auto-update trip statuses based on today's date
+  const today = new Date().toISOString().split("T")[0];
+
+  await Promise.all([
+    // planning → ongoing when start date has arrived
+    supabase
+      .from("trips")
+      .update({ status: "ongoing", updated_at: new Date().toISOString() })
+      .eq("status", "planning")
+      .not("start_date", "is", null)
+      .lte("start_date", today),
+
+    // ongoing → completed when end date has passed
+    supabase
+      .from("trips")
+      .update({ status: "completed", updated_at: new Date().toISOString() })
+      .eq("status", "ongoing")
+      .not("end_date", "is", null)
+      .lt("end_date", today),
+  ]);
+
   const [{ data: trips }, { data: settings }] = await Promise.all([
     supabase.from("trips").select("*").order("created_at", { ascending: false }),
     supabase.from("user_settings").select("*").eq("user_id", user.id).single(),
@@ -23,6 +45,32 @@ export default async function TripsPage() {
   const mapView = settings?.map_view ?? "world";
   const homeCountryCode = settings?.home_country_code ?? null;
 
+  // Upcoming trips: planning status with a future start date, soonest first
+  const upcomingTrips = allTrips
+    .filter((t) => t.status === "planning" && t.start_date && t.start_date >= today)
+    .sort((a, b) => (a.start_date! > b.start_date! ? 1 : -1));
+
+  // Sort: ongoing → planning (soonest first) → completed (most recent first) → completed no date
+  const statusOrder: Record<string, number> = { ongoing: 0, planning: 1, completed: 2, cancelled: 3 };
+  const sortedTrips = [...allTrips].sort((a, b) => {
+    if (statusOrder[a.status] !== statusOrder[b.status]) {
+      return statusOrder[a.status] - statusOrder[b.status];
+    }
+    if (a.status === "planning") {
+      if (!a.start_date && !b.start_date) return 0;
+      if (!a.start_date) return 1;
+      if (!b.start_date) return -1;
+      return a.start_date < b.start_date ? -1 : 1;
+    }
+    if (a.status === "completed") {
+      if (!a.start_date && !b.start_date) return 0;
+      if (!a.start_date) return 1;
+      if (!b.start_date) return -1;
+      return a.start_date > b.start_date ? -1 : 1;
+    }
+    return 0;
+  });
+
   return (
     <div>
       {/* Travel Map */}
@@ -31,6 +79,9 @@ export default async function TripsPage() {
         mapView={mapView}
         homeCountryCode={homeCountryCode}
       />
+
+      {/* Upcoming trip countdowns */}
+      <TripCountdown trips={upcomingTrips} />
 
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
@@ -42,7 +93,7 @@ export default async function TripsPage() {
               : `${allTrips.length} trip${allTrips.length !== 1 ? "s" : ""}`}
           </p>
         </div>
-        <Link href="/trips/new" className="btn-primary">
+        <Link href="/trips/new" className="inline-flex items-center justify-center rounded-lg bg-gray-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
           + New Trip
         </Link>
       </div>
@@ -71,7 +122,7 @@ export default async function TripsPage() {
         </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {allTrips.map((trip) => (
+          {sortedTrips.map((trip) => (
             <TripCard key={trip.id} trip={trip} />
           ))}
         </div>

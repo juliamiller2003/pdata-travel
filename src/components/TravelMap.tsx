@@ -27,8 +27,11 @@ export default function TravelMap({ trips, mapView, homeCountryCode }: TravelMap
   function buildVisitedMap(tripList: Trip[]) {
     const map = new Map<string, number>();
     for (const trip of tripList) {
-      if (trip.country_code) {
-        map.set(trip.country_code, (map.get(trip.country_code) ?? 0) + 1);
+      const codes = trip.country_codes?.length
+        ? trip.country_codes
+        : trip.country_code ? [trip.country_code] : [];
+      for (const code of codes) {
+        map.set(code, (map.get(code) ?? 0) + 1);
       }
     }
     return map;
@@ -79,7 +82,7 @@ export default function TravelMap({ trips, mapView, homeCountryCode }: TravelMap
 
   return (
     <>
-      <div className="overflow-hidden rounded-2xl border border-gray-100 shadow-sm mb-8 bg-sky-50">
+      <div className="overflow-hidden rounded-2xl border border-gray-100 shadow-sm mb-8 bg-sky-50 dark:bg-black dark:border-gray-800">
         <div className="relative" style={{ height: 480 }}>
           <ComposableMap
             projection="geoNaturalEarth1"
@@ -113,7 +116,7 @@ export default function TravelMap({ trips, mapView, homeCountryCode }: TravelMap
                               : isVisited
                               ? "#38bdf8"
                               : "#cbd5e1",
-                            stroke: "#fff",
+                            stroke: "var(--map-border)",
                             strokeWidth: 0.4,
                             outline: "none",
                             cursor: "pointer",
@@ -121,7 +124,7 @@ export default function TravelMap({ trips, mapView, homeCountryCode }: TravelMap
                           },
                           hover: {
                             fill: isVisited ? "#0284c7" : "#94a3b8",
-                            stroke: "#fff",
+                            stroke: "var(--map-border)",
                             strokeWidth: 0.4,
                             outline: "none",
                             cursor: "pointer",

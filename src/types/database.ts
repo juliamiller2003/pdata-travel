@@ -20,10 +20,13 @@ export interface Database {
           title: string;
           destination: string;
           country_code: string | null;
+          country_codes: string[];
+          budget: number | null;
           start_date: string | null;
           end_date: string | null;
           cover_photo_url: string | null;
           photos: string[];
+          photo_captions: Record<string, string>;
           external_link: string | null;
           notes: string | null;
           status: TripStatus;
@@ -36,10 +39,13 @@ export interface Database {
           title: string;
           destination: string;
           country_code?: string | null;
+          country_codes?: string[];
+          budget?: number | null;
           start_date?: string | null;
           end_date?: string | null;
           cover_photo_url?: string | null;
           photos?: string[];
+          photo_captions?: Record<string, string>;
           external_link?: string | null;
           notes?: string | null;
           status?: TripStatus;
@@ -52,10 +58,13 @@ export interface Database {
           title?: string;
           destination?: string;
           country_code?: string | null;
+          country_codes?: string[];
+          budget?: number | null;
           start_date?: string | null;
           end_date?: string | null;
           cover_photo_url?: string | null;
           photos?: string[];
+          photo_captions?: Record<string, string>;
           external_link?: string | null;
           notes?: string | null;
           status?: TripStatus;
@@ -146,6 +155,88 @@ export interface Database {
           updated_at?: string;
         };
       };
+      expenses: {
+        Row: {
+          id: string;
+          trip_id: string;
+          title: string;
+          amount: number;
+          category: string;
+          date: string | null;
+          notes: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          trip_id: string;
+          title: string;
+          amount: number;
+          category?: string;
+          date?: string | null;
+          notes?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          title?: string;
+          amount?: number;
+          category?: string;
+          date?: string | null;
+          notes?: string | null;
+        };
+      };
+      flights: {
+        Row: {
+          id: string;
+          trip_id: string;
+          flight_number: string;
+          airline: string | null;
+          departure_airport: string | null;
+          departure_city: string | null;
+          departure_iata: string | null;
+          departure_time: string | null;
+          arrival_airport: string | null;
+          arrival_city: string | null;
+          arrival_iata: string | null;
+          arrival_time: string | null;
+          flight_date: string;
+          status: string | null;
+          distance_miles: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          trip_id: string;
+          flight_number: string;
+          airline?: string | null;
+          departure_airport?: string | null;
+          departure_city?: string | null;
+          departure_iata?: string | null;
+          departure_time?: string | null;
+          arrival_airport?: string | null;
+          arrival_city?: string | null;
+          arrival_iata?: string | null;
+          arrival_time?: string | null;
+          flight_date: string;
+          status?: string | null;
+          distance_miles?: number | null;
+          created_at?: string;
+        };
+        Update: {
+          flight_number?: string;
+          airline?: string | null;
+          departure_airport?: string | null;
+          departure_city?: string | null;
+          departure_iata?: string | null;
+          departure_time?: string | null;
+          arrival_airport?: string | null;
+          arrival_city?: string | null;
+          arrival_iata?: string | null;
+          arrival_time?: string | null;
+          flight_date?: string;
+          status?: string | null;
+          distance_miles?: number | null;
+        };
+      };
       user_settings: {
         Row: {
           user_id: string;
@@ -172,9 +263,11 @@ export interface Database {
   };
 }
 
+export type Expense = Database["public"]["Tables"]["expenses"]["Row"];
 // Convenience row types
 export type Trip = Database["public"]["Tables"]["trips"]["Row"];
 export type ItineraryDay = Database["public"]["Tables"]["itinerary_days"]["Row"];
 export type Activity = Database["public"]["Tables"]["activities"]["Row"];
 export type JournalEntry = Database["public"]["Tables"]["journal_entries"]["Row"];
 export type UserSettings = Database["public"]["Tables"]["user_settings"]["Row"];
+export type Flight = Database["public"]["Tables"]["flights"]["Row"];

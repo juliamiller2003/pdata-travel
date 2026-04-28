@@ -33,7 +33,7 @@ export default function TripCard({ trip }: TripCardProps) {
     <Link href={`/trips/${trip.id}`} className="group block">
       <div className="card overflow-hidden transition-shadow hover:shadow-md">
         {/* Cover photo */}
-        <div className="relative h-40 w-full bg-gradient-to-br from-brand-600 to-brand-900">
+        <div className="relative h-40 w-full bg-black dark:bg-white">
           {trip.cover_photo_url && (
             // eslint-disable-next-line @next/next/no-img-element
             <img

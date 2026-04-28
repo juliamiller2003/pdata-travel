@@ -8,6 +8,7 @@ import { SORTED_COUNTRIES } from "@/lib/countries";
 import type { MapView } from "@/types/database";
 
 export default function SettingsPage() {
+  const [isDark, setIsDark] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -16,6 +17,12 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("theme");
+    const preferred = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    setIsDark(stored ? stored === "dark" : preferred);
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -27,13 +34,13 @@ export default function SettingsPage() {
         return;
       }
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("user_settings")
         .select("*")
         .eq("user_id", user.id)
         .single();
 
-      if (data) {
+      if (!error && data) {
         setMapView(data.map_view);
         setHomeCountry(data.home_country_code ?? "");
       }
@@ -41,6 +48,18 @@ export default function SettingsPage() {
     }
     load();
   }, [supabase, router]);
+
+  function toggleDark() {
+    const next = !isDark;
+    setIsDark(next);
+    if (next) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -159,6 +178,31 @@ export default function SettingsPage() {
             )}
           </div>
         </form>
+
+        {/* Dark mode — lives outside the form, saves instantly */}
+        <div className="mt-6 border-t border-gray-100 pt-6 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Dark mode</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Switch between light and dark appearance.</p>
+            </div>
+            <button
+              type="button"
+              onClick={toggleDark}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 ${
+                isDark ? "bg-brand-600" : "bg-gray-200"
+              }`}
+              role="switch"
+              aria-checked={isDark}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
+                  isDark ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

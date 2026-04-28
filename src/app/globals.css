@@ -6,8 +6,20 @@
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply bg-gray-50 text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100;
   }
+}
+
+:root {
+  --map-border: #fff;
+}
+.dark {
+  --map-border: #000;
+}
+
+@layer utilities {
+  .dark .text-gray-900 { color: rgb(249 250 251); }
+  .dark .text-gray-800 { color: rgb(229 231 235); }
 }
 
 @layer components {
@@ -16,18 +28,18 @@
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2;
+    @apply inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700;
   }
 
   .input {
-    @apply block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm placeholder-gray-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500;
+    @apply block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm placeholder-gray-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500;
   }
 
   .label {
-    @apply block text-sm font-medium text-gray-700 mb-1;
+    @apply block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300;
   }
 
   .card {
-    @apply rounded-xl bg-white shadow-sm border border-gray-100;
+    @apply rounded-xl bg-white shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700;
   }
 }

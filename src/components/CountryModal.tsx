@@ -58,7 +58,7 @@ export default function CountryModal({
       const { data } = await supabase
         .from("trips")
         .select("*")
-        .eq("country_code", countryCode)
+        .or(`country_codes.cs.{${countryCode}},country_code.eq.${countryCode}`)
         .order("start_date", { ascending: false });
       setTrips(data ?? []);
       setLoadingTrips(false);
@@ -103,6 +103,9 @@ export default function CountryModal({
       title: title.trim(),
       destination: countryName,
       country_code: countryCode,
+      country_codes: editingTrip
+        ? (editingTrip.country_codes?.length ? editingTrip.country_codes : [countryCode])
+        : [countryCode],
       start_date: startDate || null,
       end_date: endDate || null,
       photos,
@@ -125,7 +128,7 @@ export default function CountryModal({
     const { data } = await supabase
       .from("trips")
       .select("*")
-      .eq("country_code", countryCode)
+      .or(`country_codes.cs.{${countryCode}},country_code.eq.${countryCode}`)
       .order("start_date", { ascending: false });
     setTrips(data ?? []);
     setShowForm(false);

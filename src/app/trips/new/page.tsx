@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { SORTED_COUNTRIES } from "@/lib/countries";
+import CountryMultiSelect from "@/components/CountryMultiSelect";
 import type { TripStatus } from "@/types/database";
 
 const STATUS_OPTIONS: { value: TripStatus; label: string }[] = [
@@ -20,10 +20,11 @@ export default function NewTripPage() {
 
   const [title, setTitle] = useState("");
   const [destination, setDestination] = useState("");
-  const [countryCode, setCountryCode] = useState("");
+  const [countryCodes, setCountryCodes] = useState<string[]>([]);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [status, setStatus] = useState<TripStatus>("planning");
+  const [budget, setBudget] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,10 +49,12 @@ export default function NewTripPage() {
         user_id: user.id,
         title: title.trim(),
         destination: destination.trim(),
-        country_code: countryCode || null,
+        country_code: countryCodes[0] ?? null,
+        country_codes: countryCodes,
         start_date: startDate || null,
         end_date: endDate || null,
         cover_photo_url: coverUrl.trim() || null,
+        budget: budget ? parseFloat(budget) : null,
         status,
       })
       .select()
@@ -107,21 +110,9 @@ export default function NewTripPage() {
           </div>
 
           <div>
-            <label htmlFor="country" className="label">Country</label>
-            <p className="text-xs text-gray-400 mb-1">Used to show this trip on your travel map.</p>
-            <select
-              id="country"
-              value={countryCode}
-              onChange={(e) => setCountryCode(e.target.value)}
-              className="input"
-            >
-              <option value="">— Select a country —</option>
-              {SORTED_COUNTRIES.map((c) => (
-                <option key={c.alpha2} value={c.alpha2}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+            <label className="label">Countries</label>
+            <p className="text-xs text-gray-400 mb-1">Used to show this trip on your travel map. Add all countries you visited.</p>
+            <CountryMultiSelect value={countryCodes} onChange={setCountryCodes} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -144,6 +135,23 @@ export default function NewTripPage() {
                 min={startDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 className="input"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="budget" className="label">Budget</label>
+            <div className="relative">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400 text-sm">$</span>
+              <input
+                id="budget"
+                type="number"
+                min="0"
+                step="0.01"
+                value={budget}
+                onChange={(e) => setBudget(e.target.value)}
+                placeholder="0.00"
+                className="input pl-7"
               />
             </div>
           </div>
