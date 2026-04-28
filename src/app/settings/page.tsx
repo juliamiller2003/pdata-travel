@@ -72,7 +72,8 @@ export default function SettingsPage() {
     } = await supabase.auth.getUser();
     if (!user) return;
 
-    await supabase.from("user_settings").upsert({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from("user_settings").upsert({
       user_id: user.id,
       map_view: mapView,
       home_country_code: homeCountry || null,

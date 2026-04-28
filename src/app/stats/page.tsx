@@ -70,11 +70,13 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
 
   const visitedCodes = [
     ...new Set(
-      filteredTrips.flatMap((t) =>
-        (t.country_codes as string[] | null)?.length
-          ? (t.country_codes as string[])
-          : t.country_code ? [t.country_code] : []
-      )
+      filteredTrips
+        .filter((t) => t.status === "completed" || t.status === "ongoing")
+        .flatMap((t) =>
+          (t.country_codes as string[] | null)?.length
+            ? (t.country_codes as string[])
+            : t.country_code ? [t.country_code] : []
+        )
     ),
   ] as string[];
 

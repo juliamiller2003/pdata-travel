@@ -70,7 +70,13 @@ export interface Database {
           status?: TripStatus;
           updated_at?: string;
         };
-        Relationships: [];
+        Relationships: {
+          foreignKeyName: string;
+          columns: string[];
+          isOneToOne: boolean;
+          referencedRelation: string;
+          referencedColumns: string[];
+        }[];
       };
       itinerary_days: {
         Row: {
@@ -91,7 +97,13 @@ export interface Database {
           day_number?: number;
           date?: string | null;
         };
-        Relationships: [];
+        Relationships: {
+          foreignKeyName: string;
+          columns: string[];
+          isOneToOne: boolean;
+          referencedRelation: string;
+          referencedColumns: string[];
+        }[];
       };
       activities: {
         Row: {
@@ -127,7 +139,13 @@ export interface Database {
           lng?: number | null;
           order_index?: number;
         };
-        Relationships: [];
+        Relationships: {
+          foreignKeyName: string;
+          columns: string[];
+          isOneToOne: boolean;
+          referencedRelation: string;
+          referencedColumns: string[];
+        }[];
       };
       journal_entries: {
         Row: {
@@ -157,7 +175,13 @@ export interface Database {
           mood?: Mood | null;
           updated_at?: string;
         };
-        Relationships: [];
+        Relationships: {
+          foreignKeyName: string;
+          columns: string[];
+          isOneToOne: boolean;
+          referencedRelation: string;
+          referencedColumns: string[];
+        }[];
       };
       expenses: {
         Row: {
@@ -187,7 +211,13 @@ export interface Database {
           date?: string | null;
           notes?: string | null;
         };
-        Relationships: [];
+        Relationships: {
+          foreignKeyName: string;
+          columns: string[];
+          isOneToOne: boolean;
+          referencedRelation: string;
+          referencedColumns: string[];
+        }[];
       };
       flights: {
         Row: {
@@ -241,7 +271,13 @@ export interface Database {
           status?: string | null;
           distance_miles?: number | null;
         };
-        Relationships: [];
+        Relationships: {
+          foreignKeyName: string;
+          columns: string[];
+          isOneToOne: boolean;
+          referencedRelation: string;
+          referencedColumns: string[];
+        }[];
       };
       user_settings: {
         Row: {
@@ -261,7 +297,13 @@ export interface Database {
           home_country_code?: string | null;
           updated_at?: string;
         };
-        Relationships: [];
+        Relationships: {
+          foreignKeyName: string;
+          columns: string[];
+          isOneToOne: boolean;
+          referencedRelation: string;
+          referencedColumns: string[];
+        }[];
       };
     };
     Views: Record<string, never>;

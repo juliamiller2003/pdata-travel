@@ -25,7 +25,6 @@ export default function NewTripPage() {
   const [endDate, setEndDate] = useState("");
   const [status, setStatus] = useState<TripStatus>("planning");
   const [budget, setBudget] = useState("");
-  const [coverUrl, setCoverUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,7 +52,6 @@ export default function NewTripPage() {
         country_codes: countryCodes,
         start_date: startDate || null,
         end_date: endDate || null,
-        cover_photo_url: coverUrl.trim() || null,
         budget: budget ? parseFloat(budget) : null,
         status,
       })
@@ -170,25 +168,7 @@ export default function NewTripPage() {
             </select>
           </div>
 
-          <div>
-            <label htmlFor="cover" className="label">Cover photo URL</label>
-            <input
-              id="cover"
-              type="url"
-              value={coverUrl}
-              onChange={(e) => setCoverUrl(e.target.value)}
-              placeholder="https://..."
-              className="input"
-            />
-            {coverUrl && (
-              <div className="mt-2 overflow-hidden rounded-lg border border-gray-200">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={coverUrl} alt="Cover preview" className="h-32 w-full object-cover" />
-              </div>
-            )}
-          </div>
-
-          {error && (
+{error && (
             <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
           )}
 

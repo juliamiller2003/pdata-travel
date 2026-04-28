@@ -27,6 +27,7 @@ export default function TravelMap({ trips, mapView, homeCountryCode }: TravelMap
   function buildVisitedMap(tripList: Trip[]) {
     const map = new Map<string, number>();
     for (const trip of tripList) {
+      if (trip.status !== "completed" && trip.status !== "ongoing") continue;
       const codes = trip.country_codes?.length
         ? trip.country_codes
         : trip.country_code ? [trip.country_code] : [];
