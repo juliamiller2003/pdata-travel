@@ -44,10 +44,11 @@ export default function TravelMap({ trips, mapView, homeCountryCode }: TravelMap
   const zoom = mapView === "country" ? 3.5 : 1;
 
   const handleMouseEnter = useCallback(
-    (e: React.MouseEvent<SVGPathElement>, geoId: string) => {
+    (e: React.MouseEvent<SVGPathElement>, geoId: string, geoName?: string) => {
       const alpha2 = numericToAlpha2[geoId];
       const country = alpha2 ? byAlpha2[alpha2] : null;
-      if (country) setTooltip({ name: country.name, x: e.clientX, y: e.clientY });
+      const name = country?.name ?? geoName;
+      if (name) setTooltip({ name, x: e.clientX, y: e.clientY });
     },
     []
   );
@@ -106,7 +107,7 @@ export default function TravelMap({ trips, mapView, homeCountryCode }: TravelMap
                         key={geo.rsmKey}
                         geography={geo}
                         onClick={() => handleClick(geoId)}
-                        onMouseEnter={(e) => handleMouseEnter(e, geoId)}
+                        onMouseEnter={(e) => handleMouseEnter(e, geoId, geo.properties?.name as string | undefined)}
                         onMouseMove={handleMouseMove}
                         onMouseLeave={() => setTooltip(null)}
                         style={{
