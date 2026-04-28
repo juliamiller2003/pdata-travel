@@ -93,8 +93,8 @@ export default function TravelMap({ trips, mapView, homeCountryCode }: TravelMap
           >
             <ZoomableGroup center={center} zoom={zoom} maxZoom={12}>
               <Geographies geography={GEO_URL}>
-                {({ geographies }) =>
-                  geographies.map((geo) => {
+                {({ geographies }: { geographies: { id: unknown; rsmKey: string; properties?: Record<string, unknown> }[] }) =>
+                  geographies.map((geo: { id: unknown; rsmKey: string; properties?: Record<string, unknown> }) => {
                     const geoId = String(geo.id ?? "");
                     const alpha2 = numericToAlpha2[geoId];
                     const isVisited = alpha2 ? visitedMap.has(alpha2) : false;
@@ -123,7 +123,7 @@ export default function TravelMap({ trips, mapView, homeCountryCode }: TravelMap
                         key={geo.rsmKey}
                         geography={geo}
                         onClick={() => handleClick(geoId)}
-                        onMouseEnter={(e) => handleMouseEnter(e, geoId, geo.properties?.name as string | undefined)}
+                        onMouseEnter={(e: React.MouseEvent<SVGPathElement>) => handleMouseEnter(e, geoId, geo.properties?.name as string | undefined)}
                         onMouseMove={handleMouseMove}
                         onMouseLeave={() => setTooltip(null)}
                         style={{

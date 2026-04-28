@@ -42,7 +42,7 @@ export default function NewTripPage() {
       return;
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("trips")
       .insert({
         user_id: user.id,

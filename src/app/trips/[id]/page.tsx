@@ -117,8 +117,8 @@ export default async function TripDetailPage({ params }: TripPageProps) {
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
         <div className="absolute bottom-0 left-0 p-6">
           <div className="flex items-center gap-3 mb-2">
-            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLES[trip.status]}`}>
-              {trip.status.charAt(0).toUpperCase() + trip.status.slice(1)}
+            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLES[trip.status as TripStatus]}`}>
+              {(trip.status as string).charAt(0).toUpperCase() + (trip.status as string).slice(1)}
             </span>
           </div>
           <h1 className="text-2xl font-bold text-white">{trip.title}</h1>
@@ -139,7 +139,7 @@ export default async function TripDetailPage({ params }: TripPageProps) {
                 {trip.country_codes.length === 1 ? "Country" : "Countries"}
               </dt>
               <dd className="flex flex-wrap gap-1.5">
-                {trip.country_codes.map((code) => (
+                {(trip.country_codes as string[]).map((code: string) => (
                   <span key={code} className="rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-medium text-sky-700">
                     {byAlpha2[code]?.name ?? code}
                   </span>
@@ -158,8 +158,8 @@ export default async function TripDetailPage({ params }: TripPageProps) {
           <div>
             <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">Status</dt>
             <dd className="mt-1">
-              <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[trip.status]}`}>
-                {trip.status.charAt(0).toUpperCase() + trip.status.slice(1)}
+              <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[trip.status as TripStatus]}`}>
+                {(trip.status as string).charAt(0).toUpperCase() + (trip.status as string).slice(1)}
               </span>
             </dd>
           </div>
@@ -177,7 +177,7 @@ export default async function TripDetailPage({ params }: TripPageProps) {
           <div className="border-t border-gray-100 pt-4">
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Photos</p>
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-              {trip.photos.map((url, i) => {
+              {(trip.photos as string[]).map((url: string, i: number) => {
                 const caption = (trip.photo_captions as Record<string, string>)?.[url];
                 return (
                   <div key={i} className="space-y-1">
@@ -228,7 +228,7 @@ export default async function TripDetailPage({ params }: TripPageProps) {
           </div>
         ) : (
           <div className="space-y-4">
-            {itinerary.map((day) => {
+            {itinerary.map((day: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
               const activities = (day as { activities?: { id: string; time: string | null; title: string; place_name: string | null }[] }).activities ?? [];
               return (
                 <div key={day.id} className="card p-4">
@@ -288,7 +288,7 @@ export default async function TripDetailPage({ params }: TripPageProps) {
           </div>
         ) : (
           <div className="space-y-4">
-            {entries.map((entry) => (
+            {entries.map((entry: any) => ( // eslint-disable-line @typescript-eslint/no-explicit-any
               <div key={entry.id} className="card p-5">
                 <div className="mb-3 flex items-center justify-between">
                   <span className="text-xs text-gray-400">
@@ -300,15 +300,15 @@ export default async function TripDetailPage({ params }: TripPageProps) {
                     })}
                   </span>
                   {entry.mood && (
-                    <span className="text-lg" title={entry.mood}>
-                      {MOOD_EMOJI[entry.mood]}
+                    <span className="text-lg" title={entry.mood as string}>
+                      {MOOD_EMOJI[entry.mood as Mood]}
                     </span>
                   )}
                 </div>
                 <p className="text-sm text-gray-700 whitespace-pre-wrap">{entry.content}</p>
                 {entry.photos.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {entry.photos.map((url, i) => (
+                    {(entry.photos as string[]).map((url: string, i: number) => (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         key={i}

@@ -21,6 +21,8 @@ function formatTime(iso: string | null) {
 
 export default function FlightSearch({ tripId, onFlightAdded }: FlightSearchProps) {
   const supabase = createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
   const [showForm, setShowForm] = useState(false);
   const [flightNumber, setFlightNumber] = useState("");
   const [flightDate, setFlightDate] = useState("");
@@ -63,7 +65,7 @@ export default function FlightSearch({ tripId, onFlightAdded }: FlightSearchProp
 
     const miles = distanceMiles ? parseInt(distanceMiles, 10) : null;
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("flights")
       .insert({
         trip_id: tripId,
@@ -98,7 +100,7 @@ export default function FlightSearch({ tripId, onFlightAdded }: FlightSearchProp
 
     const miles = distanceMiles ? parseInt(distanceMiles, 10) : null;
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("flights")
       .insert({
         trip_id: tripId,

@@ -287,6 +287,7 @@ export default function CountryModal({
               <PhotoUploader
                 photos={photos}
                 coverUrl={coverUrl}
+                captions={{}}
                 onChange={(newPhotos, newCover) => {
                   setPhotos(newPhotos);
                   setCoverUrl(newCover);
