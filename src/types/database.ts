@@ -70,6 +70,7 @@ export interface Database {
           status?: TripStatus;
           updated_at?: string;
         };
+        Relationships: [];
       };
       itinerary_days: {
         Row: {
@@ -90,6 +91,7 @@ export interface Database {
           day_number?: number;
           date?: string | null;
         };
+        Relationships: [];
       };
       activities: {
         Row: {
@@ -125,6 +127,7 @@ export interface Database {
           lng?: number | null;
           order_index?: number;
         };
+        Relationships: [];
       };
       journal_entries: {
         Row: {
@@ -154,6 +157,7 @@ export interface Database {
           mood?: Mood | null;
           updated_at?: string;
         };
+        Relationships: [];
       };
       expenses: {
         Row: {
@@ -183,6 +187,7 @@ export interface Database {
           date?: string | null;
           notes?: string | null;
         };
+        Relationships: [];
       };
       flights: {
         Row: {
@@ -236,6 +241,7 @@ export interface Database {
           status?: string | null;
           distance_miles?: number | null;
         };
+        Relationships: [];
       };
       user_settings: {
         Row: {
@@ -255,11 +261,13 @@ export interface Database {
           home_country_code?: string | null;
           updated_at?: string;
         };
+        Relationships: [];
       };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
     Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }
 
