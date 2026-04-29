@@ -8,6 +8,7 @@ import ItinerarySection from "@/components/ItinerarySection";
 import TripMapView from "@/components/TripMapView";
 import TripPhotosSection from "@/components/TripPhotosSection";
 import JournalSection from "@/components/JournalSection";
+import SectionGuard from "@/components/SectionGuard";
 import { byAlpha2 } from "@/lib/countries";
 
 const STATUS_STYLES: Record<TripStatus, string> = {
@@ -193,35 +194,40 @@ export default async function TripDetailPage({ params }: TripPageProps) {
         )}
       </div>
 
-      {/* Itinerary */}
-      <ItinerarySection
-        tripId={id}
-        initialDays={itinerary}
-        tripStartDate={trip.start_date ?? null}
-        tripEndDate={trip.end_date ?? null}
-        destination={trip.destination}
-        style={trip.itinerary_style ?? "structured"}
-        initialNotes={trip.itinerary_notes ?? null}
-      />
-
-      {/* Trip Map */}
-      <TripMapView flights={flights} activities={allActivities} />
-
-      {/* Flights */}
-      <FlightsSection tripId={id} initialFlights={flights} />
-
-      {/* Budget & Expenses */}
-      <ExpensesSection tripId={id} budget={trip.budget} initialExpenses={expensesData ?? []} />
-
-      {/* Journal & Photos */}
-      <section>
-        <TripPhotosSection
+      <SectionGuard section="itinerary">
+        <ItinerarySection
           tripId={id}
-          initialPhotos={(trip.photos as string[]) ?? []}
-          initialCaptions={(trip.photo_captions as Record<string, string>) ?? {}}
+          initialDays={itinerary}
+          tripStartDate={trip.start_date ?? null}
+          tripEndDate={trip.end_date ?? null}
+          destination={trip.destination}
+          style={trip.itinerary_style ?? "structured"}
+          initialNotes={trip.itinerary_notes ?? null}
         />
-        <JournalSection tripId={id} initialEntries={entries ?? []} />
-      </section>
+      </SectionGuard>
+
+      <SectionGuard section="map">
+        <TripMapView flights={flights} activities={allActivities} />
+      </SectionGuard>
+
+      <SectionGuard section="flights">
+        <FlightsSection tripId={id} initialFlights={flights} />
+      </SectionGuard>
+
+      <SectionGuard section="expenses">
+        <ExpensesSection tripId={id} budget={trip.budget} initialExpenses={expensesData ?? []} />
+      </SectionGuard>
+
+      <SectionGuard section="journal">
+        <section>
+          <TripPhotosSection
+            tripId={id}
+            initialPhotos={(trip.photos as string[]) ?? []}
+            initialCaptions={(trip.photo_captions as Record<string, string>) ?? {}}
+          />
+          <JournalSection tripId={id} initialEntries={entries ?? []} />
+        </section>
+      </SectionGuard>
     </div>
   );
 }

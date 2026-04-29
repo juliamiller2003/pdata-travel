@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { SORTED_COUNTRIES } from "@/lib/countries";
+import { TRIP_SECTIONS, getSectionVisibility, setSectionVisibility, type SectionKey } from "@/lib/tripSections";
 import type { MapView, UserSettings } from "@/types/database";
 
 export default function SettingsPage() {
@@ -17,11 +18,15 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [sectionVisibility, setSectionVisibilityState] = useState<Record<SectionKey, boolean>>({
+    itinerary: true, map: true, flights: true, expenses: true, journal: true,
+  });
 
   useEffect(() => {
     const stored = localStorage.getItem("theme");
     const preferred = window.matchMedia("(prefers-color-scheme: dark)").matches;
     setIsDark(stored ? stored === "dark" : preferred);
+    setSectionVisibilityState(getSectionVisibility());
   }, []);
 
   useEffect(() => {
@@ -180,6 +185,34 @@ export default function SettingsPage() {
             )}
           </div>
         </form>
+
+        {/* Trip section visibility */}
+        <div className="mt-6 border-t border-gray-100 pt-6 dark:border-gray-700">
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Trip page sections</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Choose which sections appear on each trip page.</p>
+          <div className="space-y-2">
+            {TRIP_SECTIONS.map(({ key, label }) => (
+              <div key={key} className="flex items-center justify-between">
+                <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = { ...sectionVisibility, [key]: !sectionVisibility[key] };
+                    setSectionVisibilityState(next);
+                    setSectionVisibility(next);
+                  }}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
+                    sectionVisibility[key] ? "bg-brand-600" : "bg-gray-200"
+                  }`}
+                  role="switch"
+                  aria-checked={sectionVisibility[key]}
+                >
+                  <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${sectionVisibility[key] ? "translate-x-5" : "translate-x-0"}`} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* Dark mode — lives outside the form, saves instantly */}
         <div className="mt-6 border-t border-gray-100 pt-6 dark:border-gray-700">
