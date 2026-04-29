@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
 
@@ -9,6 +9,22 @@ const LoginMapBackground = dynamic(() => import("@/components/LoginMapBackground
 export default function LoginPage() {
   const supabase = createClient();
   const [email, setEmail] = useState("");
+
+  // Force light mode on the login page
+  useEffect(() => {
+    const html = document.documentElement;
+    const wasDark = html.classList.contains("dark");
+    html.classList.remove("dark");
+    html.style.colorScheme = "light";
+    return () => {
+      if (wasDark) {
+        html.classList.add("dark");
+        html.style.colorScheme = "dark";
+      } else {
+        html.style.colorScheme = "";
+      }
+    };
+  }, []);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +52,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen" style={{ colorScheme: "light" }}>
+    <div className="login-page relative min-h-screen" style={{ colorScheme: "light" }}>
       {/* Full-screen map background */}
       <LoginMapBackground />
 
