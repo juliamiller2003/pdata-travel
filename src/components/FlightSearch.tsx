@@ -253,7 +253,7 @@ export default function FlightSearch({ tripId, onFlightAdded }: FlightSearchProp
           )}
 
           <div>
-            <label className="label">Distance (miles) <span className="text-gray-400 font-normal">— optional</span></label>
+            <label className="label">Distance (miles)</label>
             <input
               type="number"
               min="1"
@@ -281,7 +281,7 @@ export default function FlightSearch({ tripId, onFlightAdded }: FlightSearchProp
           {flightNumber && flightDate && (
             <form onSubmit={handleSaveManual} className="space-y-2">
               <div>
-                <label className="label">Distance (miles) <span className="text-amber-600 font-normal">— optional</span></label>
+                <label className="label">Distance (miles)</label>
                 <input
                   type="number"
                   min="1"
