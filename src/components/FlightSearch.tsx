@@ -28,6 +28,10 @@ export default function FlightSearch({ tripId, onFlightAdded }: FlightSearchProp
   const [flightDate, setFlightDate] = useState("");
   const [distanceMiles, setDistanceMiles] = useState("");
   const [lookupResult, setLookupResult] = useState<FlightResult | null>(null);
+  const [editDepartureIata, setEditDepartureIata] = useState("");
+  const [editArrivalIata, setEditArrivalIata] = useState("");
+  const [editDepartureCity, setEditDepartureCity] = useState("");
+  const [editArrivalCity, setEditArrivalCity] = useState("");
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [looking, setLooking] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -38,6 +42,10 @@ export default function FlightSearch({ tripId, onFlightAdded }: FlightSearchProp
     setDistanceMiles("");
     setLookupResult(null);
     setLookupError(null);
+    setEditDepartureIata("");
+    setEditArrivalIata("");
+    setEditDepartureCity("");
+    setEditArrivalCity("");
   }
 
   async function handleLookup(e: React.FormEvent) {
@@ -57,6 +65,10 @@ export default function FlightSearch({ tripId, onFlightAdded }: FlightSearchProp
       return;
     }
     setLookupResult(data);
+    setEditDepartureIata(data.departureIata ?? "");
+    setEditArrivalIata(data.arrivalIata ?? "");
+    setEditDepartureCity(data.departureCity ?? "");
+    setEditArrivalCity(data.arrivalCity ?? "");
   }
 
   async function handleSave() {
@@ -72,12 +84,12 @@ export default function FlightSearch({ tripId, onFlightAdded }: FlightSearchProp
         flight_number: lookupResult.flightNumber,
         airline: lookupResult.airline,
         departure_airport: lookupResult.departureAirport,
-        departure_city: lookupResult.departureCity,
-        departure_iata: lookupResult.departureIata,
+        departure_city: editDepartureCity || lookupResult.departureCity,
+        departure_iata: editDepartureIata || lookupResult.departureIata,
         departure_time: lookupResult.departureTime,
         arrival_airport: lookupResult.arrivalAirport,
-        arrival_city: lookupResult.arrivalCity,
-        arrival_iata: lookupResult.arrivalIata,
+        arrival_city: editArrivalCity || lookupResult.arrivalCity,
+        arrival_iata: editArrivalIata || lookupResult.arrivalIata,
         arrival_time: lookupResult.arrivalTime,
         flight_date: flightDate,
         status: lookupResult.status,
@@ -189,32 +201,55 @@ export default function FlightSearch({ tripId, onFlightAdded }: FlightSearchProp
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex-1 text-center">
-              <p className="text-2xl font-bold text-gray-900">{lookupResult.departureIata ?? "—"}</p>
-              <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{lookupResult.departureAirport ?? "—"}</p>
-              <p className="text-sm font-medium text-gray-700 mt-1">{formatTime(lookupResult.departureTime)}</p>
-              <p className="text-xs text-gray-400">
-                {lookupResult.departureTime
-                  ? new Date(lookupResult.departureTime).toLocaleDateString("en-US", { month: "short", day: "numeric" })
-                  : ""}
-              </p>
+            <div className="flex-1 space-y-1">
+              <input
+                type="text"
+                maxLength={3}
+                value={editDepartureIata}
+                onChange={(e) => setEditDepartureIata(e.target.value.toUpperCase())}
+                placeholder="DEP"
+                className="input text-center text-xl font-bold uppercase tracking-widest"
+              />
+              <input
+                type="text"
+                value={editDepartureCity}
+                onChange={(e) => setEditDepartureCity(e.target.value)}
+                placeholder="City"
+                className="input text-center text-xs"
+              />
+              {lookupResult.departureTime && (
+                <p className="text-sm font-medium text-gray-700 text-center">{formatTime(lookupResult.departureTime)}</p>
+              )}
             </div>
-            <div className="flex flex-col items-center gap-1 text-gray-300">
+            <div className="flex flex-col items-center gap-1 text-gray-300 shrink-0">
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 12h12m0 0l-4-4m4 4l-4 4" />
               </svg>
             </div>
-            <div className="flex-1 text-center">
-              <p className="text-2xl font-bold text-gray-900">{lookupResult.arrivalIata ?? "—"}</p>
-              <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{lookupResult.arrivalAirport ?? "—"}</p>
-              <p className="text-sm font-medium text-gray-700 mt-1">{formatTime(lookupResult.arrivalTime)}</p>
-              <p className="text-xs text-gray-400">
-                {lookupResult.arrivalTime
-                  ? new Date(lookupResult.arrivalTime).toLocaleDateString("en-US", { month: "short", day: "numeric" })
-                  : ""}
-              </p>
+            <div className="flex-1 space-y-1">
+              <input
+                type="text"
+                maxLength={3}
+                value={editArrivalIata}
+                onChange={(e) => setEditArrivalIata(e.target.value.toUpperCase())}
+                placeholder="ARR"
+                className="input text-center text-xl font-bold uppercase tracking-widest"
+              />
+              <input
+                type="text"
+                value={editArrivalCity}
+                onChange={(e) => setEditArrivalCity(e.target.value)}
+                placeholder="City"
+                className="input text-center text-xs"
+              />
+              {lookupResult.arrivalTime && (
+                <p className="text-sm font-medium text-gray-700 text-center">{formatTime(lookupResult.arrivalTime)}</p>
+              )}
             </div>
           </div>
+          {(!editDepartureIata || !editArrivalIata) && (
+            <p className="text-xs text-amber-600">Enter the 3-letter airport codes above to enable the trip map.</p>
+          )}
 
           <div>
             <label className="label">Distance (miles) <span className="text-gray-400 font-normal">— optional</span></label>
