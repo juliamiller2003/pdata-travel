@@ -41,31 +41,41 @@ export async function GET(request: NextRequest) {
       });
 
       const rawText = await res.text();
-      console.log("[AeroDataBox] status:", res.status, "body:", rawText.slice(0, 500));
 
-      if (res.ok) {
-        const json = JSON.parse(rawText);
-        const flights = Array.isArray(json) ? json : json.items ?? [];
-        if (flights.length > 0) {
-          const f = flights[0];
-          const result: FlightResult = {
-            flightNumber: f.number ?? flightNumber,
-            airline: f.airline?.name ?? null,
-            departureAirport: f.departure?.airport?.name ?? null,
-            departureCity: f.departure?.airport?.municipalityName ?? null,
-            departureIata: f.departure?.airport?.iata ?? null,
-            departureTime: f.departure?.scheduledTime?.local ?? f.departure?.scheduledTime?.utc ?? null,
-            arrivalAirport: f.arrival?.airport?.name ?? null,
-            arrivalCity: f.arrival?.airport?.municipalityName ?? null,
-            arrivalIata: f.arrival?.airport?.iata ?? null,
-            arrivalTime: f.arrival?.scheduledTime?.local ?? f.arrival?.scheduledTime?.utc ?? null,
-            status: f.status ?? null,
-          };
-          return NextResponse.json(result);
-        }
+      if (!res.ok) {
+        return NextResponse.json(
+          { error: `AeroDataBox error ${res.status}: ${rawText.slice(0, 200)}` },
+          { status: 502 }
+        );
       }
+
+      const json = JSON.parse(rawText);
+      const flights = Array.isArray(json) ? json : json.items ?? [];
+
+      if (flights.length === 0) {
+        return NextResponse.json(
+          { error: `AeroDataBox returned no flights for ${flightNumber} on ${date}` },
+          { status: 404 }
+        );
+      }
+
+      const f = flights[0];
+      const result: FlightResult = {
+        flightNumber: f.number ?? flightNumber,
+        airline: f.airline?.name ?? null,
+        departureAirport: f.departure?.airport?.name ?? null,
+        departureCity: f.departure?.airport?.municipalityName ?? null,
+        departureIata: f.departure?.airport?.iata ?? null,
+        departureTime: f.departure?.scheduledTime?.local ?? f.departure?.scheduledTime?.utc ?? null,
+        arrivalAirport: f.arrival?.airport?.name ?? null,
+        arrivalCity: f.arrival?.airport?.municipalityName ?? null,
+        arrivalIata: f.arrival?.airport?.iata ?? null,
+        arrivalTime: f.arrival?.scheduledTime?.local ?? f.arrival?.scheduledTime?.utc ?? null,
+        status: f.status ?? null,
+      };
+      return NextResponse.json(result);
     } catch (e) {
-      console.log("[AeroDataBox] error:", e);
+      return NextResponse.json({ error: `AeroDataBox exception: ${String(e)}` }, { status: 500 });
     }
   }
 
