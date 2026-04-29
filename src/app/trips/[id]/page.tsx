@@ -219,9 +219,14 @@ export default async function TripDetailPage({ params }: TripPageProps) {
       {/* Budget & Expenses */}
       <ExpensesSection tripId={id} budget={trip.budget} initialExpenses={expensesData ?? []} />
 
-      {/* Journal */}
+      {/* Journal & Photos */}
       <section>
         <h2 className="mb-4 text-lg font-semibold text-gray-900">Journal</h2>
+        <TripPhotosSection
+          tripId={id}
+          initialPhotos={(trip.photos as string[]) ?? []}
+          initialCaptions={(trip.photo_captions as Record<string, string>) ?? {}}
+        />
 
         {entries.length === 0 ? (
           <div className="rounded-xl border-2 border-dashed border-gray-200 py-12 text-center text-sm text-gray-400">

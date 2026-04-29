@@ -5,7 +5,6 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import CountryMultiSelect from "@/components/CountryMultiSelect";
-import PhotoUploader from "@/components/PhotoUploader";
 import FlightsSection from "@/components/FlightsSection";
 import type { TripStatus, Flight, ItineraryStyle } from "@/types/database";
 
@@ -100,9 +99,7 @@ export default function EditTripPage() {
         status,
         notes: notes.trim() || null,
         external_link: externalLink.trim() || null,
-        photos,
         cover_photo_url: coverUrl || null,
-        photo_captions: captions,
         budget: budget ? parseFloat(budget) : null,
         itinerary_style: itineraryStyle,
         updated_at: new Date().toISOString(),
@@ -283,16 +280,36 @@ export default function EditTripPage() {
             </div>
           </div>
 
-          <PhotoUploader
-            photos={photos}
-            coverUrl={coverUrl}
-            captions={captions}
-            onChange={(newPhotos, newCover, newCaptions) => {
-              setPhotos(newPhotos);
-              setCoverUrl(newCover);
-              setCaptions(newCaptions);
-            }}
-          />
+          {/* Cover photo picker */}
+          {photos.length > 0 && (
+            <div>
+              <label className="label">Cover photo</label>
+              <p className="text-xs text-gray-400 mb-2">Click a photo to set it as the cover.</p>
+              <div className="grid grid-cols-4 gap-2">
+                {photos.map((url) => (
+                  <button
+                    key={url}
+                    type="button"
+                    onClick={() => setCoverUrl(url)}
+                    className={`relative aspect-square overflow-hidden rounded-lg border-2 transition-colors ${
+                      coverUrl === url ? "border-sky-500" : "border-transparent hover:border-gray-300"
+                    }`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt="" className="h-full w-full object-cover" />
+                    {coverUrl === url && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-sky-500/20">
+                        <span className="rounded-full bg-sky-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">Cover</span>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {photos.length === 0 && (
+            <p className="text-xs text-gray-400">Upload photos on the trip page to set a cover photo.</p>
+          )}
 
           {error && (
             <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
