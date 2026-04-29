@@ -13,6 +13,7 @@ export interface FlightResult {
   arrivalIata: string | null;
   arrivalTime: string | null;
   status: string | null;
+  distanceMiles: number | null;
 }
 
 export async function GET(request: NextRequest) {
@@ -72,6 +73,7 @@ export async function GET(request: NextRequest) {
         arrivalIata: f.arrival?.airport?.iata ?? null,
         arrivalTime: f.arrival?.scheduledTime?.local ?? f.arrival?.scheduledTime?.utc ?? null,
         status: f.status ?? null,
+        distanceMiles: f.greatCircleDistance?.mile ? Math.round(f.greatCircleDistance.mile) : null,
       };
       return NextResponse.json(result);
     } catch (e) {
@@ -100,6 +102,7 @@ export async function GET(request: NextRequest) {
           arrivalIata: f.arrival?.iata ?? null,
           arrivalTime: f.arrival?.scheduled ?? null,
           status: f.flight_status ?? null,
+          distanceMiles: null,
         };
         return NextResponse.json(result);
       }
@@ -167,6 +170,7 @@ Always try to identify the airline from the 2-letter prefix. Only return null fo
         arrivalIata: parsed.arrivalIata ?? null,
         arrivalTime: null,
         status: null,
+        distanceMiles: null,
       };
       return NextResponse.json(result);
     } catch {

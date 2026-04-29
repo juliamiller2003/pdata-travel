@@ -69,6 +69,7 @@ export default function FlightSearch({ tripId, onFlightAdded }: FlightSearchProp
     setEditArrivalIata(data.arrivalIata ?? "");
     setEditDepartureCity(data.departureCity ?? "");
     setEditArrivalCity(data.arrivalCity ?? "");
+    if (data.distanceMiles) setDistanceMiles(String(data.distanceMiles));
   }
 
   async function handleSave() {
