@@ -2,17 +2,6 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Mood } from "@/types/database";
-
-const MOOD_EMOJI: Record<Mood, string> = {
-  amazing: "🤩",
-  good:    "😊",
-  okay:    "😐",
-  tough:   "😔",
-  terrible:"😞",
-};
-
-const MOODS: Mood[] = ["amazing", "good", "okay", "tough", "terrible"];
 
 type Entry = {
   id: string;
@@ -38,7 +27,6 @@ export default function JournalSection({ tripId, initialEntries }: JournalSectio
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [content, setContent] = useState("");
-  const [mood, setMood] = useState<Mood | "">("");
   const [dayNumber, setDayNumber] = useState("");
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -46,7 +34,6 @@ export default function JournalSection({ tripId, initialEntries }: JournalSectio
   function openNew() {
     setEditingId(null);
     setContent("");
-    setMood("");
     setDayNumber("");
     setShowForm(true);
   }
@@ -54,7 +41,6 @@ export default function JournalSection({ tripId, initialEntries }: JournalSectio
   function openEdit(entry: Entry) {
     setEditingId(entry.id);
     setContent(entry.content);
-    setMood((entry.mood as Mood) ?? "");
     setDayNumber(entry.day_number != null ? String(entry.day_number) : "");
     setShowForm(true);
   }
@@ -72,7 +58,7 @@ export default function JournalSection({ tripId, initialEntries }: JournalSectio
     const payload = {
       trip_id: tripId,
       content: content.trim(),
-      mood: mood || null,
+      mood: null,
       day_number: dayNumber ? parseInt(dayNumber, 10) : null,
     };
 
@@ -137,35 +123,16 @@ export default function JournalSection({ tripId, initialEntries }: JournalSectio
             required
           />
 
-          <div className="flex flex-wrap gap-4">
-            <div>
-              <label className="label">Mood</label>
-              <div className="flex gap-1 mt-1">
-                {MOODS.map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => setMood(mood === m ? "" : m)}
-                    title={m}
-                    className={`text-xl rounded-lg p-1 transition-colors ${mood === m ? "bg-sky-100 ring-2 ring-sky-400" : "hover:bg-gray-100"}`}
-                  >
-                    {MOOD_EMOJI[m]}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="label">Day number</label>
-              <input
-                type="number"
-                min="1"
-                value={dayNumber}
-                onChange={(e) => setDayNumber(e.target.value)}
-                placeholder="e.g. 3"
-                className="input w-24 mt-1"
-              />
-            </div>
+          <div>
+            <label className="label">Day number</label>
+            <input
+              type="number"
+              min="1"
+              value={dayNumber}
+              onChange={(e) => setDayNumber(e.target.value)}
+              placeholder="e.g. 3"
+              className="input w-24"
+            />
           </div>
 
           <div className="flex gap-2">
@@ -192,11 +159,6 @@ export default function JournalSection({ tripId, initialEntries }: JournalSectio
                   {new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                 </span>
                 <div className="flex items-center gap-2 shrink-0">
-                  {entry.mood && (
-                    <span className="text-lg" title={entry.mood}>
-                      {MOOD_EMOJI[entry.mood as Mood]}
-                    </span>
-                  )}
                   <button
                     onClick={() => openEdit(entry)}
                     className="text-gray-300 hover:text-sky-500 transition-colors"
