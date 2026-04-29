@@ -425,20 +425,33 @@ export default function ItinerarySection({
     </div>
   );
 
-  // ── Blank notes ───────────────────────────────────────────────
+  // ── Blank notes (per day) ─────────────────────────────────────
   if (style === "notes") {
     return (
       <section className="mb-8">
         {sectionHeader}
         {aiPanel}
-        <textarea
-          value={tripNotes}
-          onChange={(e) => setTripNotes(e.target.value)}
-          onBlur={handleTripNotesBlur}
-          rows={14}
-          placeholder="Write your itinerary here…"
-          className="input w-full resize-y"
-        />
+        {days.length === 0 && (
+          <div className="rounded-xl border-2 border-dashed border-gray-200 py-10 text-center text-sm text-gray-400 mb-3">
+            No days yet — add your first day below.
+          </div>
+        )}
+        <div className="space-y-4 mb-3">
+          {days.map((day) => (
+            <div key={day.id} className="card p-4">
+              <DayHeader day={day} />
+              <textarea
+                value={dayNotes[day.id]?.["notes"] ?? ""}
+                onChange={(e) => updateSectionNote(day.id, "notes", e.target.value)}
+                onBlur={() => handleSectionNotesBlur(day.id)}
+                rows={4}
+                placeholder="Notes for this day…"
+                className="input w-full resize-none text-sm"
+              />
+            </div>
+          ))}
+        </div>
+        {addDayButton}
       </section>
     );
   }
