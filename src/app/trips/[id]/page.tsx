@@ -224,6 +224,8 @@ export default async function TripDetailPage({ params }: TripPageProps) {
         tripId={id}
         initialDays={itinerary}
         tripStartDate={trip.start_date ?? null}
+        tripEndDate={trip.end_date ?? null}
+        destination={trip.destination}
         style={trip.itinerary_style ?? "structured"}
         initialNotes={trip.itinerary_notes ?? null}
       />

@@ -25,10 +25,16 @@ type DayRow = {
   activities: ActivityRow[];
 };
 
+type SuggestedActivity = { time: string | null; title: string; place_name: string | null };
+type SuggestedDay = { day_number: number; activities: SuggestedActivity[] };
+type SuggestedDayNotes = { day_number: number; sections: Record<string, string> };
+
 interface ItinerarySectionProps {
   tripId: string;
   initialDays: DayRow[];
   tripStartDate: string | null;
+  tripEndDate: string | null;
+  destination: string;
   style: ItineraryStyle;
   initialNotes: string | null;
 }
@@ -50,10 +56,20 @@ function formatDayDate(date: string | null) {
   return new Date(date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+function computeDuration(start: string | null, end: string | null): number | null {
+  if (!start || !end) return null;
+  const diff = Math.round(
+    (new Date(end).getTime() - new Date(start).getTime()) / (1000 * 60 * 60 * 24)
+  ) + 1;
+  return Math.max(1, diff);
+}
+
 export default function ItinerarySection({
   tripId,
   initialDays,
   tripStartDate,
+  tripEndDate,
+  destination,
   style,
   initialNotes,
 }: ItinerarySectionProps) {
@@ -78,17 +94,32 @@ export default function ItinerarySection({
     return init;
   });
 
+  // AI suggestions
+  const [showAI, setShowAI] = useState(false);
+  const [preferences, setPreferences] = useState("");
+  const knownDays = computeDuration(tripStartDate, tripEndDate);
+  const [numDaysInput, setNumDaysInput] = useState(String(knownDays ?? 3));
+  const [generating, setGenerating] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [structuredSuggestion, setStructuredSuggestion] = useState<SuggestedDay[] | null>(null);
+  const [notesSuggestion, setNotesSuggestion] = useState<string | null>(null);
+  const [dayNotesSuggestion, setDayNotesSuggestion] = useState<SuggestedDayNotes[] | null>(null);
+
+  function dateForDayNum(dayNum: number) {
+    if (!tripStartDate) return null;
+    return new Date(new Date(tripStartDate + "T00:00:00").getTime() + (dayNum - 1) * 86400000)
+      .toISOString().split("T")[0];
+  }
+
+  // ── Day CRUD ─────────────────────────────────────────────────
+
   async function handleAddDay() {
     const nextNum = days.length > 0 ? Math.max(...days.map((d) => d.day_number)) + 1 : 1;
-    const date = tripStartDate
-      ? new Date(new Date(tripStartDate + "T00:00:00").getTime() + (nextNum - 1) * 86400000)
-          .toISOString().split("T")[0]
-      : null;
     const { data, error } = await db
       .from("itinerary_days")
-      .insert({ trip_id: tripId, day_number: nextNum, date })
-      .select()
-      .single();
+      .insert({ trip_id: tripId, day_number: nextNum, date: dateForDayNum(nextNum) })
+      .select().single();
     if (!error && data) {
       setDays((prev) => [...prev, { ...data, activities: [], section_notes: {} }]);
       setDayNotes((prev) => ({ ...prev, [data.id]: {} }));
@@ -100,6 +131,8 @@ export default function ItinerarySection({
     setDays((prev) => prev.filter((d) => d.id !== dayId));
     setDayNotes((prev) => { const n = { ...prev }; delete n[dayId]; return n; });
   }
+
+  // ── Activity CRUD ─────────────────────────────────────────────
 
   async function handleAddActivity(dayId: string) {
     if (!actTitle.trim()) return;
@@ -123,6 +156,8 @@ export default function ItinerarySection({
     ));
   }
 
+  // ── Notes saves ───────────────────────────────────────────────
+
   async function handleTripNotesBlur() {
     await db.from("trips").update({ itinerary_notes: tripNotes || null }).eq("id", tripId);
   }
@@ -134,6 +169,102 @@ export default function ItinerarySection({
   function updateSectionNote(dayId: string, key: string, value: string) {
     setDayNotes((prev) => ({ ...prev, [dayId]: { ...prev[dayId], [key]: value } }));
   }
+
+  // ── AI generation ─────────────────────────────────────────────
+
+  async function handleGenerate() {
+    setGenerating(true);
+    setAiError(null);
+    setStructuredSuggestion(null);
+    setNotesSuggestion(null);
+    setDayNotesSuggestion(null);
+
+    const num_days = knownDays ?? parseInt(numDaysInput, 10);
+
+    const res = await fetch("/api/suggest-itinerary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ destination, num_days, style, preferences }),
+    });
+
+    setGenerating(false);
+
+    if (!res.ok) { setAiError("Something went wrong. Try again."); return; }
+
+    const data = await res.json();
+    if (data.error) { setAiError(data.error); return; }
+
+    if (style === "structured") setStructuredSuggestion(data.days);
+    else if (style === "notes") setNotesSuggestion(data.content);
+    else setDayNotesSuggestion(data.days);
+  }
+
+  async function handleApplyStructured() {
+    if (!structuredSuggestion) return;
+    setApplying(true);
+    const startNum = days.length > 0 ? Math.max(...days.map((d) => d.day_number)) + 1 : 1;
+    const newDays: DayRow[] = [];
+
+    for (const sugDay of structuredSuggestion) {
+      const dayNum = startNum + sugDay.day_number - 1;
+      const { data: dayData } = await db
+        .from("itinerary_days")
+        .insert({ trip_id: tripId, day_number: dayNum, date: dateForDayNum(dayNum) })
+        .select().single();
+      if (!dayData) continue;
+
+      const activities: ActivityRow[] = [];
+      for (let i = 0; i < sugDay.activities.length; i++) {
+        const act = sugDay.activities[i];
+        const { data: actData } = await db
+          .from("activities")
+          .insert({ day_id: dayData.id, time: act.time || null, title: act.title, place_name: act.place_name || null, order_index: i })
+          .select().single();
+        if (actData) activities.push(actData);
+      }
+      newDays.push({ ...dayData, activities, section_notes: {} });
+    }
+
+    setDays((prev) => [...prev, ...newDays]);
+    setStructuredSuggestion(null);
+    setShowAI(false);
+    setApplying(false);
+  }
+
+  async function handleApplyNotes() {
+    if (notesSuggestion === null) return;
+    setTripNotes(notesSuggestion);
+    await db.from("trips").update({ itinerary_notes: notesSuggestion }).eq("id", tripId);
+    setNotesSuggestion(null);
+    setShowAI(false);
+  }
+
+  async function handleApplyDayNotes() {
+    if (!dayNotesSuggestion) return;
+    setApplying(true);
+    const startNum = days.length > 0 ? Math.max(...days.map((d) => d.day_number)) + 1 : 1;
+    const newDays: DayRow[] = [];
+    const newDayNotes: Record<string, SectionNotes> = {};
+
+    for (const sugDay of dayNotesSuggestion) {
+      const dayNum = startNum + sugDay.day_number - 1;
+      const { data: dayData } = await db
+        .from("itinerary_days")
+        .insert({ trip_id: tripId, day_number: dayNum, date: dateForDayNum(dayNum), section_notes: sugDay.sections })
+        .select().single();
+      if (!dayData) continue;
+      newDays.push({ ...dayData, activities: [], section_notes: sugDay.sections });
+      newDayNotes[dayData.id] = sugDay.sections;
+    }
+
+    setDays((prev) => [...prev, ...newDays]);
+    setDayNotes((prev) => ({ ...prev, ...newDayNotes }));
+    setDayNotesSuggestion(null);
+    setShowAI(false);
+    setApplying(false);
+  }
+
+  // ── Shared UI pieces ──────────────────────────────────────────
 
   const addDayButton = (
     <button
@@ -165,11 +296,141 @@ export default function ItinerarySection({
     );
   }
 
-  // ── Blank notes ──────────────────────────────────────────────
+  // ── AI panel ──────────────────────────────────────────────────
+
+  const aiPanel = showAI && (
+    <div className="mb-4 rounded-xl border border-sky-100 bg-sky-50/60 p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold text-gray-700">AI itinerary suggestions</p>
+        <button onClick={() => { setShowAI(false); setStructuredSuggestion(null); setNotesSuggestion(null); setDayNotesSuggestion(null); setAiError(null); }} className="text-gray-400 hover:text-gray-600">
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      {!knownDays && (
+        <div>
+          <label className="label">Number of days</label>
+          <input type="number" min="1" max="30" value={numDaysInput} onChange={(e) => setNumDaysInput(e.target.value)} className="input w-28" />
+        </div>
+      )}
+
+      <div>
+        <label className="label">Preferences <span className="text-gray-400 font-normal">— optional</span></label>
+        <input
+          type="text"
+          value={preferences}
+          onChange={(e) => setPreferences(e.target.value)}
+          placeholder="e.g. focus on food, avoid tourist traps, relaxed pace"
+          className="input w-full"
+        />
+      </div>
+
+      {aiError && <p className="text-sm text-red-600">{aiError}</p>}
+
+      {!structuredSuggestion && !notesSuggestion && !dayNotesSuggestion && (
+        <button onClick={handleGenerate} disabled={generating} className="btn-primary w-full">
+          {generating ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              Generating…
+            </span>
+          ) : "Generate suggestions"}
+        </button>
+      )}
+
+      {/* Structured suggestions preview */}
+      {structuredSuggestion && (
+        <div className="space-y-3">
+          <p className="text-xs text-gray-500">{structuredSuggestion.length} days generated — review below, then add to your itinerary.</p>
+          <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
+            {structuredSuggestion.map((day) => (
+              <div key={day.day_number} className="rounded-lg bg-white border border-gray-100 p-3">
+                <p className="text-xs font-semibold text-gray-600 mb-1.5">Day {day.day_number}</p>
+                <ul className="space-y-1">
+                  {day.activities.map((act, i) => (
+                    <li key={i} className="flex gap-2 text-xs text-gray-600">
+                      <span className="shrink-0 w-10 font-mono text-gray-400">{act.time ?? "—"}</span>
+                      <span className="font-medium">{act.title}</span>
+                      {act.place_name && <span className="text-gray-400">· {act.place_name}</span>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleApplyStructured} disabled={applying} className="btn-primary flex-1">
+              {applying ? "Adding…" : "Add to itinerary"}
+            </button>
+            <button onClick={() => { setStructuredSuggestion(null); }} className="btn-secondary">Try again</button>
+          </div>
+        </div>
+      )}
+
+      {/* Notes suggestion preview */}
+      {notesSuggestion && (
+        <div className="space-y-3">
+          <div className="max-h-60 overflow-y-auto rounded-lg bg-white border border-gray-100 p-3">
+            <p className="text-sm text-gray-700 whitespace-pre-wrap">{notesSuggestion}</p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleApplyNotes} className="btn-primary flex-1">Apply</button>
+            <button onClick={() => setNotesSuggestion(null)} className="btn-secondary">Try again</button>
+          </div>
+        </div>
+      )}
+
+      {/* Day notes suggestion preview */}
+      {dayNotesSuggestion && (
+        <div className="space-y-3">
+          <p className="text-xs text-gray-500">{dayNotesSuggestion.length} days generated.</p>
+          <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
+            {dayNotesSuggestion.map((day) => (
+              <div key={day.day_number} className="rounded-lg bg-white border border-gray-100 p-3 space-y-2">
+                <p className="text-xs font-semibold text-gray-600">Day {day.day_number}</p>
+                {Object.entries(day.sections).map(([key, val]) => (
+                  <div key={key}>
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{key}</p>
+                    <p className="text-xs text-gray-600 mt-0.5">{val}</p>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleApplyDayNotes} disabled={applying} className="btn-primary flex-1">
+              {applying ? "Adding…" : "Add to itinerary"}
+            </button>
+            <button onClick={() => setDayNotesSuggestion(null)} className="btn-secondary">Try again</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const sectionHeader = (
+    <div className="mb-4 flex items-center justify-between">
+      <h2 className="text-lg font-semibold text-gray-900">Itinerary</h2>
+      <button
+        onClick={() => { setShowAI((v) => !v); setStructuredSuggestion(null); setNotesSuggestion(null); setDayNotesSuggestion(null); setAiError(null); }}
+        className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:border-sky-300 hover:text-sky-600 transition-colors"
+      >
+        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+        </svg>
+        Suggest with AI
+      </button>
+    </div>
+  );
+
+  // ── Blank notes ───────────────────────────────────────────────
   if (style === "notes") {
     return (
       <section className="mb-8">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">Itinerary</h2>
+        {sectionHeader}
+        {aiPanel}
         <textarea
           value={tripNotes}
           onChange={(e) => setTripNotes(e.target.value)}
@@ -182,12 +443,13 @@ export default function ItinerarySection({
     );
   }
 
-  // ── Per-day notes ────────────────────────────────────────────
+  // ── Per-day notes ─────────────────────────────────────────────
   if (style === "notes_day_night" || style === "notes_day_afternoon_night") {
     const sections = SECTION_CONFIG[style];
     return (
       <section className="mb-8">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">Itinerary</h2>
+        {sectionHeader}
+        {aiPanel}
         {days.length === 0 && (
           <div className="rounded-xl border-2 border-dashed border-gray-200 py-10 text-center text-sm text-gray-400 mb-3">
             No days yet — add your first day below.
@@ -220,10 +482,11 @@ export default function ItinerarySection({
     );
   }
 
-  // ── Structured (default) ─────────────────────────────────────
+  // ── Structured (default) ──────────────────────────────────────
   return (
     <section className="mb-8">
-      <h2 className="mb-4 text-lg font-semibold text-gray-900">Itinerary</h2>
+      {sectionHeader}
+      {aiPanel}
       {days.length === 0 && (
         <div className="rounded-xl border-2 border-dashed border-gray-200 py-10 text-center text-sm text-gray-400 mb-3">
           No days yet — add your first day below.
