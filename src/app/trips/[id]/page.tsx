@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { TripStatus, Mood } from "@/types/database";
 import FlightsSection from "@/components/FlightsSection";
 import ExpensesSection from "@/components/ExpensesSection";
+import ItinerarySection from "@/components/ItinerarySection";
 import { byAlpha2 } from "@/lib/countries";
 
 const STATUS_STYLES: Record<TripStatus, string> = {
@@ -219,58 +220,13 @@ export default async function TripDetailPage({ params }: TripPageProps) {
       </div>
 
       {/* Itinerary */}
-      <section className="mb-8">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">Itinerary</h2>
-
-        {itinerary.length === 0 ? (
-          <div className="rounded-xl border-2 border-dashed border-gray-200 py-12 text-center text-sm text-gray-400">
-            No itinerary days yet.
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {itinerary.map((day: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-              const activities = (day as { activities?: { id: string; time: string | null; title: string; place_name: string | null }[] }).activities ?? [];
-              return (
-                <div key={day.id} className="card p-4">
-                  <div className="mb-3 flex items-center gap-2">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">
-                      {day.day_number}
-                    </span>
-                    <span className="text-sm font-medium text-gray-700">
-                      Day {day.day_number}
-                      {day.date && (
-                        <span className="ml-2 text-gray-400">
-                          · {new Date(day.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                        </span>
-                      )}
-                    </span>
-                  </div>
-
-                  {activities.length === 0 ? (
-                    <p className="text-xs text-gray-400">No activities planned.</p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {activities.map((act) => (
-                        <li key={act.id} className="flex items-start gap-3 text-sm">
-                          <span className="mt-0.5 shrink-0 w-12 text-xs text-gray-400 font-mono">
-                            {act.time?.slice(0, 5) ?? "—"}
-                          </span>
-                          <div>
-                            <p className="font-medium text-gray-800">{act.title}</p>
-                            {act.place_name && (
-                              <p className="text-xs text-gray-400">{act.place_name}</p>
-                            )}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
+      <ItinerarySection
+        tripId={id}
+        initialDays={itinerary}
+        tripStartDate={trip.start_date ?? null}
+        style={trip.itinerary_style ?? "structured"}
+        initialNotes={trip.itinerary_notes ?? null}
+      />
 
       {/* Flights */}
       <FlightsSection tripId={id} initialFlights={flights} />

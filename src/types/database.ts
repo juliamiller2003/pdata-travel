@@ -9,6 +9,7 @@ export type Json =
 export type TripStatus = "planning" | "ongoing" | "completed" | "cancelled";
 export type Mood = "amazing" | "good" | "okay" | "tough" | "terrible";
 export type MapView = "world" | "country";
+export type ItineraryStyle = "structured" | "notes" | "notes_day_night" | "notes_day_afternoon_night";
 
 export interface Database {
   public: {
@@ -30,6 +31,8 @@ export interface Database {
           external_link: string | null;
           notes: string | null;
           status: TripStatus;
+          itinerary_style: ItineraryStyle;
+          itinerary_notes: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -49,6 +52,8 @@ export interface Database {
           external_link?: string | null;
           notes?: string | null;
           status?: TripStatus;
+          itinerary_style?: ItineraryStyle;
+          itinerary_notes?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -68,6 +73,8 @@ export interface Database {
           external_link?: string | null;
           notes?: string | null;
           status?: TripStatus;
+          itinerary_style?: ItineraryStyle;
+          itinerary_notes?: string | null;
           updated_at?: string;
         };
         Relationships: {
@@ -84,6 +91,7 @@ export interface Database {
           trip_id: string;
           day_number: number;
           date: string | null;
+          section_notes: Json;
           created_at: string;
         };
         Insert: {
@@ -91,11 +99,13 @@ export interface Database {
           trip_id: string;
           day_number: number;
           date?: string | null;
+          section_notes?: Json;
           created_at?: string;
         };
         Update: {
           day_number?: number;
           date?: string | null;
+          section_notes?: Json;
         };
         Relationships: {
           foreignKeyName: string;

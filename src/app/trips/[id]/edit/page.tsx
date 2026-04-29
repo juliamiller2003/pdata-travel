@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import CountryMultiSelect from "@/components/CountryMultiSelect";
 import PhotoUploader from "@/components/PhotoUploader";
 import FlightsSection from "@/components/FlightsSection";
-import type { TripStatus, Flight } from "@/types/database";
+import type { TripStatus, Flight, ItineraryStyle } from "@/types/database";
 
 const STATUS_OPTIONS: { value: TripStatus; label: string }[] = [
   { value: "planning",  label: "Planning" },
@@ -43,6 +43,7 @@ export default function EditTripPage() {
   const [photos, setPhotos] = useState<string[]>([]);
   const [coverUrl, setCoverUrl] = useState("");
   const [captions, setCaptions] = useState<Record<string, string>>({});
+  const [itineraryStyle, setItineraryStyle] = useState<ItineraryStyle>("structured");
 
   useEffect(() => {
     async function load() {
@@ -68,6 +69,7 @@ export default function EditTripPage() {
       setCoverUrl(trip.cover_photo_url ?? "");
       setCaptions((trip.photo_captions as Record<string, string>) ?? {});
       setBudget(trip.budget != null ? String(trip.budget) : "");
+      setItineraryStyle(trip.itinerary_style ?? "structured");
       setInitialFlights(flights ?? []);
       setLoading(false);
     }
@@ -102,6 +104,7 @@ export default function EditTripPage() {
         cover_photo_url: coverUrl || null,
         photo_captions: captions,
         budget: budget ? parseFloat(budget) : null,
+        itinerary_style: itineraryStyle,
         updated_at: new Date().toISOString(),
       })
       .eq("id", id);
@@ -250,6 +253,34 @@ export default function EditTripPage() {
               placeholder="https://…"
               className="input"
             />
+          </div>
+
+          <div>
+            <label className="label">Itinerary style</label>
+            <div className="grid grid-cols-2 gap-2 mt-1">
+              {(
+                [
+                  { value: "structured",                  label: "Structured",         desc: "Timed activities per day" },
+                  { value: "notes",                       label: "Free notes",         desc: "One open text area" },
+                  { value: "notes_day_night",             label: "Day & Night",        desc: "Notes split by day and night" },
+                  { value: "notes_day_afternoon_night",   label: "Day, Afternoon & Night", desc: "Notes in three parts" },
+                ] as { value: ItineraryStyle; label: string; desc: string }[]
+              ).map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setItineraryStyle(opt.value)}
+                  className={`rounded-lg border p-3 text-left transition-colors ${
+                    itineraryStyle === opt.value
+                      ? "border-sky-500 bg-sky-50 text-sky-700"
+                      : "border-gray-200 text-gray-600 hover:border-gray-300"
+                  }`}
+                >
+                  <p className="text-sm font-medium">{opt.label}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{opt.desc}</p>
+                </button>
+              ))}
+            </div>
           </div>
 
           <PhotoUploader
