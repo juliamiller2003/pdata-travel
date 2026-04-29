@@ -61,21 +61,23 @@ export async function GET(request: NextRequest) {
   // ── Claude fallback (static info, no real-time times) ────────
   if (anthropicKey) {
     try {
-      const prompt = `You are a flight data assistant. Return basic static information for flight ${flightNumber}.
+      const prompt = `You are a flight data assistant. Return information for flight ${flightNumber}.
+
+The first 2 letters of a flight number are the airline's IATA code (e.g. AA = American Airlines, UA = United Airlines, BA = British Airways, SL = Thai Lion Air).
 
 Return ONLY a JSON object — no markdown, no commentary:
 {
   "flightNumber": "${flightNumber}",
-  "airline": "Full airline name or null if unknown",
-  "departureAirport": "Full airport name or null",
+  "airline": "Full airline name (derive from the 2-letter prefix — always provide this if you can identify the airline)",
+  "departureAirport": "Full airport name or null if you don't know this specific route",
   "departureCity": "City name or null",
   "departureIata": "3-letter IATA code or null",
-  "arrivalAirport": "Full airport name or null",
+  "arrivalAirport": "Full airport name or null if you don't know this specific route",
   "arrivalCity": "City name or null",
   "arrivalIata": "3-letter IATA code or null"
 }
 
-If you are not confident about the route for this specific flight number, return null for airport fields. Do not guess.`;
+Always try to identify the airline from the 2-letter prefix. Only return null for airport fields if you are not confident of the specific route.`;
 
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
@@ -98,6 +100,12 @@ If you are not confident about the route for this specific flight number, return
       text = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
 
       const parsed = JSON.parse(text);
+
+      // If Claude couldn't identify anything useful, fall through to manual save
+      if (!parsed.airline && !parsed.departureIata && !parsed.arrivalIata) {
+        return NextResponse.json({ error: "Flight not found. Try saving manually." }, { status: 404 });
+      }
+
       const result: FlightResult = {
         flightNumber: parsed.flightNumber ?? flightNumber,
         airline: parsed.airline ?? null,
