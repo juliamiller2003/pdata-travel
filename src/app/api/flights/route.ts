@@ -40,8 +40,11 @@ export async function GET(request: NextRequest) {
         next: { revalidate: 3600 },
       });
 
+      const rawText = await res.text();
+      console.log("[AeroDataBox] status:", res.status, "body:", rawText.slice(0, 500));
+
       if (res.ok) {
-        const json = await res.json();
+        const json = JSON.parse(rawText);
         const flights = Array.isArray(json) ? json : json.items ?? [];
         if (flights.length > 0) {
           const f = flights[0];
@@ -61,8 +64,8 @@ export async function GET(request: NextRequest) {
           return NextResponse.json(result);
         }
       }
-    } catch {
-      // Fall through to next source
+    } catch (e) {
+      console.log("[AeroDataBox] error:", e);
     }
   }
 
