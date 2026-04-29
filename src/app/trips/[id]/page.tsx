@@ -5,6 +5,7 @@ import type { TripStatus, Mood } from "@/types/database";
 import FlightsSection from "@/components/FlightsSection";
 import ExpensesSection from "@/components/ExpensesSection";
 import ItinerarySection from "@/components/ItinerarySection";
+import TripMapView from "@/components/TripMapView";
 import { byAlpha2 } from "@/lib/countries";
 
 const STATUS_STYLES: Record<TripStatus, string> = {
@@ -84,6 +85,11 @@ export default async function TripDetailPage({ params }: TripPageProps) {
   const itinerary = days ?? [];
   const entries = journal ?? [];
   const flights = flightsData ?? [];
+
+  // Flatten all activities across itinerary days for the map
+  const allActivities = itinerary.flatMap((day: any) => // eslint-disable-line @typescript-eslint/no-explicit-any
+    ((day.activities ?? []) as { id: string; title: string; place_name: string | null; lat: number | null; lng: number | null }[])
+  );
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -218,6 +224,9 @@ export default async function TripDetailPage({ params }: TripPageProps) {
           </div>
         )}
       </div>
+
+      {/* Trip Map */}
+      <TripMapView flights={flights} activities={allActivities} />
 
       {/* Itinerary */}
       <ItinerarySection
