@@ -6,6 +6,7 @@ import FlightsSection from "@/components/FlightsSection";
 import ExpensesSection from "@/components/ExpensesSection";
 import ItinerarySection from "@/components/ItinerarySection";
 import TripMapView from "@/components/TripMapView";
+import TripPhotosSection from "@/components/TripPhotosSection";
 import { byAlpha2 } from "@/lib/countries";
 
 const STATUS_STYLES: Record<TripStatus, string> = {
@@ -179,33 +180,6 @@ export default async function TripDetailPage({ params }: TripPageProps) {
           </div>
         )}
 
-        {/* Photo gallery */}
-        {trip.photos && trip.photos.length > 0 && (
-          <div className="border-t border-gray-100 pt-4">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Photos</p>
-            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-              {(trip.photos as string[]).map((url: string, i: number) => {
-                const caption = (trip.photo_captions as Record<string, string>)?.[url];
-                return (
-                  <div key={i} className="space-y-1">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={url}
-                      alt={caption ?? `Photo ${i + 1}`}
-                      className={`aspect-square w-full rounded-lg object-cover ${url === trip.cover_photo_url ? "ring-2 ring-sky-500" : ""}`}
-                    />
-                    {caption && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 leading-snug">{caption}</p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            {trip.cover_photo_url && trip.photos.length > 1 && (
-              <p className="mt-1.5 text-xs text-gray-400">Ring = cover photo</p>
-            )}
-          </div>
-        )}
 
         {trip.external_link && (
           <div className="border-t border-gray-100 pt-4">
@@ -225,9 +199,6 @@ export default async function TripDetailPage({ params }: TripPageProps) {
         )}
       </div>
 
-      {/* Trip Map */}
-      <TripMapView flights={flights} activities={allActivities} />
-
       {/* Itinerary */}
       <ItinerarySection
         tripId={id}
@@ -238,6 +209,9 @@ export default async function TripDetailPage({ params }: TripPageProps) {
         style={trip.itinerary_style ?? "structured"}
         initialNotes={trip.itinerary_notes ?? null}
       />
+
+      {/* Trip Map */}
+      <TripMapView flights={flights} activities={allActivities} />
 
       {/* Flights */}
       <FlightsSection tripId={id} initialFlights={flights} />
