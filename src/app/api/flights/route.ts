@@ -35,8 +35,9 @@ export async function GET(request: NextRequest) {
       const json = await res.json();
 
       if (!json.data || json.data.length === 0) {
-        return NextResponse.json({ error: "Flight not found" }, { status: 404 });
-      }
+        // Fall through to Claude — free AviationStack plan doesn't support
+        // future dates or date filtering, so no results doesn't mean invalid flight
+      } else {
 
       const f = json.data[0];
       const result: FlightResult = {
@@ -53,8 +54,9 @@ export async function GET(request: NextRequest) {
         status: f.flight_status ?? null,
       };
       return NextResponse.json(result);
+      }
     } catch {
-      return NextResponse.json({ error: "Failed to fetch flight data" }, { status: 500 });
+      // Fall through to Claude on network/parse errors
     }
   }
 
