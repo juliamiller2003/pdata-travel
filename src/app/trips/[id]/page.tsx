@@ -1,12 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import type { TripStatus, Mood } from "@/types/database";
+import type { TripStatus } from "@/types/database";
 import FlightsSection from "@/components/FlightsSection";
 import ExpensesSection from "@/components/ExpensesSection";
 import ItinerarySection from "@/components/ItinerarySection";
 import TripMapView from "@/components/TripMapView";
 import TripPhotosSection from "@/components/TripPhotosSection";
+import JournalSection from "@/components/JournalSection";
 import { byAlpha2 } from "@/lib/countries";
 
 const STATUS_STYLES: Record<TripStatus, string> = {
@@ -16,13 +17,6 @@ const STATUS_STYLES: Record<TripStatus, string> = {
   cancelled: "bg-gray-100 text-gray-500",
 };
 
-const MOOD_EMOJI: Record<Mood, string> = {
-  amazing:  "🤩",
-  good:     "😊",
-  okay:     "😐",
-  tough:    "😔",
-  terrible: "😞",
-};
 
 function formatDate(d: string | null) {
   if (!d) return "—";
@@ -221,54 +215,12 @@ export default async function TripDetailPage({ params }: TripPageProps) {
 
       {/* Journal & Photos */}
       <section>
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">Journal</h2>
         <TripPhotosSection
           tripId={id}
           initialPhotos={(trip.photos as string[]) ?? []}
           initialCaptions={(trip.photo_captions as Record<string, string>) ?? {}}
         />
-
-        {entries.length === 0 ? (
-          <div className="rounded-xl border-2 border-dashed border-gray-200 py-12 text-center text-sm text-gray-400">
-            No journal entries yet.
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {entries.map((entry: any) => ( // eslint-disable-line @typescript-eslint/no-explicit-any
-              <div key={entry.id} className="card p-5">
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="text-xs text-gray-400">
-                    {entry.day_number ? `Day ${entry.day_number} · ` : ""}
-                    {new Date(entry.created_at).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </span>
-                  {entry.mood && (
-                    <span className="text-lg" title={entry.mood as string}>
-                      {MOOD_EMOJI[entry.mood as Mood]}
-                    </span>
-                  )}
-                </div>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">{entry.content}</p>
-                {entry.photos.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {(entry.photos as string[]).map((url: string, i: number) => (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        key={i}
-                        src={url}
-                        alt={`Photo ${i + 1}`}
-                        className="h-20 w-20 rounded-lg object-cover"
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        <JournalSection tripId={id} initialEntries={entries ?? []} />
       </section>
     </div>
   );
