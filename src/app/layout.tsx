@@ -3,6 +3,7 @@ import "./globals.css";
 import { createClient } from "@/lib/supabase/server";
 import Nav from "@/components/Nav";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import LoginAwareMain from "@/components/LoginAwareMain";
 
 export const metadata: Metadata = {
   title: "Pdata Travel – Travel Planning & Journaling",
@@ -24,7 +25,7 @@ export default async function RootLayout({
       <body>
         <ThemeProvider>
           <Nav user={user} />
-          <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">{children}</main>
+          <LoginAwareMain>{children}</LoginAwareMain>
         </ThemeProvider>
       </body>
     </html>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import NavMenu from "@/components/NavMenu";
@@ -12,7 +12,10 @@ interface NavProps {
 
 export default function Nav({ user }: NavProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const supabase = createClient();
+
+  if (pathname === "/login") return null;
 
   async function signOut() {
     await supabase.auth.signOut();
