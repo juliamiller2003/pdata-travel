@@ -24,43 +24,78 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Missing flight or date" }, { status: 400 });
   }
 
+  const aeroKey = process.env.AERODATABOX_API_KEY;
   const aviationKey = process.env.AVIATIONSTACK_API_KEY;
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
 
-  // ── AviationStack (real-time) ────────────────────────────────
+  // ── AeroDataBox (scheduled + live flights) ───────────────────
+  if (aeroKey) {
+    try {
+      const url = `https://aerodatabox.p.rapidapi.com/flights/number/${encodeURIComponent(flightNumber)}/${date}`;
+      const res = await fetch(url, {
+        headers: {
+          "X-RapidAPI-Key": aeroKey,
+          "X-RapidAPI-Host": "aerodatabox.p.rapidapi.com",
+        },
+        next: { revalidate: 3600 },
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        const flights = Array.isArray(json) ? json : json.items ?? [];
+        if (flights.length > 0) {
+          const f = flights[0];
+          const result: FlightResult = {
+            flightNumber: f.number ?? flightNumber,
+            airline: f.airline?.name ?? null,
+            departureAirport: f.departure?.airport?.name ?? null,
+            departureCity: f.departure?.airport?.municipalityName ?? null,
+            departureIata: f.departure?.airport?.iata ?? null,
+            departureTime: f.departure?.scheduledTime?.local ?? f.departure?.scheduledTime?.utc ?? null,
+            arrivalAirport: f.arrival?.airport?.name ?? null,
+            arrivalCity: f.arrival?.airport?.municipalityName ?? null,
+            arrivalIata: f.arrival?.airport?.iata ?? null,
+            arrivalTime: f.arrival?.scheduledTime?.local ?? f.arrival?.scheduledTime?.utc ?? null,
+            status: f.status ?? null,
+          };
+          return NextResponse.json(result);
+        }
+      }
+    } catch {
+      // Fall through to next source
+    }
+  }
+
+  // ── AviationStack (real-time only, free plan = live flights) ─
   if (aviationKey) {
     try {
       const url = `http://api.aviationstack.com/v1/flights?access_key=${aviationKey}&flight_iata=${flightNumber}&flight_date=${date}`;
       const res = await fetch(url, { next: { revalidate: 3600 } });
       const json = await res.json();
 
-      if (!json.data || json.data.length === 0) {
-        // Fall through to Claude — free AviationStack plan doesn't support
-        // future dates or date filtering, so no results doesn't mean invalid flight
-      } else {
-
-      const f = json.data[0];
-      const result: FlightResult = {
-        flightNumber: f.flight?.iata ?? flightNumber,
-        airline: f.airline?.name ?? null,
-        departureAirport: f.departure?.airport ?? null,
-        departureCity: f.departure?.timezone?.split("/")[1]?.replace("_", " ") ?? null,
-        departureIata: f.departure?.iata ?? null,
-        departureTime: f.departure?.scheduled ?? null,
-        arrivalAirport: f.arrival?.airport ?? null,
-        arrivalCity: f.arrival?.timezone?.split("/")[1]?.replace("_", " ") ?? null,
-        arrivalIata: f.arrival?.iata ?? null,
-        arrivalTime: f.arrival?.scheduled ?? null,
-        status: f.flight_status ?? null,
-      };
-      return NextResponse.json(result);
+      if (json.data && json.data.length > 0) {
+        const f = json.data[0];
+        const result: FlightResult = {
+          flightNumber: f.flight?.iata ?? flightNumber,
+          airline: f.airline?.name ?? null,
+          departureAirport: f.departure?.airport ?? null,
+          departureCity: f.departure?.timezone?.split("/")[1]?.replace("_", " ") ?? null,
+          departureIata: f.departure?.iata ?? null,
+          departureTime: f.departure?.scheduled ?? null,
+          arrivalAirport: f.arrival?.airport ?? null,
+          arrivalCity: f.arrival?.timezone?.split("/")[1]?.replace("_", " ") ?? null,
+          arrivalIata: f.arrival?.iata ?? null,
+          arrivalTime: f.arrival?.scheduled ?? null,
+          status: f.flight_status ?? null,
+        };
+        return NextResponse.json(result);
       }
     } catch {
-      // Fall through to Claude on network/parse errors
+      // Fall through to Claude
     }
   }
 
-  // ── Claude fallback (static info, no real-time times) ────────
+  // ── Claude fallback (airline name only) ──────────────────────
   if (anthropicKey) {
     try {
       const prompt = `You are a flight data assistant. Return information for flight ${flightNumber}.
@@ -103,7 +138,6 @@ Always try to identify the airline from the 2-letter prefix. Only return null fo
 
       const parsed = JSON.parse(text);
 
-      // If Claude couldn't identify anything useful, fall through to manual save
       if (!parsed.airline && !parsed.departureIata && !parsed.arrivalIata) {
         return NextResponse.json({ error: "Flight not found. Try saving manually." }, { status: 404 });
       }
