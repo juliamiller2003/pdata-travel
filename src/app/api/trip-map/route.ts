@@ -58,9 +58,9 @@ export async function POST(req: NextRequest) {
     if (f.arrival_iata) iatas.add(f.arrival_iata);
   }
 
-  // Activities needing geocoding (have place_name but no coordinates)
-  const toGeocode = activities.filter((a) => a.place_name && (a.lat == null || a.lng == null));
-  const preGeocoded = activities.filter((a) => a.place_name && a.lat != null && a.lng != null);
+  // Activities needing geocoding (have place_name or title, but no coordinates)
+  const toGeocode = activities.filter((a) => (a.place_name || a.title) && (a.lat == null || a.lng == null));
+  const preGeocoded = activities.filter((a) => (a.place_name || a.title) && a.lat != null && a.lng != null);
 
   // Skip API call if nothing to geocode
   if (iatas.size === 0 && toGeocode.length === 0) {
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
   }
 
   const airportLines = [...iatas].map((iata) => `- ${iata}`).join("\n");
-  const placeLines = toGeocode.map((a) => `- id:"${a.id}" name:"${a.place_name}"`).join("\n");
+  const placeLines = toGeocode.map((a) => `- id:"${a.id}" name:"${a.place_name ?? a.title}"`).join("\n");
 
   const prompt = `Return precise latitude/longitude coordinates for these locations. Return ONLY a JSON array, no commentary.
 
@@ -142,7 +142,7 @@ Only include entries you are confident about (within ~1km accuracy). Omit entrie
     }
     for (const a of toGeocode) {
       const g = placeCoords.get(a.id);
-      if (g) markers.push({ id: a.id, type: "activity", lat: g.lat, lng: g.lng, label: a.title, sublabel: a.place_name ?? undefined });
+      if (g) markers.push({ id: a.id, type: "activity", lat: g.lat, lng: g.lng, label: a.title, sublabel: a.place_name ?? a.title });
     }
 
     // Build routes

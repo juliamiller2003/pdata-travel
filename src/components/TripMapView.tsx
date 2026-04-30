@@ -34,7 +34,7 @@ export default function TripMapView({ flights, activities }: TripMapViewProps) {
 
   const hasContent =
     flights.some((f) => f.departure_iata && f.arrival_iata) ||
-    activities.some((a) => a.place_name);
+    activities.some((a) => a.place_name || a.title);
 
   useEffect(() => {
     if (!hasContent) { setLoading(false); return; }
