@@ -14,7 +14,7 @@ ${monthLine}
 
 Respond with ONLY valid JSON — no markdown, no explanation:
 {
-  "outlet": "plug type(s) and voltage, e.g. Type C/F · 230V · 50Hz",
+  "outlet": "US, EU, or Other compatibility label, then plug type(s) and voltage, e.g. EU (Type C/F · 230V · 50Hz) or US (Type A/B · 120V · 60Hz) or Other (Type G · 230V · 50Hz)",
   "currency": "currency name, code, and symbol, e.g. Euro (EUR · €)",
   "weather": "one short sentence about typical weather${month ? ` in ${month}` : ""} including temperature range in both °C and °F"
 }`;
