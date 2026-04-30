@@ -108,26 +108,34 @@ export default async function TripDetailPage({ params }: TripPageProps) {
       </nav>
 
       {/* Hero */}
-      <div className="relative mb-8 h-56 w-full overflow-hidden rounded-2xl bg-gradient-to-br from-brand-600 to-brand-900">
-        {trip.cover_photo_url && (
-          // eslint-disable-next-line @next/next/no-img-element
+      {trip.cover_photo_url ? (
+        <div className="relative mb-8 h-56 w-full overflow-hidden rounded-2xl">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={trip.cover_photo_url}
             alt={trip.destination}
             className="h-full w-full object-cover"
           />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-        <div className="absolute bottom-0 left-0 p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLES[trip.status as TripStatus]}`}>
-              {(trip.status as string).charAt(0).toUpperCase() + (trip.status as string).slice(1)}
-            </span>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+          <div className="absolute bottom-0 left-0 p-6">
+            <div className="flex items-center gap-3 mb-2">
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLES[trip.status as TripStatus]}`}>
+                {(trip.status as string).charAt(0).toUpperCase() + (trip.status as string).slice(1)}
+              </span>
+            </div>
+            <h1 className="text-2xl font-bold text-white">{trip.title}</h1>
+            <p className="text-white/80 text-sm mt-1">{trip.destination}</p>
           </div>
-          <h1 className="text-2xl font-bold text-white">{trip.title}</h1>
-          <p className="text-white/80 text-sm mt-1">{trip.destination}</p>
         </div>
-      </div>
+      ) : (
+        <div className="mb-6">
+          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLES[trip.status as TripStatus]}`}>
+            {(trip.status as string).charAt(0).toUpperCase() + (trip.status as string).slice(1)}
+          </span>
+          <h1 className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{trip.title}</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{trip.destination}</p>
+        </div>
+      )}
 
       {/* Meta */}
       <div className="card mb-6 p-5 space-y-4">
