@@ -1,0 +1,50 @@
+import { NextRequest, NextResponse } from "next/server";
+
+export async function POST(req: NextRequest) {
+  const { countryName, month } = await req.json();
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return NextResponse.json({ error: "AI not configured" }, { status: 500 });
+  }
+
+  const monthLine = month ? `The traveler is visiting in ${month}.` : "";
+
+  const prompt = `You are a concise travel reference. For the country "${countryName}", provide three pieces of practical traveler information.
+${monthLine}
+
+Respond with ONLY valid JSON — no markdown, no explanation:
+{
+  "outlet": "plug type(s) and voltage, e.g. Type C/F · 230V · 50Hz",
+  "currency": "currency name, code, and symbol, e.g. Euro (EUR · €)",
+  "weather": "one short sentence about typical weather${month ? ` in ${month}` : ""} including temperature range in both °C and °F"
+}`;
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": process.env.ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 256,
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  if (!response.ok) {
+    return NextResponse.json({ error: "Failed to reach AI" }, { status: 500 });
+  }
+
+  const data = await response.json();
+  const text: string = data.content?.[0]?.text ?? "";
+  const cleaned = text.replace(/^```(?:json)?\n?/m, "").replace(/\n?```$/m, "").trim();
+
+  try {
+    const parsed = JSON.parse(cleaned);
+    return NextResponse.json(parsed);
+  } catch {
+    return NextResponse.json({ error: "Unexpected AI response" }, { status: 500 });
+  }
+}
