@@ -33,6 +33,17 @@ export default async function RootLayout({
         <ServiceWorkerRegistration />
         <ThemeProvider>
           <OfflineBanner />
+          <div className="flex items-center justify-center gap-1.5 bg-[#cadede] dark:bg-[#2e2e2e] px-4 py-2 text-xs text-[#1e1e1e] dark:text-[#efefef]">
+            Thank you for being a beta tester! Leave feedback here:&nbsp;
+            <a
+              href="https://forms.gle/AVgyaQaKBVUVTFKVA"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold underline underline-offset-2 hover:text-[#9fb8b8]"
+            >
+              feedback form
+            </a>
+          </div>
           <Nav user={user} />
           <LoginAwareMain>{children}</LoginAwareMain>
         </ThemeProvider>
