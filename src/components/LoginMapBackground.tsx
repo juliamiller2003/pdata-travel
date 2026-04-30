@@ -7,7 +7,7 @@ export default function LoginMapBackground() {
   return (
     <MapContainer
       center={[20, 10]}
-      zoom={2}
+      zoom={3}
       zoomControl={false}
       dragging={false}
       scrollWheelZoom={false}
@@ -17,7 +17,7 @@ export default function LoginMapBackground() {
       attributionControl={false}
       style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 0, height: "100vh", width: "100vw" }}
     >
-      <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+      <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png" />
     </MapContainer>
   );
 }
