@@ -93,11 +93,11 @@ export default function TravelMap({ trips, mapView, homeCountryCode }: TravelMap
 
   return (
     <>
-      <div className="overflow-hidden mb-8 bg-[#efefef] dark:bg-[#1e1e1e]">
-        <div className="relative" style={{ height: 480 }}>
+      <div className="overflow-hidden mb-8 bg-[#efefef] dark:bg-[#1e1e1e] -mx-4 sm:-mx-6">
+        <div className="relative" style={{ height: 560 }}>
           <ComposableMap
             projection="geoNaturalEarth1"
-            projectionConfig={{ scale: 175, center: [0, 0] }}
+            projectionConfig={{ scale: 210, center: [0, 10] }}
             style={{ width: "100%", height: "100%" }}
           >
             <ZoomableGroup center={center} zoom={zoom} maxZoom={12}>
