@@ -2,10 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+
 @layer base {
   body {
     @apply bg-gray-50 text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100;
-    font-family: "Franklin Gothic Medium", "Franklin Gothic", "ITC Franklin Gothic", Arial, sans-serif;
+    font-family: "Montserrat", sans-serif;
   }
   body:has(.login-page) header {
     display: none;
