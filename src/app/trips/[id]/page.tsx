@@ -10,7 +10,7 @@ import TripPhotosSection from "@/components/TripPhotosSection";
 import JournalSection from "@/components/JournalSection";
 import SectionGuard from "@/components/SectionGuard";
 import { byAlpha2 } from "@/lib/countries";
-import CountryProfileCard from "@/components/CountryProfileCard";
+import CountryProfileSection from "@/components/CountryProfileSection";
 
 const STATUS_STYLES: Record<TripStatus, string> = {
   planning:  "bg-[#e5dd83] dark:bg-[#f5ee9e] text-[#1e1e1e]",
@@ -173,24 +173,11 @@ export default async function TripDetailPage({ params }: TripPageProps) {
           </div>
         </dl>
 
-        {trip.country_codes && trip.country_codes.length > 0 && (
-          <div className="border-t border-gray-100 dark:border-[#2e2e2e] pt-4 space-y-4">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Country Profile</p>
-            {(trip.country_codes as string[]).map((code: string) => {
-              const name = byAlpha2[code]?.name ?? code;
-              const month = trip.start_date
-                ? new Date(trip.start_date).toLocaleString("en-US", { month: "long" })
-                : null;
-              return (
-                <div key={code}>
-                  {(trip.country_codes as string[]).length > 1 && (
-                    <p className="text-xs font-medium text-gray-400 dark:text-[#9fb8b8] mb-2">{name}</p>
-                  )}
-                  <CountryProfileCard countryName={name} month={month} />
-                </div>
-              );
-            })}
-          </div>
+        {trip.country_codes && trip.country_codes.length > 0 && trip.status !== "completed" && (
+          <CountryProfileSection
+            countryCodes={trip.country_codes as string[]}
+            startDate={trip.start_date ?? null}
+          />
         )}
 
         {trip.notes && (
