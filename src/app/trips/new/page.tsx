@@ -23,6 +23,7 @@ export default function NewTripPage() {
   const [countryCodes, setCountryCodes] = useState<string[]>([]);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [endDateTouched, setEndDateTouched] = useState(false);
   const [status, setStatus] = useState<TripStatus>("planning");
   const [budget, setBudget] = useState("");
   const [loading, setLoading] = useState(false);
@@ -120,7 +121,15 @@ export default function NewTripPage() {
                 id="start"
                 type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setStartDate(val);
+                  if (val && !endDateTouched) {
+                    const d = new Date(val + "T00:00:00");
+                    d.setDate(d.getDate() + 14);
+                    setEndDate(d.toISOString().slice(0, 10));
+                  }
+                }}
                 className="input"
               />
             </div>
@@ -131,7 +140,7 @@ export default function NewTripPage() {
                 type="date"
                 value={endDate}
                 min={startDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={(e) => { setEndDate(e.target.value); setEndDateTouched(true); }}
                 className="input"
               />
             </div>
