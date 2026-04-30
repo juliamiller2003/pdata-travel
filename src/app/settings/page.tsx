@@ -105,7 +105,7 @@ export default function SettingsPage() {
         <span className="text-gray-900 font-medium">Settings</span>
       </nav>
 
-      <div className="card p-6">
+      <div>
         <h1 className="mb-6 text-xl font-bold text-gray-900">Settings</h1>
 
         <form onSubmit={handleSave} className="space-y-6">
