@@ -36,11 +36,11 @@ export default function TakeAChancePage() {
   const router = useRouter();
   const supabase = createClient();
 
-  const [location, setLocation]   = useState("");
-  const [distance, setDistance]   = useState(DISTANCES[0].value);
-  const [duration, setDuration]   = useState("7");
-  const [budget, setBudget]       = useState("");
-  const [vibes, setVibes]         = useState<string[]>([]);
+  const [location, setLocation]     = useState("");
+  const [distance, setDistance]     = useState(DISTANCES[0].value);
+  const [duration, setDuration]     = useState("7");
+  const [requests, setRequests]     = useState("");
+  const [vibes, setVibes]           = useState<string[]>([]);
 
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState<string | null>(null);
@@ -65,7 +65,7 @@ export default function TakeAChancePage() {
         location,
         distance,
         duration: parseInt(duration),
-        budget: budget ? parseInt(budget) : null,
+        requests,
         vibes,
       }),
     });
@@ -94,7 +94,6 @@ export default function TakeAChancePage() {
         country_code: trip.country_code,
         country_codes: [trip.country_code],
         status: "planning",
-        budget: budget ? parseFloat(budget) : null,
       })
       .select()
       .single();
@@ -154,34 +153,30 @@ export default function TakeAChancePage() {
             </div>
           </div>
 
-          {/* Duration + Budget */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="label">Trip length (days) *</label>
-              <input
-                type="number"
-                required
-                min="1"
-                max="365"
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
-                className="input"
-              />
-            </div>
-            <div>
-              <label className="label">Budget (optional)</label>
-              <div className="relative">
-                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400 text-sm">$</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={budget}
-                  onChange={(e) => setBudget(e.target.value)}
-                  placeholder="Total"
-                  className="input pl-7"
-                />
-              </div>
-            </div>
+          {/* Duration */}
+          <div>
+            <label className="label">Trip length (days) *</label>
+            <input
+              type="number"
+              required
+              min="1"
+              max="365"
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+              className="input"
+            />
+          </div>
+
+          {/* Specific Requests */}
+          <div>
+            <label className="label">Anything specific? (optional)</label>
+            <textarea
+              value={requests}
+              onChange={(e) => setRequests(e.target.value)}
+              placeholder="e.g. I want somewhere warm with good food and easy hiking, avoid big tourist crowds"
+              rows={3}
+              className="input resize-none"
+            />
           </div>
 
           {/* Vibe */}

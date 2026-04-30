@@ -1,20 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
-  const { location, distance, duration, budget, vibes } = await req.json();
+  const { location, distance, duration, requests, vibes } = await req.json();
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ error: "AI not configured" }, { status: 500 });
   }
 
-  const budgetText = budget ? `$${budget} total for the trip` : "no fixed budget";
+  const requestsText = requests?.trim() ? `\n- Specific requests: ${requests.trim()}` : "";
 
   const prompt = `You are a travel expert. Suggest exactly 3 trip destinations based on these constraints:
 - Starting from: ${location}
 - Willing to travel: ${distance}
 - Trip length: ${duration} days
-- Budget: ${budgetText}
-- Vibe: ${vibes.join(", ")}
+- Vibe: ${vibes.join(", ")}${requestsText}
 
 Respond with ONLY valid JSON — no markdown, no code blocks, no explanation. Use this exact structure:
 {"trips":[{"title":"Short trip name","destination":"City, Country","country_code":"XX","tagline":"One punchy sentence that sells the trip","why":"2-3 sentences explaining why this destination matches the constraints and vibe","highlights":["specific highlight 1","specific highlight 2","specific highlight 3"],"estimated_cost":1500,"best_time":"Month–Month"}]}
