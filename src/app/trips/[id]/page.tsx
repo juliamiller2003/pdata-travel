@@ -134,7 +134,7 @@ export default async function TripDetailPage({ params }: TripPageProps) {
       )}
 
       {/* Meta */}
-      <div className="card mb-6 p-5 space-y-4">
+      <div className="mb-6 p-5 space-y-4">
         <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div>
             <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">Destination</dt>
