@@ -195,7 +195,7 @@ export default function FlightSearch({ tripId, onFlightAdded }: FlightSearchProp
               {lookupResult.airline && <p className="text-xs text-gray-400 dark:text-[#9fb8b8]">{lookupResult.airline}</p>}
             </div>
             {lookupResult.status && (
-              <span className="rounded-full bg-green-100 dark:bg-[#cadede] px-2.5 py-0.5 text-xs font-medium text-green-700 dark:text-gray-800 capitalize">
+              <span className="rounded-full bg-green-100 dark:bg-[#cadede] px-2.5 py-0.5 text-xs font-medium text-green-700 dark:text-[#1e1e1e] capitalize">
                 {lookupResult.status}
               </span>
             )}
@@ -329,7 +329,7 @@ export function FlightCard({ flight, onDelete }: { flight: Flight; onDelete: () 
         </div>
         <div className="flex items-center gap-2">
           {flight.status && (
-            <span className="rounded-full bg-sky-100 dark:bg-[#cadede] px-2 py-0.5 text-xs font-medium text-sky-700 dark:text-gray-800 capitalize">
+            <span className="rounded-full bg-sky-100 dark:bg-[#cadede] px-2 py-0.5 text-xs font-medium text-sky-700 dark:text-[#1e1e1e] capitalize">
               {flight.status}
             </span>
           )}
