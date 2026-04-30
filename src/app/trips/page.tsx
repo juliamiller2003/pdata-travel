@@ -4,6 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import TripCard from "@/components/TripCard";
 import TripCountdown from "@/components/TripCountdown";
+import TripPlannerWidget from "@/components/TripPlannerWidget";
 
 const TravelMap = dynamic(() => import("@/components/TravelMap"), { ssr: false });
 
@@ -84,6 +85,9 @@ export default async function TripsPage() {
 
       {/* Upcoming trip countdowns */}
       <TripCountdown trips={upcomingTrips} />
+
+      {/* AI Trip Planner */}
+      <TripPlannerWidget />
 
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
