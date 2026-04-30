@@ -32,7 +32,7 @@ export default function TripCountdown({ trips }: TripCountdownProps) {
             <Link key={trip.id} href={`/trips/${trip.id}`} className="group block">
               <div className="flex items-center gap-4 p-4 hover:opacity-80 transition-opacity">
                 {/* Countdown bubble */}
-                <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-full bg-sky-50 text-center">
+                <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-full bg-sky-50 dark:bg-[#2e2e2e] text-center">
                   {days === 0 ? (
                     <span className="text-lg font-bold text-sky-600">🎉</span>
                   ) : (
