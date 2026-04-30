@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Offline – Pdata Travel</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Helvetica, Arial, sans-serif;
+      background: #efefef;
+      color: #1e1e1e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .card {
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 16px;
+      padding: 40px 32px;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+    }
+    .icon { font-size: 48px; margin-bottom: 16px; }
+    h1 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    p { font-size: 14px; color: #6b7280; line-height: 1.6; margin-bottom: 24px; }
+    a {
+      display: inline-block;
+      background: #9fb8b8;
+      color: #1e1e1e;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 24px;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+    a:hover { background: #cadede; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">✈️</div>
+    <h1>You're offline</h1>
+    <p>Trip pages you've visited recently are still accessible. Go back and navigate to a trip you've already opened.</p>
+    <a href="/trips">My Trips</a>
+  </div>
+</body>
+</html>

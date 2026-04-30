@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { ItineraryStyle } from "@/types/database";
 
@@ -78,6 +78,10 @@ export default function ItinerarySection({
   const db = supabase as any;
 
   const [days, setDays] = useState<DayRow[]>(initialDays);
+
+  useEffect(() => {
+    try { localStorage.setItem(`pdata-itinerary-${tripId}`, JSON.stringify(days)); } catch {}
+  }, [days, tripId]);
 
   // Structured mode
   const [addingActivity, setAddingActivity] = useState<string | null>(null);

@@ -1,0 +1,21 @@
+{
+  "name": "Pdata Travel",
+  "short_name": "Pdata",
+  "description": "Plan trips and journal your adventures",
+  "start_url": "/trips",
+  "display": "standalone",
+  "background_color": "#efefef",
+  "theme_color": "#9fb8b8",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

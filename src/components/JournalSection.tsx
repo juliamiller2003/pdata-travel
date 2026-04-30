@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type Entry = {
@@ -35,6 +35,11 @@ export default function JournalSection({ tripId, initialEntries, initialDays = [
   const db = supabase as any;
 
   const [entries, setEntries] = useState<Entry[]>(initialEntries);
+
+  useEffect(() => {
+    try { localStorage.setItem(`pdata-journal-${tripId}`, JSON.stringify(entries)); } catch {}
+  }, [entries, tripId]);
+
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 

@@ -4,10 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import Nav from "@/components/Nav";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import LoginAwareMain from "@/components/LoginAwareMain";
+import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
+import OfflineBanner from "@/components/OfflineBanner";
 
 export const metadata: Metadata = {
   title: "Pdata Travel – Travel Planning & Journaling",
   description: "Plan trips and journal your adventures as a solo traveler.",
+  manifest: "/manifest.json",
 };
 
 export default async function RootLayout({
@@ -22,8 +25,14 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#9fb8b8" />
+      </head>
       <body>
+        <ServiceWorkerRegistration />
         <ThemeProvider>
+          <OfflineBanner />
           <Nav user={user} />
           <LoginAwareMain>{children}</LoginAwareMain>
         </ThemeProvider>
