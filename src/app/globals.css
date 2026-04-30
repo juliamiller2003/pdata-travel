@@ -22,6 +22,10 @@
   --accent-light: #ddeaea;
   --accent-50:    #f0f5f5;
 }
+html, body {
+  background-color: #efefef;
+}
+
 .dark {
   --map-border: #000;
   --accent:       #cadede;
@@ -29,6 +33,7 @@
   --accent-light: #e8f0f0;
   --accent-50:    #f0f5f5;
 }
+.dark html,
 .dark body {
   background-color: #1e1e1e;
   color: #efefef;
