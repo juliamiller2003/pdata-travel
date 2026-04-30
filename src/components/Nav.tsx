@@ -27,7 +27,7 @@ export default function Nav({ user }: NavProps) {
   const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/80 backdrop-blur-sm dark:border-gray-800 dark:bg-[#1e1e1e]/80">
+    <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-sm dark:bg-[#1e1e1e]/80">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         {/* Logo + hamburger */}
         <div className="flex items-center gap-2">
