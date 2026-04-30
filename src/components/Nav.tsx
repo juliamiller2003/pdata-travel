@@ -42,7 +42,7 @@ export default function Nav({ user }: NavProps) {
   const firstName = fullName.split(" ")[0];
 
   return (
-    <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-sm dark:bg-[#1e1e1e]/80">
+    <header className="sticky top-0 z-40 bg-[#efefef]/90 backdrop-blur-sm dark:bg-[#1e1e1e]/80">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         {/* Logo */}
         <Link href="/trips" className="flex items-center gap-2 font-bold text-gray-600 text-2xl dark:text-gray-300">

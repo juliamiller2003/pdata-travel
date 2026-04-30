@@ -93,7 +93,7 @@ export default function TravelMap({ trips, mapView, homeCountryCode }: TravelMap
 
   return (
     <>
-      <div className="overflow-hidden mb-8 bg-sky-50 dark:bg-[#1e1e1e]">
+      <div className="overflow-hidden mb-8 bg-[#efefef] dark:bg-[#1e1e1e]">
         <div className="relative" style={{ height: 480 }}>
           <ComposableMap
             projection="geoNaturalEarth1"
@@ -115,8 +115,8 @@ export default function TravelMap({ trips, mapView, homeCountryCode }: TravelMap
 
                     const accentColor = isDark ? "#cadede" : "#9fb8b8";
                     const accentDark  = isDark ? "#a8c8c8" : "#7a9d9d";
-                    const unvisited   = "#efefef";
-                    const unvisitedHover = isDark ? "#cccccc" : "#c0c0c0";
+                    const unvisited   = isDark ? "#efefef" : "#1e1e1e";
+                    const unvisitedHover = isDark ? "#cccccc" : "#3a3a3a";
 
                     const defaultFill = isSelected
                       ? "#e8df6a"
