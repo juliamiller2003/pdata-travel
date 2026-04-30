@@ -29,6 +29,7 @@ interface TripSuggestion {
   why: string;
   highlights: string[];
   estimated_cost: number;
+  estimated_flights: number;
   best_time: string;
 }
 
@@ -39,6 +40,7 @@ export default function TakeAChancePage() {
   const [location, setLocation]     = useState("");
   const [distance, setDistance]     = useState(DISTANCES[0].value);
   const [duration, setDuration]     = useState("7");
+  const [budget, setBudget]         = useState("");
   const [requests, setRequests]     = useState("");
   const [vibes, setVibes]           = useState<string[]>([]);
 
@@ -65,6 +67,7 @@ export default function TakeAChancePage() {
         location,
         distance,
         duration: parseInt(duration),
+        budget: budget ? parseInt(budget) : null,
         requests,
         vibes,
       }),
@@ -167,6 +170,23 @@ export default function TakeAChancePage() {
             />
           </div>
 
+          {/* Budget */}
+          <div>
+            <label className="label">Total budget in USD (optional)</label>
+            <div className="relative">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">$</span>
+              <input
+                type="number"
+                min="0"
+                value={budget}
+                onChange={(e) => setBudget(e.target.value)}
+                placeholder="e.g. 3000"
+                className="input pl-6"
+              />
+            </div>
+            <p className="mt-1 text-xs text-gray-400 dark:text-[#9fb8b8]">Includes flights and accommodation</p>
+          </div>
+
           {/* Specific Requests */}
           <div>
             <label className="label">Anything specific? (optional)</label>
@@ -226,9 +246,16 @@ export default function TakeAChancePage() {
                   <p className="text-sm text-sky-600 dark:text-sky-400">{trip.destination}</p>
                 </div>
                 {trip.estimated_cost > 0 && (
-                  <span className="shrink-0 rounded-full bg-green-100 dark:bg-green-900/40 px-2.5 py-1 text-xs font-semibold text-green-700 dark:text-green-300">
-                    ~${trip.estimated_cost.toLocaleString()}
-                  </span>
+                  <div className="shrink-0 text-right">
+                    <span className="block rounded-full bg-[#cadede] dark:bg-[#2e2e2e] px-2.5 py-1 text-xs font-semibold text-[#1e1e1e] dark:text-[#cadede]">
+                      ~${trip.estimated_cost.toLocaleString()} total
+                    </span>
+                    {trip.estimated_flights > 0 && (
+                      <span className="mt-0.5 block text-center text-[10px] text-gray-400 dark:text-[#9fb8b8]">
+                        incl. ~${trip.estimated_flights.toLocaleString()} flights
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
 
