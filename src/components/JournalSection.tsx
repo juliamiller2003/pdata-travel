@@ -12,12 +12,24 @@ type Entry = {
   created_at: string;
 };
 
+type DayOption = {
+  id: string;
+  day_number: number;
+  date: string | null;
+};
+
 interface JournalSectionProps {
   tripId: string;
   initialEntries: Entry[];
+  initialDays?: DayOption[];
 }
 
-export default function JournalSection({ tripId, initialEntries }: JournalSectionProps) {
+function formatDayDate(date: string | null) {
+  if (!date) return null;
+  return new Date(date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+export default function JournalSection({ tripId, initialEntries, initialDays = [] }: JournalSectionProps) {
   const supabase = createClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
@@ -124,15 +136,30 @@ export default function JournalSection({ tripId, initialEntries }: JournalSectio
           />
 
           <div>
-            <label className="label">Day number</label>
-            <input
-              type="number"
-              min="1"
-              value={dayNumber}
-              onChange={(e) => setDayNumber(e.target.value)}
-              placeholder="e.g. 3"
-              className="input w-24"
-            />
+            <label className="label">Trip day</label>
+            {initialDays.length > 0 ? (
+              <select
+                value={dayNumber}
+                onChange={(e) => setDayNumber(e.target.value)}
+                className="input"
+              >
+                <option value="">No specific day</option>
+                {initialDays.map((d) => (
+                  <option key={d.id} value={String(d.day_number)}>
+                    Day {d.day_number}{d.date ? ` · ${formatDayDate(d.date)}` : ""}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="number"
+                min="1"
+                value={dayNumber}
+                onChange={(e) => setDayNumber(e.target.value)}
+                placeholder="e.g. 3"
+                className="input w-24"
+              />
+            )}
           </div>
 
           <div className="flex gap-2">

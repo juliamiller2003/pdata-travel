@@ -229,7 +229,11 @@ export default async function TripDetailPage({ params }: TripPageProps) {
             initialPhotos={(trip.photos as string[]) ?? []}
             initialCaptions={(trip.photo_captions as Record<string, string>) ?? {}}
           />
-          <JournalSection tripId={id} initialEntries={entries ?? []} />
+          <JournalSection
+            tripId={id}
+            initialEntries={entries ?? []}
+            initialDays={itinerary.map((d: any) => ({ id: d.id, day_number: d.day_number, date: d.date }))} // eslint-disable-line @typescript-eslint/no-explicit-any
+          />
         </section>
       </SectionGuard>
     </div>
