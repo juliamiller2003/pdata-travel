@@ -40,6 +40,7 @@ export default function TakeAChancePage() {
   const [location, setLocation]     = useState("");
   const [distance, setDistance]     = useState(DISTANCES[0].value);
   const [duration, setDuration]     = useState("7");
+  const [travelDate, setTravelDate] = useState("");
   const [budget, setBudget]         = useState("");
   const [requests, setRequests]     = useState("");
   const [vibes, setVibes]           = useState<string[]>([]);
@@ -67,6 +68,7 @@ export default function TakeAChancePage() {
         location,
         distance,
         duration: parseInt(duration),
+        travelDate: travelDate || null,
         budget: budget ? parseInt(budget) : null,
         requests,
         vibes,
@@ -168,6 +170,18 @@ export default function TakeAChancePage() {
               onChange={(e) => setDuration(e.target.value)}
               className="input"
             />
+          </div>
+
+          {/* Travel date */}
+          <div>
+            <label className="label">When are you looking to travel? (optional)</label>
+            <input
+              type="month"
+              value={travelDate}
+              onChange={(e) => setTravelDate(e.target.value)}
+              className="input"
+            />
+            <p className="mt-1 text-xs text-gray-400 dark:text-[#9fb8b8]">Helps tailor recommendations for weather, events, and crowds</p>
           </div>
 
           {/* Budget */}
