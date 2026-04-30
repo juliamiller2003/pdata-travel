@@ -41,7 +41,7 @@ export default function TripPlannerWidget() {
     }
 
     if (!data.destination) {
-      setError("Try asking something like "Help me plan a trip to Japan".");
+      setError('Try asking something like "Help me plan a trip to Japan".');
       return;
     }
 
