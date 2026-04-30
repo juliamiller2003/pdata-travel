@@ -129,11 +129,7 @@ export default async function TripDetailPage({ params }: TripPageProps) {
         </div>
       ) : (
         <div className="mb-6">
-          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLES[trip.status as TripStatus]}`}>
-            {(trip.status as string).charAt(0).toUpperCase() + (trip.status as string).slice(1)}
-          </span>
-          <h1 className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{trip.title}</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{trip.destination}</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{trip.title}</h1>
         </div>
       )}
 
