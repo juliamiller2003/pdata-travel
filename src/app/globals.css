@@ -17,9 +17,17 @@
 
 :root {
   --map-border: #fff;
+  --accent:       #9fb8b8;
+  --accent-hover: #7a9d9d;
+  --accent-light: #ddeaea;
+  --accent-50:    #f0f5f5;
 }
 .dark {
   --map-border: #000;
+  --accent:       #cadede;
+  --accent-hover: #a8c8c8;
+  --accent-light: #e8f0f0;
+  --accent-50:    #f0f5f5;
 }
 .dark body {
   background-color: #1e1e1e;

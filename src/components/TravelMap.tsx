@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
 import type { Trip } from "@/types/database";
 import { numericToAlpha2, byAlpha2 } from "@/lib/countries";
@@ -23,6 +23,15 @@ export default function TravelMap({ trips, mapView, homeCountryCode }: TravelMap
   const [visitedMap, setVisitedMap] = useState(() => buildVisitedMap(trips));
   const [selected, setSelected] = useState<SelectedCountry | null>(null);
   const [tooltip, setTooltip] = useState<{ name: string; x: number; y: number } | null>(null);
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsDark(document.documentElement.classList.contains("dark"));
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
 
   function buildVisitedMap(tripList: Trip[]) {
     const map = new Map<string, number>();
@@ -104,19 +113,24 @@ export default function TravelMap({ trips, mapView, homeCountryCode }: TravelMap
                       alpha2 !== undefined &&
                       selected.code === alpha2;
 
+                    const accentColor = isDark ? "#cadede" : "#9fb8b8";
+                    const accentDark  = isDark ? "#a8c8c8" : "#7a9d9d";
+                    const unvisited   = "#efefef";
+                    const unvisitedHover = isDark ? "#cccccc" : "#c0c0c0";
+
                     const defaultFill = isSelected
-                      ? "#0284c7"
+                      ? accentDark
                       : isVisited
-                      ? "#38bdf8"
+                      ? accentColor
                       : isHome
                       ? "#f5ee9e"
-                      : "#cbd5e1";
+                      : unvisited;
 
                     const hoverFill = isVisited
-                      ? "#0284c7"
+                      ? accentDark
                       : isHome
                       ? "#e8df6a"
-                      : "#94a3b8";
+                      : unvisitedHover;
 
                     return (
                       <Geography
