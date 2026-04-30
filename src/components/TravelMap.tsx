@@ -121,7 +121,7 @@ export default function TravelMap({ trips, mapView, homeCountryCode }: TravelMap
                     const defaultFill = isSelected
                       ? "#e8df6a"
                       : isVisited
-                      ? "#f5ee9e"
+                      ? "#e5dd83"
                       : isHome
                       ? accentColor
                       : unvisited;
