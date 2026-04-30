@@ -86,8 +86,8 @@ export default function LoginPage() {
                 </svg>
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900" style={{ textShadow: "0 1px 3px rgba(255,255,255,0.8), 0 0 8px rgba(255,255,255,0.6)" }}>Welcome to Pdata Travel</h1>
-            <p className="mt-1 text-sm text-gray-700" style={{ textShadow: "0 1px 2px rgba(255,255,255,0.8)" }}>Plan to travel.</p>
+            <h1 className="text-2xl font-bold text-white" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.5), 0 2px 12px rgba(0,0,0,0.3)" }}>Welcome to Pdata Travel</h1>
+            <p className="mt-1 text-sm text-white/90" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}>Plan to travel.</p>
           </div>
 
           {/* Card */}
