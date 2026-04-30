@@ -31,6 +31,7 @@ interface TripRow {
 interface FlightRow {
   distance_miles: number | null;
   flight_date: string;
+  trip_id: string;
 }
 
 function daysForTrip(trip: { start_date: string | null; end_date: string | null; status: string }, today: Date): number {
@@ -57,7 +58,7 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
   const db = supabase as any;
   const [{ data: tripsRaw }, { data: flightsRaw }] = await Promise.all([
     db.from("trips").select("country_code, country_codes, status, start_date, end_date, destination, title, id"),
-    db.from("flights").select("distance_miles, flight_date"),
+    db.from("flights").select("distance_miles, flight_date, trip_id"),
   ]);
 
   const allTrips: TripRow[] = tripsRaw ?? [];
@@ -72,8 +73,10 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
     ? allFlights.filter((f) => f.flight_date && new Date(f.flight_date) >= cutoff)
     : allFlights;
 
+  const completedTripIds = new Set(allTrips.filter((t) => t.status === "completed").map((t) => t.id));
+
   const totalMiles = filteredFlights
-    .filter((f) => f.distance_miles != null)
+    .filter((f) => f.distance_miles != null && completedTripIds.has(f.trip_id))
     .reduce((sum, f) => sum + (f.distance_miles ?? 0), 0);
 
   const flightCount = filteredFlights.length;
