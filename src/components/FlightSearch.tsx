@@ -136,7 +136,7 @@ export default function FlightSearch({ tripId, onFlightAdded }: FlightSearchProp
     return (
       <button
         onClick={() => setShowForm(true)}
-        className="w-full rounded-xl border-2 border-dashed border-gray-200 py-3 text-sm font-medium text-gray-400 hover:border-sky-300 hover:text-sky-500 transition-colors"
+        className="w-full rounded-xl border-2 border-dashed border-gray-200 dark:border-[#2e2e2e] py-3 text-sm font-medium text-gray-400 dark:text-[#9fb8b8] hover:border-[#9fb8b8] hover:text-[#9fb8b8] transition-colors"
       >
         + Add flight
       </button>
@@ -144,8 +144,8 @@ export default function FlightSearch({ tripId, onFlightAdded }: FlightSearchProp
   }
 
   return (
-    <div className="rounded-xl border border-sky-100 bg-sky-50/50 p-4 space-y-4">
-      <h4 className="text-sm font-semibold text-gray-700">Add a flight</h4>
+    <div className="rounded-xl border border-sky-100 bg-sky-50/50 dark:border-[#2e2e2e] dark:bg-transparent p-4 space-y-4">
+      <h4 className="text-sm font-semibold text-gray-700 dark:text-[#cadede]">Add a flight</h4>
 
       <form onSubmit={handleLookup} className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
@@ -188,14 +188,14 @@ export default function FlightSearch({ tripId, onFlightAdded }: FlightSearchProp
 
       {/* Lookup result */}
       {lookupResult && (
-        <div className="rounded-lg border border-sky-200 bg-white p-4 space-y-3">
+        <div className="rounded-lg border border-sky-200 bg-white dark:border-[#2e2e2e] dark:bg-transparent p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-bold text-gray-900 text-lg">{lookupResult.flightNumber}</p>
-              {lookupResult.airline && <p className="text-xs text-gray-400">{lookupResult.airline}</p>}
+              <p className="font-bold text-gray-900 dark:text-[#efefef] text-lg">{lookupResult.flightNumber}</p>
+              {lookupResult.airline && <p className="text-xs text-gray-400 dark:text-[#9fb8b8]">{lookupResult.airline}</p>}
             </div>
             {lookupResult.status && (
-              <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700 capitalize">
+              <span className="rounded-full bg-green-100 dark:bg-[#cadede] px-2.5 py-0.5 text-xs font-medium text-green-700 dark:text-gray-800 capitalize">
                 {lookupResult.status}
               </span>
             )}
@@ -219,7 +219,7 @@ export default function FlightSearch({ tripId, onFlightAdded }: FlightSearchProp
                 className="input text-center text-xs"
               />
               {lookupResult.departureTime && (
-                <p className="text-sm font-medium text-gray-700 text-center">{formatTime(lookupResult.departureTime)}</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-[#efefef] text-center">{formatTime(lookupResult.departureTime)}</p>
               )}
             </div>
             <div className="flex flex-col items-center gap-1 text-gray-300 shrink-0">
@@ -321,15 +321,15 @@ export function FlightCard({ flight, onDelete }: { flight: Flight; onDelete: () 
   }
 
   return (
-    <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+    <div className="rounded-xl border border-gray-100 bg-gray-50 dark:border-[#2e2e2e] dark:bg-transparent p-4">
       <div className="flex items-start justify-between mb-3">
         <div>
-          <p className="font-bold text-gray-900">{flight.flight_number}</p>
-          {flight.airline && <p className="text-xs text-gray-400">{flight.airline}</p>}
+          <p className="font-bold text-gray-900 dark:text-[#efefef]">{flight.flight_number}</p>
+          {flight.airline && <p className="text-xs text-gray-400 dark:text-[#9fb8b8]">{flight.airline}</p>}
         </div>
         <div className="flex items-center gap-2">
           {flight.status && (
-            <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700 capitalize">
+            <span className="rounded-full bg-sky-100 dark:bg-[#cadede] px-2 py-0.5 text-xs font-medium text-sky-700 dark:text-gray-800 capitalize">
               {flight.status}
             </span>
           )}
@@ -348,17 +348,17 @@ export function FlightCard({ flight, onDelete }: { flight: Flight; onDelete: () 
       {(flight.departure_iata || flight.arrival_iata) ? (
         <div className="flex items-center gap-3">
           <div className="flex-1 text-center">
-            <p className="text-xl font-bold text-gray-900">{flight.departure_iata ?? "—"}</p>
-            <p className="text-xs text-gray-400 line-clamp-1">{flight.departure_airport ?? ""}</p>
-            <p className="text-sm font-medium text-gray-700 mt-1">{formatTime(flight.departure_time)}</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-[#efefef]">{flight.departure_iata ?? "—"}</p>
+            <p className="text-xs text-gray-400 dark:text-[#9fb8b8] line-clamp-1">{flight.departure_airport ?? ""}</p>
+            <p className="text-sm font-medium text-gray-700 dark:text-[#efefef] mt-1">{formatTime(flight.departure_time)}</p>
           </div>
           <svg className="h-4 w-4 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 12h12m0 0l-4-4m4 4l-4 4" />
           </svg>
           <div className="flex-1 text-center">
-            <p className="text-xl font-bold text-gray-900">{flight.arrival_iata ?? "—"}</p>
-            <p className="text-xs text-gray-400 line-clamp-1">{flight.arrival_airport ?? ""}</p>
-            <p className="text-sm font-medium text-gray-700 mt-1">{formatTime(flight.arrival_time)}</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-[#efefef]">{flight.arrival_iata ?? "—"}</p>
+            <p className="text-xs text-gray-400 dark:text-[#9fb8b8] line-clamp-1">{flight.arrival_airport ?? ""}</p>
+            <p className="text-sm font-medium text-gray-700 dark:text-[#efefef] mt-1">{formatTime(flight.arrival_time)}</p>
           </div>
         </div>
       ) : (
@@ -372,7 +372,7 @@ export function FlightCard({ flight, onDelete }: { flight: Flight; onDelete: () 
       )}
 
       {flight.distance_miles != null && (
-        <p className="mt-2 text-xs text-gray-400 text-right">
+        <p className="mt-2 text-xs text-gray-400 dark:text-[#9fb8b8] text-right">
           {flight.distance_miles.toLocaleString()} mi
         </p>
       )}

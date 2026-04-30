@@ -85,7 +85,7 @@ export default function TripPhotosSection({ tripId, initialPhotos, initialCaptio
         onDrop={(e) => { e.preventDefault(); if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files); }}
         onDragOver={(e) => e.preventDefault()}
         onClick={() => inputRef.current?.click()}
-        className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 p-5 text-center hover:border-sky-300 hover:bg-sky-50 transition-colors"
+        className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 dark:border-[#2e2e2e] bg-gray-50 dark:bg-transparent p-5 text-center hover:border-[#9fb8b8] transition-colors"
       >
         {uploading ? (
           <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -94,13 +94,13 @@ export default function TripPhotosSection({ tripId, initialPhotos, initialCaptio
           </div>
         ) : (
           <>
-            <svg className="h-7 w-7 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <svg className="h-7 w-7 text-gray-300 dark:text-[#9fb8b8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
             </svg>
-            <p className="text-sm text-gray-500">
-              <span className="font-medium text-sky-600">Click to upload</span> or drag and drop
+            <p className="text-sm text-gray-500 dark:text-[#9fb8b8]">
+              <span className="font-medium text-sky-600 dark:text-[#cadede]">Click to upload</span> or drag and drop
             </p>
-            <p className="text-xs text-gray-400">PNG, JPG, WEBP</p>
+            <p className="text-xs text-gray-400 dark:text-[#9fb8b8]">PNG, JPG, WEBP</p>
           </>
         )}
         <input
