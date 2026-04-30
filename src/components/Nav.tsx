@@ -32,7 +32,7 @@ export default function Nav({ user }: NavProps) {
         {/* Logo + hamburger */}
         <div className="flex items-center gap-2">
           {user && <NavMenu />}
-          <Link href="/trips" className="flex items-center gap-2 font-bold text-gray-600 text-lg dark:text-gray-300">
+          <Link href="/trips" className="flex items-center gap-2 font-bold text-gray-600 text-2xl dark:text-gray-300">
             <svg
               className="h-7 w-7 text-gray-500 dark:text-gray-400"
               viewBox="0 0 24 24"
