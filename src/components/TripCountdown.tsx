@@ -25,15 +25,12 @@ export default function TripCountdown({ trips }: TripCountdownProps) {
 
   return (
     <div className="mb-8">
-      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-400">
-        Upcoming
-      </h2>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {trips.map((trip) => {
           const days = daysUntil(trip.start_date!);
           return (
             <Link key={trip.id} href={`/trips/${trip.id}`} className="group block">
-              <div className="flex items-center gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm hover:shadow-md transition-shadow dark:bg-black dark:border-gray-800">
+              <div className="flex items-center gap-4 p-4 hover:opacity-80 transition-opacity">
                 {/* Countdown bubble */}
                 <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-full bg-sky-50 text-center">
                   {days === 0 ? (

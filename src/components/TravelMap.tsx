@@ -84,7 +84,7 @@ export default function TravelMap({ trips, mapView, homeCountryCode }: TravelMap
 
   return (
     <>
-      <div className="overflow-hidden rounded-2xl border border-gray-100 shadow-sm mb-8 bg-sky-50 dark:bg-black dark:border-gray-800">
+      <div className="overflow-hidden mb-8 bg-sky-50 dark:bg-black">
         <div className="relative" style={{ height: 480 }}>
           <ComposableMap
             projection="geoNaturalEarth1"
