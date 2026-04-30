@@ -269,7 +269,7 @@ export default function ItinerarySection({
   const addDayButton = (
     <button
       onClick={handleAddDay}
-      className="w-full rounded-xl border-2 border-dashed border-gray-200 py-3 text-sm font-medium text-gray-400 hover:border-sky-300 hover:text-sky-500 transition-colors"
+      className="w-full rounded-xl border-2 border-dashed border-gray-200 dark:border-[#2e2e2e] py-3 text-sm font-medium text-gray-400 dark:text-[#9fb8b8] hover:border-[#9fb8b8] hover:text-[#9fb8b8] transition-colors"
     >
       + Add day
     </button>
@@ -282,9 +282,9 @@ export default function ItinerarySection({
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">
             {day.day_number}
           </span>
-          <span className="text-sm font-medium text-gray-700">
+          <span className="text-sm font-medium text-gray-700 dark:text-[#efefef]">
             Day {day.day_number}
-            {day.date && <span className="ml-2 text-gray-400">· {formatDayDate(day.date)}</span>}
+            {day.date && <span className="ml-2 text-gray-400 dark:text-[#9fb8b8]">· {formatDayDate(day.date)}</span>}
           </span>
         </div>
         <button onClick={() => handleDeleteDay(day.id)} className="text-gray-300 hover:text-red-400 transition-colors" title="Delete day">
@@ -299,9 +299,9 @@ export default function ItinerarySection({
   // ── AI panel ──────────────────────────────────────────────────
 
   const aiPanel = showAI && (
-    <div className="mb-4 rounded-xl border border-sky-100 bg-sky-50/60 p-4 space-y-3">
+    <div className="mb-4 rounded-xl border border-sky-100 dark:border-[#2e2e2e] bg-sky-50/60 dark:bg-transparent p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-gray-700">AI itinerary suggestions</p>
+        <p className="text-sm font-semibold text-gray-700 dark:text-[#efefef]">AI itinerary suggestions</p>
         <button onClick={() => { setShowAI(false); setStructuredSuggestion(null); setNotesSuggestion(null); setDayNotesSuggestion(null); setAiError(null); }} className="text-gray-400 hover:text-gray-600">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -343,15 +343,15 @@ export default function ItinerarySection({
       {/* Structured suggestions preview */}
       {structuredSuggestion && (
         <div className="space-y-3">
-          <p className="text-xs text-gray-500">{structuredSuggestion.length} days generated — review below, then add to your itinerary.</p>
+          <p className="text-xs text-gray-500 dark:text-[#9fb8b8]">{structuredSuggestion.length} days generated — review below, then add to your itinerary.</p>
           <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
             {structuredSuggestion.map((day) => (
-              <div key={day.day_number} className="rounded-lg bg-white border border-gray-100 p-3">
-                <p className="text-xs font-semibold text-gray-600 mb-1.5">Day {day.day_number}</p>
+              <div key={day.day_number} className="rounded-lg bg-white dark:bg-transparent border border-gray-100 dark:border-[#2e2e2e] p-3">
+                <p className="text-xs font-semibold text-gray-600 dark:text-[#9fb8b8] mb-1.5">Day {day.day_number}</p>
                 <ul className="space-y-1">
                   {day.activities.map((act, i) => (
-                    <li key={i} className="flex gap-2 text-xs text-gray-600">
-                      <span className="shrink-0 w-10 font-mono text-gray-400">{act.time ?? "—"}</span>
+                    <li key={i} className="flex gap-2 text-xs text-gray-600 dark:text-[#9fb8b8]">
+                      <span className="shrink-0 w-10 font-mono text-gray-400 dark:text-[#9fb8b8]">{act.time ?? "—"}</span>
                       <span className="font-medium">{act.title}</span>
                       {act.place_name && <span className="text-gray-400">· {act.place_name}</span>}
                     </li>
@@ -372,8 +372,8 @@ export default function ItinerarySection({
       {/* Notes suggestion preview */}
       {notesSuggestion && (
         <div className="space-y-3">
-          <div className="max-h-60 overflow-y-auto rounded-lg bg-white border border-gray-100 p-3">
-            <p className="text-sm text-gray-700 whitespace-pre-wrap">{notesSuggestion}</p>
+          <div className="max-h-60 overflow-y-auto rounded-lg bg-white dark:bg-transparent border border-gray-100 dark:border-[#2e2e2e] p-3">
+            <p className="text-sm text-gray-700 dark:text-[#efefef] whitespace-pre-wrap">{notesSuggestion}</p>
           </div>
           <div className="flex gap-2">
             <button onClick={handleApplyNotes} className="btn-primary flex-1">Apply</button>
@@ -385,15 +385,15 @@ export default function ItinerarySection({
       {/* Day notes suggestion preview */}
       {dayNotesSuggestion && (
         <div className="space-y-3">
-          <p className="text-xs text-gray-500">{dayNotesSuggestion.length} days generated.</p>
+          <p className="text-xs text-gray-500 dark:text-[#9fb8b8]">{dayNotesSuggestion.length} days generated.</p>
           <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
             {dayNotesSuggestion.map((day) => (
-              <div key={day.day_number} className="rounded-lg bg-white border border-gray-100 p-3 space-y-2">
-                <p className="text-xs font-semibold text-gray-600">Day {day.day_number}</p>
+              <div key={day.day_number} className="rounded-lg bg-white dark:bg-transparent border border-gray-100 dark:border-[#2e2e2e] p-3 space-y-2">
+                <p className="text-xs font-semibold text-gray-600 dark:text-[#9fb8b8]">Day {day.day_number}</p>
                 {Object.entries(day.sections).map(([key, val]) => (
                   <div key={key}>
-                    <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{key}</p>
-                    <p className="text-xs text-gray-600 mt-0.5">{val}</p>
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8]">{key}</p>
+                    <p className="text-xs text-gray-600 dark:text-[#efefef] mt-0.5">{val}</p>
                   </div>
                 ))}
               </div>
@@ -412,10 +412,10 @@ export default function ItinerarySection({
 
   const sectionHeader = (
     <div className="mb-4 flex items-center justify-between">
-      <h2 className="text-lg font-semibold text-gray-900">Itinerary</h2>
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-[#efefef]">Itinerary</h2>
       <button
         onClick={() => { setShowAI((v) => !v); setStructuredSuggestion(null); setNotesSuggestion(null); setDayNotesSuggestion(null); setAiError(null); }}
-        className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:border-sky-300 hover:text-sky-600 transition-colors"
+        className="flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-[#2e2e2e] bg-white dark:bg-transparent px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-[#9fb8b8] hover:border-[#9fb8b8] hover:text-[#9fb8b8] transition-colors"
       >
         <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
@@ -432,7 +432,7 @@ export default function ItinerarySection({
         {sectionHeader}
         {aiPanel}
         {days.length === 0 && (
-          <div className="rounded-xl border-2 border-dashed border-gray-200 py-10 text-center text-sm text-gray-400 mb-3">
+          <div className="rounded-xl border-2 border-dashed border-gray-200 dark:border-[#2e2e2e] py-10 text-center text-sm text-gray-400 dark:text-[#9fb8b8] mb-3">
             No days yet — add your first day below.
           </div>
         )}
@@ -464,7 +464,7 @@ export default function ItinerarySection({
         {sectionHeader}
         {aiPanel}
         {days.length === 0 && (
-          <div className="rounded-xl border-2 border-dashed border-gray-200 py-10 text-center text-sm text-gray-400 mb-3">
+          <div className="rounded-xl border-2 border-dashed border-gray-200 dark:border-[#2e2e2e] py-10 text-center text-sm text-gray-400 dark:text-[#9fb8b8] mb-3">
             No days yet — add your first day below.
           </div>
         )}
@@ -475,7 +475,7 @@ export default function ItinerarySection({
               <div className="space-y-3">
                 {sections.map(({ key, label }) => (
                   <div key={key}>
-                    <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">{label}</p>
+                    <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8]">{label}</p>
                     <textarea
                       value={dayNotes[day.id]?.[key] ?? ""}
                       onChange={(e) => updateSectionNote(day.id, key, e.target.value)}
@@ -513,10 +513,10 @@ export default function ItinerarySection({
               <ul className="space-y-2 mb-3">
                 {day.activities.map((act) => (
                   <li key={act.id} className="group flex items-start gap-3 text-sm">
-                    <span className="mt-0.5 w-12 shrink-0 font-mono text-xs text-gray-400">{act.time?.slice(0, 5) ?? "—"}</span>
+                    <span className="mt-0.5 w-12 shrink-0 font-mono text-xs text-gray-400 dark:text-[#9fb8b8]">{act.time?.slice(0, 5) ?? "—"}</span>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-800">{act.title}</p>
-                      {act.place_name && <p className="text-xs text-gray-400">{act.place_name}</p>}
+                      <p className="font-medium text-gray-800 dark:text-[#efefef]">{act.title}</p>
+                      {act.place_name && <p className="text-xs text-gray-400 dark:text-[#9fb8b8]">{act.place_name}</p>}
                     </div>
                     <button onClick={() => handleDeleteActivity(act.id, day.id)} className="shrink-0 text-gray-300 opacity-0 transition-colors hover:text-red-400 group-hover:opacity-100" title="Delete activity">
                       <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -528,10 +528,10 @@ export default function ItinerarySection({
               </ul>
             )}
             {day.activities.length === 0 && addingActivity !== day.id && (
-              <p className="mb-2 text-xs text-gray-400">No activities yet.</p>
+              <p className="mb-2 text-xs text-gray-400 dark:text-[#9fb8b8]">No activities yet.</p>
             )}
             {addingActivity === day.id ? (
-              <div className="space-y-2 rounded-lg border border-sky-100 bg-sky-50/50 p-3">
+              <div className="space-y-2 rounded-lg border border-sky-100 dark:border-[#2e2e2e] bg-sky-50/50 dark:bg-transparent p-3">
                 <div className="grid grid-cols-3 gap-2">
                   <input type="time" value={actTime} onChange={(e) => setActTime(e.target.value)} className="input text-sm" />
                   <input type="text" value={actTitle} onChange={(e) => setActTitle(e.target.value)} className="input col-span-2 text-sm" placeholder="Activity name *" autoFocus />
@@ -545,7 +545,7 @@ export default function ItinerarySection({
                 </div>
               </div>
             ) : (
-              <button onClick={() => { setAddingActivity(day.id); setActTime(""); setActTitle(""); setActPlace(""); }} className="text-xs text-gray-400 hover:text-sky-500 transition-colors">
+              <button onClick={() => { setAddingActivity(day.id); setActTime(""); setActTitle(""); setActPlace(""); }} className="text-xs text-gray-400 dark:text-[#9fb8b8] hover:text-[#9fb8b8] transition-colors">
                 + Add activity
               </button>
             )}

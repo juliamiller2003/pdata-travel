@@ -148,12 +148,12 @@ export default function CountryModal({
       onClick={handleBackdropClick}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
     >
-      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
+      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-[#2e2e2e] shadow-2xl">
         {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white px-6 py-4">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 dark:border-[#3a3a3a] bg-white dark:bg-[#2e2e2e] px-6 py-4">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">{countryName}</h2>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-[#efefef]">{countryName}</h2>
+            <p className="text-xs text-gray-400 dark:text-[#9fb8b8] mt-0.5">
               {loadingTrips ? "Loading…" : `${trips.length} visit${trips.length !== 1 ? "s" : ""} logged`}
             </p>
           </div>
@@ -170,7 +170,7 @@ export default function CountryModal({
           {!loadingTrips && trips.length > 0 && (
             <div className="space-y-3">
               {trips.map((trip) => (
-                <div key={trip.id} className="overflow-hidden rounded-xl border border-gray-100 bg-gray-50">
+                <div key={trip.id} className="overflow-hidden rounded-xl border border-gray-100 dark:border-[#3a3a3a] bg-gray-50 dark:bg-[#1e1e1e]">
                   {/* Cover photo */}
                   {trip.cover_photo_url && (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -178,14 +178,14 @@ export default function CountryModal({
                   )}
                   <div className="p-3 space-y-1.5">
                     <div className="flex items-start justify-between gap-2">
-                      <p className="font-semibold text-gray-800 text-sm">{trip.title}</p>
+                      <p className="font-semibold text-gray-800 dark:text-[#efefef] text-sm">{trip.title}</p>
                       <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[trip.status]}`}>
                         {trip.status}
                       </span>
                     </div>
 
                     {(trip.start_date || trip.end_date) && (
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-gray-400 dark:text-[#9fb8b8]">
                         {formatDate(trip.start_date)}
                         {trip.end_date && trip.start_date !== trip.end_date && ` – ${formatDate(trip.end_date)}`}
                       </p>
@@ -202,7 +202,7 @@ export default function CountryModal({
                     )}
 
                     {trip.notes && (
-                      <p className="text-xs text-gray-500 line-clamp-2">{trip.notes}</p>
+                      <p className="text-xs text-gray-500 dark:text-[#9fb8b8] line-clamp-2">{trip.notes}</p>
                     )}
 
                     {trip.external_link && (
@@ -225,7 +225,7 @@ export default function CountryModal({
                       </a>
                       <button
                         onClick={() => setEditingTrip(trip)}
-                        className="text-xs text-gray-400 hover:text-sky-600 hover:underline"
+                        className="text-xs text-gray-400 dark:text-[#9fb8b8] hover:text-[#cadede] hover:underline"
                       >
                         Edit
                       </button>
@@ -240,13 +240,13 @@ export default function CountryModal({
           {!showForm ? (
             <button
               onClick={() => { resetForm(); setShowForm(true); }}
-              className="w-full rounded-xl border-2 border-dashed border-gray-200 py-4 text-sm font-medium text-gray-400 hover:border-sky-300 hover:text-sky-500 transition-colors"
+              className="w-full rounded-xl border-2 border-dashed border-gray-200 dark:border-[#3a3a3a] py-4 text-sm font-medium text-gray-400 dark:text-[#9fb8b8] hover:border-[#9fb8b8] hover:text-[#9fb8b8] transition-colors"
             >
               + Log a visit to {countryName}
             </button>
           ) : (
-            <form onSubmit={handleSave} className="space-y-4 rounded-xl border border-sky-100 bg-sky-50/50 p-4">
-              <h3 className="text-sm font-semibold text-gray-700">
+            <form onSubmit={handleSave} className="space-y-4 rounded-xl border border-sky-100 dark:border-[#3a3a3a] bg-sky-50/50 dark:bg-transparent p-4">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-[#efefef]">
                 {editingTrip ? "Edit visit" : "Log a visit"}
               </h3>
 
@@ -303,7 +303,7 @@ export default function CountryModal({
                   placeholder="https://..."
                   className="input"
                 />
-                <p className="mt-1 text-xs text-gray-400">Old itinerary, blog post, Google Maps, etc.</p>
+                <p className="mt-1 text-xs text-gray-400 dark:text-[#9fb8b8]">Old itinerary, blog post, Google Maps, etc.</p>
               </div>
 
               <div>

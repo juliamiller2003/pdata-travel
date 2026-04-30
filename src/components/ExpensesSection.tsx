@@ -5,13 +5,13 @@ import { createClient } from "@/lib/supabase/client";
 import type { Expense } from "@/types/database";
 
 const CATEGORIES: { value: string; label: string; light: string; dark: string }[] = [
-  { value: "food",          label: "Food & Drink",   light: "bg-green-100 text-green-700",   dark: "dark:bg-green-900/40 dark:text-green-300" },
-  { value: "transport",     label: "Transport",      light: "bg-blue-100 text-blue-700",     dark: "dark:bg-blue-900/40 dark:text-blue-300" },
-  { value: "accommodation", label: "Accommodation",  light: "bg-purple-100 text-purple-700", dark: "dark:bg-purple-900/40 dark:text-purple-300" },
-  { value: "activities",    label: "Activities",     light: "bg-orange-100 text-orange-700", dark: "dark:bg-orange-900/40 dark:text-orange-300" },
-  { value: "shopping",      label: "Shopping",       light: "bg-pink-100 text-pink-700",     dark: "dark:bg-pink-900/40 dark:text-pink-300" },
-  { value: "health",        label: "Health",         light: "bg-red-100 text-red-700",       dark: "dark:bg-red-900/40 dark:text-red-300" },
-  { value: "other",         label: "Other",          light: "bg-gray-100 text-gray-600",     dark: "dark:bg-gray-700 dark:text-gray-300" },
+  { value: "food",          label: "Food & Drink",   light: "bg-green-100 text-green-700",   dark: "dark:bg-[#2e2e2e] dark:text-[#cadede]" },
+  { value: "transport",     label: "Transport",      light: "bg-blue-100 text-blue-700",     dark: "dark:bg-[#2e2e2e] dark:text-[#cadede]" },
+  { value: "accommodation", label: "Accommodation",  light: "bg-purple-100 text-purple-700", dark: "dark:bg-[#2e2e2e] dark:text-[#cadede]" },
+  { value: "activities",    label: "Activities",     light: "bg-orange-100 text-orange-700", dark: "dark:bg-[#2e2e2e] dark:text-[#cadede]" },
+  { value: "shopping",      label: "Shopping",       light: "bg-pink-100 text-pink-700",     dark: "dark:bg-[#2e2e2e] dark:text-[#cadede]" },
+  { value: "health",        label: "Health",         light: "bg-red-100 text-red-700",       dark: "dark:bg-[#2e2e2e] dark:text-[#cadede]" },
+  { value: "other",         label: "Other",          light: "bg-gray-100 text-gray-600",     dark: "dark:bg-[#2e2e2e] dark:text-[#cadede]" },
 ];
 
 function categoryStyle(value: string) {
@@ -110,17 +110,17 @@ export default function ExpensesSection({ tripId, budget, initialExpenses }: Exp
           <div className="grid grid-cols-3 gap-4 text-center">
             {budget != null && (
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Budget</p>
-                <p className="mt-1 text-xl font-bold text-gray-900 dark:text-white">${fmt(budget)}</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8]">Budget</p>
+                <p className="mt-1 text-xl font-bold text-gray-900 dark:text-[#efefef]">${fmt(budget)}</p>
               </div>
             )}
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Spent</p>
-              <p className="mt-1 text-xl font-bold text-gray-900 dark:text-white">${fmt(totalSpent)}</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8]">Spent</p>
+              <p className="mt-1 text-xl font-bold text-gray-900 dark:text-[#efefef]">${fmt(totalSpent)}</p>
             </div>
             {remaining != null && (
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Remaining</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8]">Remaining</p>
                 <p className={`mt-1 text-xl font-bold ${remaining >= 0 ? "text-green-600" : "text-red-500"}`}>
                   {remaining < 0 ? "-" : ""}${fmt(Math.abs(remaining))}
                 </p>
@@ -136,7 +136,7 @@ export default function ExpensesSection({ tripId, budget, initialExpenses }: Exp
                   <span className="text-red-500 font-medium">Over budget by ${fmt(Math.abs(remaining))}</span>
                 )}
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-[#2e2e2e]">
                 <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
               </div>
             </div>
@@ -160,23 +160,24 @@ export default function ExpensesSection({ tripId, budget, initialExpenses }: Exp
           <div key={expense.id} className="card flex items-center gap-3 px-4 py-3">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-sm font-medium text-gray-900 dark:text-white">{expense.title}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-[#efefef]">{expense.title}</p>
                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${categoryStyle(expense.category)}`}>
                   {categoryLabel(expense.category)}
                 </span>
               </div>
               {(expense.date || expense.notes) && (
-                <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                <p className="mt-0.5 text-xs text-gray-400 dark:text-[#9fb8b8]">
                   {expense.date && new Date(expense.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                   {expense.date && expense.notes && " · "}
                   {expense.notes}
                 </p>
+
               )}
             </div>
-            <p className="shrink-0 text-sm font-semibold text-gray-900 dark:text-white">${fmt(expense.amount)}</p>
+            <p className="shrink-0 text-sm font-semibold text-gray-900 dark:text-[#efefef]">${fmt(expense.amount)}</p>
             <button
               onClick={() => handleDelete(expense.id)}
-              className="shrink-0 text-gray-300 hover:text-red-400 transition-colors dark:text-gray-600"
+              className="shrink-0 text-gray-300 dark:text-[#3a3a3a] hover:text-red-400 transition-colors"
               title="Delete expense"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -189,8 +190,8 @@ export default function ExpensesSection({ tripId, budget, initialExpenses }: Exp
 
       {/* Add expense form */}
       {showForm ? (
-        <form onSubmit={handleAdd} className="rounded-xl border border-sky-100 bg-sky-50/50 dark:border-gray-700 dark:bg-gray-800/50 p-4 space-y-3">
-          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Add expense</h4>
+        <form onSubmit={handleAdd} className="rounded-xl border border-sky-100 dark:border-[#2e2e2e] bg-sky-50/50 dark:bg-transparent p-4 space-y-3">
+          <h4 className="text-sm font-semibold text-gray-700 dark:text-[#efefef]">Add expense</h4>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
@@ -233,7 +234,7 @@ export default function ExpensesSection({ tripId, budget, initialExpenses }: Exp
       ) : (
         <button
           onClick={() => setShowForm(true)}
-          className="w-full rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 py-3 text-sm font-medium text-gray-400 hover:border-sky-300 hover:text-sky-500 transition-colors"
+          className="w-full rounded-xl border-2 border-dashed border-gray-200 dark:border-[#2e2e2e] py-3 text-sm font-medium text-gray-400 dark:text-[#9fb8b8] hover:border-[#9fb8b8] hover:text-[#9fb8b8] transition-colors"
         >
           + Add expense
         </button>

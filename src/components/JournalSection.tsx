@@ -100,9 +100,9 @@ export default function JournalSection({ tripId, initialEntries }: JournalSectio
   return (
     <div className="mt-6">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Journal</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-[#efefef]">Journal</h2>
         {!showForm && (
-          <button onClick={openNew} className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:border-sky-300 hover:text-sky-600 transition-colors">
+          <button onClick={openNew} className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-[#2e2e2e] bg-white dark:bg-transparent px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-[#9fb8b8] hover:border-[#9fb8b8] hover:text-[#9fb8b8] transition-colors">
             + New entry
           </button>
         )}
@@ -110,8 +110,8 @@ export default function JournalSection({ tripId, initialEntries }: JournalSectio
 
       {/* Entry form */}
       {showForm && (
-        <form onSubmit={handleSave} className="mb-4 rounded-xl border border-sky-100 bg-sky-50/50 p-4 space-y-3">
-          <p className="text-sm font-semibold text-gray-700">{editingId ? "Edit entry" : "New journal entry"}</p>
+        <form onSubmit={handleSave} className="mb-4 rounded-xl border border-sky-100 dark:border-[#2e2e2e] bg-sky-50/50 dark:bg-transparent p-4 space-y-3">
+          <p className="text-sm font-semibold text-gray-700 dark:text-[#efefef]">{editingId ? "Edit entry" : "New journal entry"}</p>
 
           <textarea
             value={content}
@@ -146,7 +146,7 @@ export default function JournalSection({ tripId, initialEntries }: JournalSectio
 
       {/* Entries list */}
       {entries.length === 0 && !showForm ? (
-        <div className="rounded-xl border-2 border-dashed border-gray-200 py-12 text-center text-sm text-gray-400">
+        <div className="rounded-xl border-2 border-dashed border-gray-200 dark:border-[#2e2e2e] py-12 text-center text-sm text-gray-400 dark:text-[#9fb8b8]">
           No journal entries yet.
         </div>
       ) : (
@@ -154,7 +154,7 @@ export default function JournalSection({ tripId, initialEntries }: JournalSectio
           {entries.map((entry) => (
             <div key={entry.id} className="card p-5">
               <div className="mb-3 flex items-start justify-between gap-2">
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-gray-400 dark:text-[#9fb8b8]">
                   {entry.day_number ? `Day ${entry.day_number} · ` : ""}
                   {new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                 </span>
@@ -180,7 +180,7 @@ export default function JournalSection({ tripId, initialEntries }: JournalSectio
                   </button>
                 </div>
               </div>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{entry.content}</p>
+              <p className="text-sm text-gray-700 dark:text-[#efefef] whitespace-pre-wrap">{entry.content}</p>
               {entry.photos.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {entry.photos.map((url, i) => (
