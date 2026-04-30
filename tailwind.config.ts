@@ -11,12 +11,22 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          50:  "#f0f9ff",
-          100: "#e0f2fe",
-          500: "#7dd3fc",
-          600: "#38bdf8",
-          700: "#0ea5e9",
-          900: "#0c4a6e",
+          50:  "#f0f5f5",
+          100: "#ddeaea",
+          500: "#b8cccc",
+          600: "#9fb8b8",
+          700: "#7a9d9d",
+          900: "#3a5e5e",
+        },
+        sky: {
+          50:  "#f0f5f5",
+          100: "#ddeaea",
+          300: "#c5d9d9",
+          400: "#b8cccc",
+          500: "#9fb8b8",
+          600: "#9fb8b8",
+          700: "#7a9d9d",
+          900: "#3a5e5e",
         },
       },
       fontFamily: {
