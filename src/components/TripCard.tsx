@@ -31,9 +31,9 @@ interface TripCardProps {
 export default function TripCard({ trip }: TripCardProps) {
   return (
     <Link href={`/trips/${trip.id}`} className="group block">
-      <div className="overflow-hidden rounded-xl transition-opacity hover:opacity-90 dark:bg-[#2e2e2e] bg-white shadow-sm border border-gray-100 dark:border-transparent">
+      <div className="overflow-hidden rounded-xl transition-opacity hover:opacity-90 dark:bg-[#2e2e2e] bg-white shadow-sm border border-gray-100 dark:border-transparent flex flex-col">
         {/* Cover photo */}
-        <div className="relative h-40 w-full bg-gradient-to-b from-gray-200 to-gray-300 dark:from-[#3a3a3a] dark:to-[#2e2e2e]">
+        <div className="relative h-48 w-full bg-gradient-to-b from-gray-200 to-gray-300 dark:from-[#3a3a3a] dark:to-[#2e2e2e]">
           {trip.cover_photo_url && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -54,7 +54,7 @@ export default function TripCard({ trip }: TripCardProps) {
         </div>
 
         {/* Body */}
-        <div className="p-4">
+        <div className="p-4 flex-1 flex flex-col justify-between">
           {!trip.cover_photo_url && (
             <p className="mb-1 text-xs text-gray-400 dark:text-[#9fb8b8]">{trip.destination}</p>
           )}

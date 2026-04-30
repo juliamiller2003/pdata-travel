@@ -123,7 +123,7 @@ export default async function TripsPage() {
           </Link>
         </div>
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 items-stretch">
           {sortedTrips.map((trip) => (
             <TripCard key={trip.id} trip={trip} />
           ))}
