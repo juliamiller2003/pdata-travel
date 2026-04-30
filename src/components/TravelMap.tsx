@@ -119,17 +119,17 @@ export default function TravelMap({ trips, mapView, homeCountryCode }: TravelMap
                     const unvisitedHover = isDark ? "#cccccc" : "#c0c0c0";
 
                     const defaultFill = isSelected
-                      ? accentDark
+                      ? "#e8df6a"
                       : isVisited
-                      ? accentColor
-                      : isHome
                       ? "#f5ee9e"
+                      : isHome
+                      ? accentColor
                       : unvisited;
 
                     const hoverFill = isVisited
-                      ? accentDark
-                      : isHome
                       ? "#e8df6a"
+                      : isHome
+                      ? accentDark
                       : unvisitedHover;
 
                     return (
