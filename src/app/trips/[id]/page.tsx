@@ -12,10 +12,10 @@ import SectionGuard from "@/components/SectionGuard";
 import { byAlpha2 } from "@/lib/countries";
 
 const STATUS_STYLES: Record<TripStatus, string> = {
-  planning:  "bg-amber-100 text-amber-800 dark:text-[#1e1e1e]",
-  ongoing:   "bg-green-100 text-green-800 dark:text-[#1e1e1e]",
-  completed: "bg-blue-100 text-blue-800 dark:text-[#1e1e1e]",
-  cancelled: "bg-gray-100 text-gray-500 dark:text-[#1e1e1e]",
+  planning:  "bg-[#f5ee9e] text-[#1e1e1e]",
+  ongoing:   "bg-[#cadede] text-[#1e1e1e]",
+  completed: "bg-[#9fb8b8] text-[#1e1e1e]",
+  cancelled: "bg-[#e0e0e0] text-[#1e1e1e]",
 };
 
 
@@ -147,7 +147,7 @@ export default async function TripDetailPage({ params }: TripPageProps) {
               </dt>
               <dd className="flex flex-wrap gap-1.5">
                 {(trip.country_codes as string[]).map((code: string) => (
-                  <span key={code} className="rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-medium text-sky-700 dark:text-[#1e1e1e]">
+                  <span key={code} className="rounded-full bg-[#cadede] px-2.5 py-0.5 text-xs font-medium text-[#1e1e1e]">
                     {byAlpha2[code]?.name ?? code}
                   </span>
                 ))}

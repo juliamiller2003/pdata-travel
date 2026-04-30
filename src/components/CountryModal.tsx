@@ -22,10 +22,10 @@ function formatDate(d: string | null) {
 }
 
 const STATUS_STYLES: Record<TripStatus, string> = {
-  planning:  "bg-amber-100 text-amber-700",
-  ongoing:   "bg-green-100 text-green-700",
-  completed: "bg-blue-100 text-blue-700",
-  cancelled: "bg-gray-100 text-gray-500",
+  planning:  "bg-[#f5ee9e] text-[#1e1e1e]",
+  ongoing:   "bg-[#cadede] text-[#1e1e1e]",
+  completed: "bg-[#9fb8b8] text-[#1e1e1e]",
+  cancelled: "bg-[#e0e0e0] text-[#1e1e1e]",
 };
 
 export default function CountryModal({

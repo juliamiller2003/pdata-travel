@@ -16,9 +16,9 @@ const STATUS_LABELS: Record<TripStatus, string> = {
 };
 
 const STATUS_TEXT: Record<TripStatus, string> = {
-  planning:  "text-[#f5ee9e]",
-  ongoing:   "text-[#cadede]",
-  completed: "text-[#9fb8b8]",
+  planning:  "text-[#1e1e1e] dark:text-[#f5ee9e]",
+  ongoing:   "text-[#1e1e1e] dark:text-[#cadede]",
+  completed: "text-[#1e1e1e] dark:text-[#9fb8b8]",
   cancelled: "text-gray-400",
 };
 
@@ -38,11 +38,11 @@ interface TripCardProps {
 export default function TripCard({ trip }: TripCardProps) {
   return (
     <Link href={`/trips/${trip.id}`} className="group block">
-      <div className="flex items-center justify-between py-4 border-b border-gray-100 dark:border-[#2e2e2e] hover:opacity-70 transition-opacity">
+      <div className="flex items-center justify-between py-4 border-b border-[#e0e0e0] dark:border-[#2e2e2e] hover:opacity-70 transition-opacity">
         {/* Left: photo thumbnail + text */}
         <div className="flex items-center gap-4 min-w-0">
           {/* Thumbnail */}
-          <div className="h-14 w-14 shrink-0 rounded-lg overflow-hidden bg-gray-200 dark:bg-[#2e2e2e]">
+          <div className="h-14 w-14 shrink-0 rounded-lg overflow-hidden bg-[#e0e0e0] dark:bg-[#2e2e2e]">
             {trip.cover_photo_url && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
