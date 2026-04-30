@@ -109,13 +109,13 @@ export default function TravelMap({ trips, mapView, homeCountryCode }: TravelMap
                       : isVisited
                       ? "#38bdf8"
                       : isHome
-                      ? "#bae6fd"
+                      ? "#f5ee9e"
                       : "#cbd5e1";
 
                     const hoverFill = isVisited
                       ? "#0284c7"
                       : isHome
-                      ? "#7dd3fc"
+                      ? "#e8df6a"
                       : "#94a3b8";
 
                     return (
