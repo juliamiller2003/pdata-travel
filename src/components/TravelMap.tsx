@@ -115,8 +115,8 @@ export default function TravelMap({ trips, mapView, homeCountryCode }: TravelMap
 
                     const accentColor = isDark ? "#cadede" : "#9fb8b8";
                     const accentDark  = isDark ? "#a8c8c8" : "#7a9d9d";
-                    const unvisited   = isDark ? "#efefef" : "#b8c8c8";
-                    const unvisitedHover = isDark ? "#cccccc" : "#9fb8b8";
+                    const unvisited   = isDark ? "#efefef" : "#4a4a4a";
+                    const unvisitedHover = isDark ? "#cccccc" : "#3a3a3a";
 
                     const defaultFill = isSelected
                       ? "#e8df6a"
