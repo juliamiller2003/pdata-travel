@@ -321,7 +321,7 @@ export function FlightCard({ flight, onDelete }: { flight: Flight; onDelete: () 
   }
 
   return (
-    <div className="rounded-xl border border-gray-100 bg-gray-50 dark:border-[#2e2e2e] dark:bg-transparent p-4">
+    <div className="rounded-xl border border-[#e0e0e0] bg-[#efefef] dark:border-[#2e2e2e] dark:bg-transparent p-4">
       <div className="flex items-start justify-between mb-3">
         <div>
           <p className="font-bold text-gray-900 dark:text-[#efefef]">{flight.flight_number}</p>

@@ -63,6 +63,6 @@ html, body {
   }
 
   .card {
-    @apply rounded-xl bg-white shadow-sm border border-[#e0e0e0] dark:bg-transparent dark:border-transparent dark:shadow-none;
+    @apply rounded-xl bg-[#efefef] border border-[#e0e0e0] dark:bg-transparent dark:border-transparent;
   }
 }
