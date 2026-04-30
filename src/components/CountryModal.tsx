@@ -22,7 +22,7 @@ function formatDate(d: string | null) {
 }
 
 const STATUS_STYLES: Record<TripStatus, string> = {
-  planning:  "bg-[#e5dd83] text-[#1e1e1e]",
+  planning:  "bg-[#e5dd83] dark:bg-[#f5ee9e] text-[#1e1e1e]",
   ongoing:   "bg-[#cadede] text-[#1e1e1e]",
   completed: "bg-[#9fb8b8] text-[#1e1e1e]",
   cancelled: "bg-[#e0e0e0] text-[#1e1e1e]",

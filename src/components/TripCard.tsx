@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Trip, TripStatus } from "@/types/database";
 
 const STATUS_DOT: Record<TripStatus, string> = {
-  planning:  "bg-[#e5dd83]",
+  planning:  "bg-[#e5dd83] dark:bg-[#f5ee9e]",
   ongoing:   "bg-[#cadede]",
   completed: "bg-[#9fb8b8]",
   cancelled: "bg-gray-400",
@@ -16,7 +16,7 @@ const STATUS_LABELS: Record<TripStatus, string> = {
 };
 
 const STATUS_TEXT: Record<TripStatus, string> = {
-  planning:  "text-[#1e1e1e] dark:text-[#e5dd83]",
+  planning:  "text-[#1e1e1e] dark:text-[#f5ee9e]",
   ongoing:   "text-[#1e1e1e] dark:text-[#cadede]",
   completed: "text-[#1e1e1e] dark:text-[#9fb8b8]",
   cancelled: "text-gray-400",
