@@ -1,21 +1,6 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
 
-interface HomeProps {
-  searchParams: { code?: string; next?: string };
-}
-
-export default async function MarketingPage({ searchParams }: HomeProps) {
-  // Preserve existing auth callback redirect
-  const { code, next } = searchParams;
-  if (code) {
-    redirect(`/auth/callback?code=${code}${next ? `&next=${next}` : ""}`);
-  }
-
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) redirect("/trips");
+export default function MarketingPage() {
 
   const features = [
     {

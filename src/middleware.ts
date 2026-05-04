@@ -33,19 +33,22 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isAuthPage = request.nextUrl.pathname.startsWith("/login");
-  const isProtected =
-    request.nextUrl.pathname.startsWith("/trips");
+  const pathname = request.nextUrl.pathname;
+  const isAuthPage = pathname.startsWith("/login");
+  const isProtected = pathname.startsWith("/trips");
+  const isRoot = pathname === "/";
 
-  if (!user && isProtected) {
+  // Redirect logged-in users away from auth pages and the marketing page
+  if (user && (isAuthPage || isRoot)) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    url.pathname = "/trips";
     return NextResponse.redirect(url);
   }
 
-  if (user && isAuthPage) {
+  // Redirect logged-out users away from protected pages
+  if (!user && isProtected) {
     const url = request.nextUrl.clone();
-    url.pathname = "/trips";
+    url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
