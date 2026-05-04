@@ -20,6 +20,24 @@ const STATUS_STYLES: Record<TripStatus, string> = {
 };
 
 
+function effectiveStatus(trip: { status: string; start_date: string | null; end_date: string | null }): TripStatus {
+  const status = trip.status as TripStatus;
+  if (status === "cancelled") return "cancelled";
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (trip.end_date) {
+    const end = new Date(trip.end_date);
+    end.setHours(0, 0, 0, 0);
+    if (today > end && status !== "completed") return "completed";
+  }
+  if (trip.start_date) {
+    const start = new Date(trip.start_date);
+    start.setHours(0, 0, 0, 0);
+    if (today >= start && (!trip.end_date || today <= new Date(trip.end_date)) && status === "planning") return "ongoing";
+  }
+  return status;
+}
+
 function formatDate(d: string | null) {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("en-US", {
@@ -82,6 +100,7 @@ export default async function TripDetailPage({ params }: TripPageProps) {
   const itinerary = days ?? [];
   const entries = journal ?? [];
   const flights = flightsData ?? [];
+  const tripStatus = effectiveStatus(trip);
 
   // Flatten all activities across itinerary days for the map
   const allActivities = itinerary.flatMap((day: any) => // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -120,8 +139,8 @@ export default async function TripDetailPage({ params }: TripPageProps) {
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
           <div className="absolute bottom-0 left-0 p-6">
             <div className="flex items-center gap-3 mb-2">
-              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLES[trip.status as TripStatus]}`}>
-                {(trip.status as string).charAt(0).toUpperCase() + (trip.status as string).slice(1)}
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLES[tripStatus]}`}>
+                {tripStatus.charAt(0).toUpperCase() + tripStatus.slice(1)}
               </span>
             </div>
             <h1 className="text-2xl font-bold text-white">{trip.title}</h1>
@@ -166,14 +185,14 @@ export default async function TripDetailPage({ params }: TripPageProps) {
           <div>
             <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">Status</dt>
             <dd className="mt-1">
-              <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[trip.status as TripStatus]}`}>
-                {(trip.status as string).charAt(0).toUpperCase() + (trip.status as string).slice(1)}
+              <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[tripStatus]}`}>
+                {tripStatus.charAt(0).toUpperCase() + tripStatus.slice(1)}
               </span>
             </dd>
           </div>
         </dl>
 
-        {trip.country_codes && trip.country_codes.length > 0 && trip.status !== "completed" && (
+        {trip.country_codes && trip.country_codes.length > 0 && tripStatus !== "completed" && (
           <CountryProfileSection
             countryCodes={trip.country_codes as string[]}
             startDate={trip.start_date ?? null}

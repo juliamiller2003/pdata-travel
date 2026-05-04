@@ -22,6 +22,24 @@ const STATUS_TEXT: Record<TripStatus, string> = {
   cancelled: "text-gray-400",
 };
 
+function effectiveStatus(trip: Trip): TripStatus {
+  const status = trip.status as TripStatus;
+  if (status === "cancelled") return "cancelled";
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (trip.end_date) {
+    const end = new Date(trip.end_date);
+    end.setHours(0, 0, 0, 0);
+    if (today > end && status !== "completed") return "completed";
+  }
+  if (trip.start_date) {
+    const start = new Date(trip.start_date);
+    start.setHours(0, 0, 0, 0);
+    if (today >= start && (!trip.end_date || today <= new Date(trip.end_date)) && status === "planning") return "ongoing";
+  }
+  return status;
+}
+
 function formatDateRange(start: string | null, end: string | null): string {
   if (!start && !end) return "Dates TBD";
   const fmt = (d: string) =>
@@ -36,6 +54,7 @@ interface TripCardProps {
 }
 
 export default function TripCard({ trip }: TripCardProps) {
+  const status = effectiveStatus(trip);
   return (
     <Link href={`/trips/${trip.id}`} className="group block">
       <div className="flex items-center justify-between py-4 border-b border-[#e0e0e0] dark:border-[#2e2e2e] hover:opacity-70 transition-opacity">
@@ -69,9 +88,9 @@ export default function TripCard({ trip }: TripCardProps) {
 
         {/* Right: status */}
         <div className="shrink-0 flex items-center gap-2 ml-4">
-          <span className={`h-2 w-2 rounded-full ${STATUS_DOT[trip.status]}`} />
-          <span className={`text-xs font-medium hidden sm:block ${STATUS_TEXT[trip.status]}`}>
-            {STATUS_LABELS[trip.status]}
+          <span className={`h-2 w-2 rounded-full ${STATUS_DOT[status]}`} />
+          <span className={`text-xs font-medium hidden sm:block ${STATUS_TEXT[status]}`}>
+            {STATUS_LABELS[status]}
           </span>
         </div>
       </div>
