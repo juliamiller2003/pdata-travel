@@ -1,6 +1,6 @@
 {
-  "name": "Pdata Travel",
-  "short_name": "Pdata",
+  "name": "Pathway Travel",
+  "short_name": "Pathway",
   "description": "Plan trips and journal your adventures",
   "start_url": "/trips",
   "display": "standalone",

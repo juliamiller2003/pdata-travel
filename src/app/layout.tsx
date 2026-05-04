@@ -8,7 +8,7 @@ import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import OfflineBanner from "@/components/OfflineBanner";
 
 export const metadata: Metadata = {
-  title: "Pdata Travel – Travel Planning & Journaling",
+  title: "Pathway Travel – Travel Planning & Journaling",
   description: "Plan trips and journal your adventures as a solo traveler.",
   manifest: "/manifest.json",
 };

@@ -86,7 +86,7 @@ export default function LoginPage() {
                 </svg>
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-[#1e1e1e]" style={{ textShadow: "0 1px 3px rgba(255,255,255,0.9), 0 0 12px rgba(255,255,255,0.8)" }}>Welcome to Pdata Travel</h1>
+            <h1 className="text-2xl font-bold text-[#1e1e1e]" style={{ textShadow: "0 1px 3px rgba(255,255,255,0.9), 0 0 12px rgba(255,255,255,0.8)" }}>Welcome to Pathway Travel</h1>
             <p className="mt-1 text-sm text-[#1e1e1e]" style={{ textShadow: "0 1px 2px rgba(255,255,255,0.9)" }}>Plan to travel.</p>
           </div>
 

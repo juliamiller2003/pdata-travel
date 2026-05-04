@@ -1,4 +1,4 @@
-const CACHE_NAME = "pdata-travel-v1";
+const CACHE_NAME = "pathway-travel-v1";
 const OFFLINE_URL = "/offline.html";
 
 const STATIC_ASSETS = [
