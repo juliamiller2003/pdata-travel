@@ -17,6 +17,7 @@ create table if not exists transport_legs (
 
 alter table transport_legs enable row level security;
 
+drop policy if exists "Users manage own transport legs" on transport_legs;
 create policy "Users manage own transport legs" on transport_legs
   using  (trip_id in (select id from trips where user_id = auth.uid()))
   with check (trip_id in (select id from trips where user_id = auth.uid()));
@@ -36,6 +37,7 @@ create table if not exists saved_map_links (
 
 alter table saved_map_links enable row level security;
 
+drop policy if exists "Users manage own map links" on saved_map_links;
 create policy "Users manage own map links" on saved_map_links
   using  (trip_id in (select id from trips where user_id = auth.uid()))
   with check (trip_id in (select id from trips where user_id = auth.uid()));

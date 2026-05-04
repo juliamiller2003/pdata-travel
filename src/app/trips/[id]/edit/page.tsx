@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import CountryMultiSelect from "@/components/CountryMultiSelect";
 import FlightsSection from "@/components/FlightsSection";
 import type { TripStatus, Flight, ItineraryStyle } from "@/types/database";
+import { effectiveStatus } from "@/lib/tripUtils";
 
 const STATUS_OPTIONS: { value: TripStatus; label: string }[] = [
   { value: "planning",  label: "Planning" },
@@ -87,6 +88,15 @@ export default function EditTripPage() {
     setSaving(true);
     setError(null);
 
+    // Re-derive status from the new dates so the DB stays consistent.
+    // E.g. if dates moved to the future, a stale "completed" becomes "planning".
+    // "cancelled" is always preserved as-is.
+    const savedStatus = effectiveStatus({
+      status,
+      start_date: startDate || null,
+      end_date: endDate || null,
+    });
+
     const { error } = await db
       .from("trips")
       .update({
@@ -96,7 +106,7 @@ export default function EditTripPage() {
         country_codes: countryCodes,
         start_date: startDate || null,
         end_date: endDate || null,
-        status,
+        status: savedStatus,
         notes: notes.trim() || null,
         external_link: externalLink.trim() || null,
         cover_photo_url: coverUrl || null,

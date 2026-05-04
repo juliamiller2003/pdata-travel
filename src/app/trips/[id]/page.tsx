@@ -15,6 +15,7 @@ import PackingListSection from "@/components/PackingListSection";
 import WhereNextSection from "@/components/WhereNextSection";
 import TransportationSection from "@/components/TransportationSection";
 import OfflineMapsSection from "@/components/OfflineMapsSection";
+import { effectiveStatus, formatDate } from "@/lib/tripUtils";
 
 const STATUS_STYLES: Record<TripStatus, string> = {
   planning:  "bg-[#e5dd83] dark:bg-[#f5ee9e] text-[#1e1e1e]",
@@ -24,32 +25,6 @@ const STATUS_STYLES: Record<TripStatus, string> = {
 };
 
 
-function effectiveStatus(trip: { status: string; start_date: string | null; end_date: string | null }): TripStatus {
-  const status = trip.status as TripStatus;
-  if (status === "cancelled") return "cancelled";
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  if (trip.end_date) {
-    const end = new Date(trip.end_date);
-    end.setHours(0, 0, 0, 0);
-    if (today > end && status !== "completed") return "completed";
-  }
-  if (trip.start_date) {
-    const start = new Date(trip.start_date);
-    start.setHours(0, 0, 0, 0);
-    if (today >= start && (!trip.end_date || today <= new Date(trip.end_date)) && status === "planning") return "ongoing";
-  }
-  return status;
-}
-
-function formatDate(d: string | null) {
-  if (!d) return "—";
-  return new Date(d).toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-}
 
 interface TripPageProps {
   params: { id: string };

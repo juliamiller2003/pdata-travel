@@ -109,6 +109,7 @@ function SavedLinkCard({ link, onDelete }: { link: SavedMapLink; onDelete: () =>
 function AddLinkForm({ tripId, onAdded }: { tripId: string; onAdded: (link: SavedMapLink) => void }) {
   const [show, setShow] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [form, setForm] = useState({ label: "", lat: "", lng: "", url: "", notes: "" });
 
   function set(k: string, v: string) { setForm((f) => ({ ...f, [k]: v })); }
@@ -116,6 +117,15 @@ function AddLinkForm({ tripId, onAdded }: { tripId: string; onAdded: (link: Save
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
+    setSaveError(null);
+
+    // Validate: if one of lat/lng is provided, both must be
+    if ((form.lat && !form.lng) || (!form.lat && form.lng)) {
+      setSaveError("Please provide both latitude and longitude, or leave both empty.");
+      setSaving(false);
+      return;
+    }
+
     const { createClient } = await import("@/lib/supabase/client");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = createClient() as any;
@@ -134,7 +144,10 @@ function AddLinkForm({ tripId, onAdded }: { tripId: string; onAdded: (link: Save
       .single();
 
     setSaving(false);
-    if (error || !data) return;
+    if (error || !data) {
+      setSaveError(error?.message ?? "Failed to save location. The database table may not exist yet — run the Supabase migration.");
+      return;
+    }
     onAdded(data);
     setShow(false);
     setForm({ label: "", lat: "", lng: "", url: "", notes: "" });
@@ -184,6 +197,10 @@ function AddLinkForm({ tripId, onAdded }: { tripId: string; onAdded: (link: Save
       <p className="text-[11px] text-gray-400 dark:text-[#9fb8b8]">
         💡 To get coordinates: long-press a spot in Google Maps, then tap the coordinates at the top.
       </p>
+
+      {saveError && (
+        <p className="text-xs text-red-500 rounded-lg bg-red-50 dark:bg-transparent border border-red-200 dark:border-red-900 px-3 py-2">{saveError}</p>
+      )}
 
       <div className="flex gap-2">
         <button type="submit" disabled={saving} className="btn-primary flex-1">

@@ -37,7 +37,7 @@ export default function JournalSection({ tripId, initialEntries, initialDays = [
   const [entries, setEntries] = useState<Entry[]>(initialEntries);
 
   useEffect(() => {
-    try { localStorage.setItem(`pdata-journal-${tripId}`, JSON.stringify(entries)); } catch {}
+    try { localStorage.setItem(`pathway-journal-${tripId}`, JSON.stringify(entries)); } catch {}
   }, [entries, tripId]);
 
   const [showForm, setShowForm] = useState(false);

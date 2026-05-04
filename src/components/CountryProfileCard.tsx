@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { OUTLET_LOOKUP } from "@/lib/countryData";
 
 interface CountryProfile {
-  outlet: string;
   currency: string;
   weather: string;
   sim: string;
   visa: string | null;
+  exchangeRate?: string;
 }
 
 interface Props {
@@ -53,8 +54,12 @@ export default function CountryProfileCard({ countryName, month, homeCountryName
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Outlet is resolved directly from the static lookup — no API call, no cache involved.
+  // This is the permanent fix for the "wrong outlet" problem.
+  const outlet = OUTLET_LOOKUP[countryName] ?? null;
+
   useEffect(() => {
-    const cacheKey = `pdata-profile-v3-${countryName}-${month ?? ""}-${homeCountryName ?? ""}`;
+    const cacheKey = `pathway-profile-v7-${countryName}-${month ?? ""}-${homeCountryName ?? ""}`;
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) {
       try { setProfile(JSON.parse(cached)); setLoading(false); return; } catch {}
@@ -89,30 +94,42 @@ export default function CountryProfileCard({ countryName, month, homeCountryName
   }
 
   if (error) {
-    return (
-      <p className="text-xs text-red-400 py-1">{error}</p>
-    );
+    return <p className="text-xs text-red-400 py-1">{error}</p>;
   }
 
   if (!profile) return null;
 
   const items = [
-    { key: "outlet",   label: "Outlet",                                   value: profile.outlet },
-    { key: "currency", label: "Currency",                                  value: profile.currency },
-    { key: "weather",  label: month ? `Weather in ${month}` : "Climate",  value: profile.weather },
-    { key: "sim",      label: "SIM Card",                                  value: profile.sim },
-    ...(profile.visa ? [{ key: "visa", label: "Visa", value: profile.visa }] : []),
+    // Outlet always comes from the static lookup — never from the API or cache
+    ...(outlet ? [{ key: "outlet", label: "Outlet", value: outlet, sub: null }] : []),
+    {
+      key: "currency",
+      label: "Currency",
+      value: profile.currency,
+      sub: profile.exchangeRate ?? null,
+    },
+    {
+      key: "weather",
+      label: month ? `Weather in ${month}` : "Climate",
+      value: profile.weather,
+      sub: null,
+    },
+    { key: "sim",  label: "SIM Card", value: profile.sim,  sub: null },
+    ...(profile.visa ? [{ key: "visa", label: "Visa", value: profile.visa, sub: null }] : []),
   ];
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-      {items.map(({ key, label, value }) => (
+      {items.map(({ key, label, value, sub }) => (
         <div key={key} className="rounded-lg border border-[#e0e0e0] dark:border-[#2e2e2e] bg-white dark:bg-[#2e2e2e]/60 p-3">
           <div className="flex items-center gap-1.5 mb-1">
             {ICONS[key]}
             <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8]">{label}</span>
           </div>
           <p className="text-xs text-gray-700 dark:text-[#efefef] leading-snug">{value}</p>
+          {sub && (
+            <p className="text-[11px] text-[#9fb8b8] dark:text-[#9fb8b8] mt-1 font-medium">{sub}</p>
+          )}
         </div>
       ))}
     </div>

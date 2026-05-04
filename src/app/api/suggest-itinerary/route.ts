@@ -87,8 +87,14 @@ export async function POST(req: NextRequest) {
 
   const { destination, num_days, style, preferences }: SuggestRequest = await req.json();
 
+  const VALID_STYLES: ItineraryStyle[] = ["structured", "notes", "notes_day_night", "notes_day_afternoon_night"];
+
   if (!destination || !num_days || num_days < 1 || num_days > 30) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  }
+
+  if (!VALID_STYLES.includes(style)) {
+    return NextResponse.json({ error: "Invalid itinerary style" }, { status: 400 });
   }
 
   const prompt = buildPrompt(destination, num_days, style, preferences);

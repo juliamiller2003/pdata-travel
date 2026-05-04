@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Trip, TripStatus } from "@/types/database";
+import { effectiveStatus } from "@/lib/tripUtils";
 
 const STATUS_DOT: Record<TripStatus, string> = {
   planning:  "bg-[#e5dd83] dark:bg-[#f5ee9e]",
@@ -22,28 +23,11 @@ const STATUS_TEXT: Record<TripStatus, string> = {
   cancelled: "text-gray-400",
 };
 
-function effectiveStatus(trip: Trip): TripStatus {
-  const status = trip.status as TripStatus;
-  if (status === "cancelled") return "cancelled";
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  if (trip.end_date) {
-    const end = new Date(trip.end_date);
-    end.setHours(0, 0, 0, 0);
-    if (today > end && status !== "completed") return "completed";
-  }
-  if (trip.start_date) {
-    const start = new Date(trip.start_date);
-    start.setHours(0, 0, 0, 0);
-    if (today >= start && (!trip.end_date || today <= new Date(trip.end_date)) && status === "planning") return "ongoing";
-  }
-  return status;
-}
 
 function formatDateRange(start: string | null, end: string | null): string {
   if (!start && !end) return "Dates TBD";
   const fmt = (d: string) =>
-    new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    new Date(d + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   if (start && end) return `${fmt(start)} – ${fmt(end)}`;
   if (start) return `From ${fmt(start)}`;
   return `Until ${fmt(end!)}`;

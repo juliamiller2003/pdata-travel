@@ -80,7 +80,7 @@ export default function ItinerarySection({
   const [days, setDays] = useState<DayRow[]>(initialDays);
 
   useEffect(() => {
-    try { localStorage.setItem(`pdata-itinerary-${tripId}`, JSON.stringify(days)); } catch {}
+    try { localStorage.setItem(`pathway-itinerary-${tripId}`, JSON.stringify(days)); } catch {}
   }, [days, tripId]);
 
   // Structured mode
