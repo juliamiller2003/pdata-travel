@@ -13,6 +13,7 @@ import { byAlpha2 } from "@/lib/countries";
 import CountryProfileSection from "@/components/CountryProfileSection";
 import AccommodationSection from "@/components/AccommodationSection";
 import PackingListSection from "@/components/PackingListSection";
+import WhereNextSection from "@/components/WhereNextSection";
 
 const STATUS_STYLES: Record<TripStatus, string> = {
   planning:  "bg-[#e5dd83] dark:bg-[#f5ee9e] text-[#1e1e1e]",
@@ -251,6 +252,10 @@ export default async function TripDetailPage({ params }: TripPageProps) {
           </div>
         )}
       </div>
+
+      {tripStatus === "ongoing" && (
+        <WhereNextSection currentDestination={trip.destination} />
+      )}
 
       <SectionGuard section="itinerary">
         <ItinerarySection
