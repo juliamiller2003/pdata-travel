@@ -147,9 +147,9 @@ function LegCard({ leg, onDelete }: { leg: TransportLeg; onDelete: () => void })
 
       {/* Meta row */}
       <div className="flex flex-wrap gap-3 text-xs text-gray-400 dark:text-[#9fb8b8]">
-        {leg.duration && <span>⏱ {leg.duration}</span>}
-        {leg.cost != null && <span>💰 {leg.cost.toLocaleString()}</span>}
-        {leg.booking_ref && <span>🎫 {leg.booking_ref}</span>}
+        {leg.duration && <span>{leg.duration}</span>}
+        {leg.cost != null && <span>{leg.cost.toLocaleString()}</span>}
+        {leg.booking_ref && <span>{leg.booking_ref}</span>}
       </div>
 
       {leg.notes && (
@@ -161,14 +161,14 @@ function LegCard({ leg, onDelete }: { leg: TransportLeg; onDelete: () => void })
 
 // ─── Add Leg Form ──────────────────────────────────────────────────────────────
 
-function AddLegForm({ tripId, onAdded }: { tripId: string; onAdded: (leg: TransportLeg) => void }) {
+function AddLegForm({ tripId, tripStartDate, onAdded }: { tripId: string; tripStartDate: string | null; onAdded: (leg: TransportLeg) => void }) {
   const [show, setShow] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     mode: "bus" as TransportMode,
     from_location: "",
     to_location: "",
-    travel_date: "",
+    travel_date: tripStartDate ?? "",
     departure_time: "",
     arrival_time: "",
     duration: "",
@@ -307,11 +307,12 @@ function AddLegForm({ tripId, onAdded }: { tripId: string; onAdded: (leg: Transp
 
 interface TransportationSectionProps {
   tripId: string;
+  tripStartDate: string | null;
   initialFlights: Flight[];
   initialLegs: TransportLeg[];
 }
 
-export default function TransportationSection({ tripId, initialFlights, initialLegs }: TransportationSectionProps) {
+export default function TransportationSection({ tripId, tripStartDate, initialFlights, initialLegs }: TransportationSectionProps) {
   const [tab, setTab] = useState<"flights" | "ground">("flights");
   const [flights, setFlights] = useState<Flight[]>(initialFlights);
   const [legs, setLegs] = useState<TransportLeg[]>(initialLegs);
@@ -344,7 +345,7 @@ export default function TransportationSection({ tripId, initialFlights, initialL
               : "text-gray-500 dark:text-[#9fb8b8] hover:text-gray-700 dark:hover:text-[#efefef]"
           }`}
         >
-          ✈️ Flights {flights.length > 0 && `(${flights.length})`}
+          Flights {flights.length > 0 && `(${flights.length})`}
         </button>
         <button
           onClick={() => setTab("ground")}
@@ -354,7 +355,7 @@ export default function TransportationSection({ tripId, initialFlights, initialL
               : "text-gray-500 dark:text-[#9fb8b8] hover:text-gray-700 dark:hover:text-[#efefef]"
           }`}
         >
-          🚌 Ground &amp; Sea {legs.length > 0 && `(${legs.length})`}
+          Ground &amp; Sea {legs.length > 0 && `(${legs.length})`}
         </button>
       </div>
 
@@ -382,7 +383,7 @@ export default function TransportationSection({ tripId, initialFlights, initialL
             .map((leg) => (
               <LegCard key={leg.id} leg={leg} onDelete={() => deleteLeg(leg.id)} />
             ))}
-          <AddLegForm tripId={tripId} onAdded={(leg) => setLegs((prev) => [...prev, leg])} />
+          <AddLegForm tripId={tripId} tripStartDate={tripStartDate} onAdded={(leg) => setLegs((prev) => [...prev, leg])} />
         </div>
       )}
     </section>

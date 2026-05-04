@@ -289,6 +289,7 @@ export default async function TripDetailPage({ params }: TripPageProps) {
       <SectionGuard section="flights">
         <TransportationSection
           tripId={id}
+          tripStartDate={trip.start_date ?? null}
           initialFlights={flights}
           initialLegs={transportLegsData ?? []}
         />
