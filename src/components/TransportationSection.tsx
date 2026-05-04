@@ -164,6 +164,7 @@ function LegCard({ leg, onDelete }: { leg: TransportLeg; onDelete: () => void })
 function AddLegForm({ tripId, tripStartDate, onAdded }: { tripId: string; tripStartDate: string | null; onAdded: (leg: TransportLeg) => void }) {
   const [show, setShow] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [form, setForm] = useState({
     mode: "bus" as TransportMode,
     from_location: "",
@@ -184,6 +185,7 @@ function AddLegForm({ tripId, tripStartDate, onAdded }: { tripId: string; tripSt
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
+    setSaveError(null);
     const { createClient } = await import("@/lib/supabase/client");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = createClient() as any;
@@ -207,11 +209,14 @@ function AddLegForm({ tripId, tripStartDate, onAdded }: { tripId: string; tripSt
       .single();
 
     setSaving(false);
-    if (error || !data) return;
+    if (error || !data) {
+      setSaveError(error?.message ?? "Could not save. Make sure you've run the transport_legs migration in Supabase.");
+      return;
+    }
 
     onAdded(data);
     setShow(false);
-    setForm({ mode: "bus", from_location: "", to_location: "", travel_date: "", departure_time: "", arrival_time: "", duration: "", cost: "", booking_ref: "", notes: "" });
+    setForm({ mode: "bus", from_location: "", to_location: "", travel_date: tripStartDate ?? "", departure_time: "", arrival_time: "", duration: "", cost: "", booking_ref: "", notes: "" });
   }
 
   if (!show) {
@@ -293,11 +298,15 @@ function AddLegForm({ tripId, tripStartDate, onAdded }: { tripId: string; tripSt
         <textarea rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Platform number, pickup spot, etc." className="input resize-none text-sm" />
       </div>
 
+      {saveError && (
+        <p className="text-xs text-red-500 rounded-lg bg-red-50 dark:bg-transparent border border-red-200 dark:border-red-900 px-3 py-2">{saveError}</p>
+      )}
+
       <div className="flex gap-2">
         <button type="submit" disabled={saving} className="btn-primary flex-1">
           {saving ? "Saving…" : "Add"}
         </button>
-        <button type="button" onClick={() => setShow(false)} className="btn-secondary">Cancel</button>
+        <button type="button" onClick={() => { setShow(false); setSaveError(null); }} className="btn-secondary">Cancel</button>
       </div>
     </form>
   );
