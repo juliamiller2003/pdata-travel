@@ -2,7 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import type { TripStatus } from "@/types/database";
-import FlightsSection from "@/components/FlightsSection";
 import ExpensesSection from "@/components/ExpensesSection";
 import ItinerarySection from "@/components/ItinerarySection";
 import TripMapView from "@/components/TripMapView";
@@ -14,6 +13,8 @@ import CountryProfileSection from "@/components/CountryProfileSection";
 import AccommodationSection from "@/components/AccommodationSection";
 import PackingListSection from "@/components/PackingListSection";
 import WhereNextSection from "@/components/WhereNextSection";
+import TransportationSection from "@/components/TransportationSection";
+import OfflineMapsSection from "@/components/OfflineMapsSection";
 
 const STATUS_STYLES: Record<TripStatus, string> = {
   planning:  "bg-[#e5dd83] dark:bg-[#f5ee9e] text-[#1e1e1e]",
@@ -81,7 +82,7 @@ export default async function TripDetailPage({ params }: TripPageProps) {
     .eq("trip_id", id)
     .order("day_number");
 
-  // Fetch journal, flights, expenses, user settings, accommodations, packing in parallel
+  // Fetch journal, flights, expenses, user settings, accommodations, packing, transport, maps in parallel
   const [
     { data: journal },
     { data: flightsData },
@@ -89,6 +90,8 @@ export default async function TripDetailPage({ params }: TripPageProps) {
     { data: userSettings },
     { data: accommodationsData },
     { data: packingData },
+    { data: transportLegsData },
+    { data: savedMapLinksData },
   ] = await Promise.all([
     db
       .from("journal_entries")
@@ -117,6 +120,16 @@ export default async function TripDetailPage({ params }: TripPageProps) {
       .order("check_in", { ascending: true }),
     db
       .from("packing_items")
+      .select("*")
+      .eq("trip_id", id)
+      .order("created_at"),
+    db
+      .from("transport_legs")
+      .select("*")
+      .eq("trip_id", id)
+      .order("travel_date"),
+    db
+      .from("saved_map_links")
       .select("*")
       .eq("trip_id", id)
       .order("created_at"),
@@ -274,8 +287,18 @@ export default async function TripDetailPage({ params }: TripPageProps) {
       </SectionGuard>
 
       <SectionGuard section="flights">
-        <FlightsSection tripId={id} initialFlights={flights} />
+        <TransportationSection
+          tripId={id}
+          initialFlights={flights}
+          initialLegs={transportLegsData ?? []}
+        />
       </SectionGuard>
+
+      <OfflineMapsSection
+        tripId={id}
+        destination={trip.destination}
+        initialLinks={savedMapLinksData ?? []}
+      />
 
       <AccommodationSection tripId={id} initialAccommodations={accommodationsData ?? []} />
 

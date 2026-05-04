@@ -51,9 +51,10 @@ const ICONS: Record<string, JSX.Element> = {
 export default function CountryProfileCard({ countryName, month, homeCountryName }: Props) {
   const [profile, setProfile] = useState<CountryProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const cacheKey = `pdata-profile-v2-${countryName}-${month ?? ""}-${homeCountryName ?? ""}`;
+    const cacheKey = `pdata-profile-v3-${countryName}-${month ?? ""}-${homeCountryName ?? ""}`;
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) {
       try { setProfile(JSON.parse(cached)); setLoading(false); return; } catch {}
@@ -66,11 +67,14 @@ export default function CountryProfileCard({ countryName, month, homeCountryName
     })
       .then((r) => r.json())
       .then((data) => {
-        if (!data.error) {
+        if (data.error) {
+          setError(data.error);
+        } else {
           setProfile(data);
           sessionStorage.setItem(cacheKey, JSON.stringify(data));
         }
       })
+      .catch(() => setError("Could not load country info."))
       .finally(() => setLoading(false));
   }, [countryName, month, homeCountryName]);
 
@@ -84,13 +88,19 @@ export default function CountryProfileCard({ countryName, month, homeCountryName
     );
   }
 
+  if (error) {
+    return (
+      <p className="text-xs text-red-400 py-1">{error}</p>
+    );
+  }
+
   if (!profile) return null;
 
   const items = [
-    { key: "outlet",   label: "Outlet",                          value: profile.outlet },
-    { key: "currency", label: "Currency",                        value: profile.currency },
-    { key: "weather",  label: month ? `Weather in ${month}` : "Climate", value: profile.weather },
-    { key: "sim",      label: "SIM Card",                        value: profile.sim },
+    { key: "outlet",   label: "Outlet",                                   value: profile.outlet },
+    { key: "currency", label: "Currency",                                  value: profile.currency },
+    { key: "weather",  label: month ? `Weather in ${month}` : "Climate",  value: profile.weather },
+    { key: "sim",      label: "SIM Card",                                  value: profile.sim },
     ...(profile.visa ? [{ key: "visa", label: "Visa", value: profile.visa }] : []),
   ];
 

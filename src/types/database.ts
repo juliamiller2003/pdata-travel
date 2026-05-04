@@ -331,3 +331,32 @@ export type Activity = Database["public"]["Tables"]["activities"]["Row"];
 export type JournalEntry = Database["public"]["Tables"]["journal_entries"]["Row"];
 export type UserSettings = Database["public"]["Tables"]["user_settings"]["Row"];
 export type Flight = Database["public"]["Tables"]["flights"]["Row"];
+
+// Transport legs (bus, train, ferry, etc.)
+export interface TransportLeg {
+  id: string;
+  trip_id: string;
+  mode: string;
+  from_location: string;
+  to_location: string;
+  travel_date: string;
+  departure_time: string | null;
+  arrival_time: string | null;
+  duration: string | null;
+  cost: number | null;
+  booking_ref: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+// Saved map locations for offline reference
+export interface SavedMapLink {
+  id: string;
+  trip_id: string;
+  label: string;
+  url: string | null;
+  lat: number | null;
+  lng: number | null;
+  notes: string | null;
+  created_at: string;
+}
