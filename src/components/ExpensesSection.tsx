@@ -31,9 +31,11 @@ interface ExpensesSectionProps {
   tripId: string;
   budget: number | null;
   initialExpenses: Expense[];
+  startDate: string | null;
+  endDate: string | null;
 }
 
-export default function ExpensesSection({ tripId, budget, initialExpenses }: ExpensesSectionProps) {
+export default function ExpensesSection({ tripId, budget, initialExpenses, startDate, endDate }: ExpensesSectionProps) {
   const supabase = createClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
@@ -52,6 +54,30 @@ export default function ExpensesSection({ tripId, budget, initialExpenses }: Exp
   const remaining = budget != null ? budget - totalSpent : null;
   const pct = budget ? Math.min((totalSpent / budget) * 100, 100) : 0;
   const barColor = pct >= 90 ? "bg-red-500" : pct >= 75 ? "bg-amber-400" : "bg-green-500";
+
+  // Daily budget calculations
+  const tripDays = (() => {
+    if (!startDate || !endDate) return null;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diff = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    return Math.max(1, diff);
+  })();
+  const dailyBudget = budget && tripDays ? budget / tripDays : null;
+  const daysElapsed = (() => {
+    if (!startDate || !tripDays) return null;
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const elapsed = Math.round((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    return Math.min(Math.max(elapsed, 1), tripDays);
+  })();
+  const daysRemaining = tripDays && daysElapsed != null ? tripDays - daysElapsed : null;
+  const avgDailySpend = daysElapsed ? totalSpent / daysElapsed : null;
+  const dailyBudgetPct = dailyBudget && avgDailySpend ? Math.min((avgDailySpend / dailyBudget) * 100, 100) : 0;
+  const dailyBarColor = dailyBudgetPct >= 90 ? "bg-red-500" : dailyBudgetPct >= 75 ? "bg-amber-400" : "bg-green-500";
+  const showDailyMode = tripDays != null && totalSpent > 0;
 
   // Category breakdown
   const byCategory = CATEGORIES.map((cat) => ({
@@ -149,6 +175,49 @@ export default function ExpensesSection({ tripId, budget, initialExpenses }: Exp
                   {cat.label} · ${fmt(cat.total)}
                 </span>
               ))}
+            </div>
+          )}
+
+          {showDailyMode && (
+            <div className="border-t border-gray-100 dark:border-[#3a3a3a] pt-4 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8]">Daily Budget</p>
+              <div className="grid grid-cols-3 gap-4 text-center">
+                {dailyBudget && (
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8]">Per Day</p>
+                    <p className="mt-1 text-lg font-bold text-gray-900 dark:text-[#efefef]">${fmt(dailyBudget)}</p>
+                  </div>
+                )}
+                {avgDailySpend != null && (
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8]">Avg / Day</p>
+                    <p className={`mt-1 text-lg font-bold ${dailyBudget && avgDailySpend > dailyBudget ? "text-red-500" : "text-gray-900 dark:text-[#efefef]"}`}>
+                      ${fmt(avgDailySpend)}
+                    </p>
+                  </div>
+                )}
+                {daysRemaining != null && (
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8]">Days Left</p>
+                    <p className="mt-1 text-lg font-bold text-gray-900 dark:text-[#efefef]">{daysRemaining}</p>
+                  </div>
+                )}
+              </div>
+              {dailyBudget && avgDailySpend != null && (
+                <div>
+                  <div className="mb-1 flex justify-between text-xs text-gray-400">
+                    <span>${fmt(avgDailySpend)} / day avg</span>
+                    {daysRemaining != null && remaining != null && daysRemaining > 0 && (
+                      <span className="text-gray-400 dark:text-[#9fb8b8]">
+                        ${fmt(remaining / daysRemaining)} / day remaining
+                      </span>
+                    )}
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-[#2e2e2e]">
+                    <div className={`h-full rounded-full transition-all ${dailyBarColor}`} style={{ width: `${dailyBudgetPct}%` }} />
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

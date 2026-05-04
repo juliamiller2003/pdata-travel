@@ -6,11 +6,13 @@ interface CountryProfile {
   outlet: string;
   currency: string;
   weather: string;
+  visa: string | null;
 }
 
 interface Props {
   countryName: string;
   month: string | null;
+  homeCountryName: string | null;
 }
 
 const OUTLET_ICON = (
@@ -34,12 +36,18 @@ const WEATHER_ICON = (
   </svg>
 );
 
-export default function CountryProfileCard({ countryName, month }: Props) {
+const VISA_ICON = (
+  <svg className="h-3.5 w-3.5 shrink-0 text-[#9fb8b8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z" />
+  </svg>
+);
+
+export default function CountryProfileCard({ countryName, month, homeCountryName }: Props) {
   const [profile, setProfile] = useState<CountryProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const cacheKey = `pdata-profile-${countryName}-${month ?? ""}`;
+    const cacheKey = `pdata-profile-${countryName}-${month ?? ""}-${homeCountryName ?? ""}`;
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) {
       try { setProfile(JSON.parse(cached)); setLoading(false); return; } catch {}
@@ -48,7 +56,7 @@ export default function CountryProfileCard({ countryName, month }: Props) {
     fetch("/api/country-profile", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ countryName, month }),
+      body: JSON.stringify({ countryName, month, homeCountryName }),
     })
       .then((r) => r.json())
       .then((data) => {
@@ -58,12 +66,15 @@ export default function CountryProfileCard({ countryName, month }: Props) {
         }
       })
       .finally(() => setLoading(false));
-  }, [countryName, month]);
+  }, [countryName, month, homeCountryName]);
+
+  const colCount = profile?.visa ? 4 : 3;
+  const skeletonCols = homeCountryName ? 4 : 3;
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {[0, 1, 2].map((i) => (
+      <div className={`grid grid-cols-1 sm:grid-cols-${skeletonCols} gap-3`}>
+        {Array.from({ length: skeletonCols }).map((_, i) => (
           <div key={i} className="h-14 rounded-lg bg-[#e0e0e0] dark:bg-[#2e2e2e] animate-pulse" />
         ))}
       </div>
@@ -76,10 +87,15 @@ export default function CountryProfileCard({ countryName, month }: Props) {
     { icon: OUTLET_ICON, label: "Outlet", value: profile.outlet },
     { icon: CURRENCY_ICON, label: "Currency", value: profile.currency },
     { icon: WEATHER_ICON, label: month ? `Weather in ${month}` : "Climate", value: profile.weather },
+    ...(profile.visa ? [{ icon: VISA_ICON, label: "Visa", value: profile.visa }] : []),
   ];
 
+  const gridClass = colCount === 4
+    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
+    : "grid grid-cols-1 sm:grid-cols-3 gap-3";
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <div className={gridClass}>
       {items.map(({ icon, label, value }) => (
         <div key={label} className="rounded-lg border border-[#e0e0e0] dark:border-[#2e2e2e] bg-white dark:bg-[#2e2e2e]/60 p-3">
           <div className="flex items-center gap-1.5 mb-1">

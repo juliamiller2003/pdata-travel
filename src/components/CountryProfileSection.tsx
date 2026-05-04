@@ -7,9 +7,10 @@ import { byAlpha2 } from "@/lib/countries";
 interface Props {
   countryCodes: string[];
   startDate: string | null;
+  homeCountryName: string | null;
 }
 
-export default function CountryProfileSection({ countryCodes, startDate }: Props) {
+export default function CountryProfileSection({ countryCodes, startDate, homeCountryName }: Props) {
   const [open, setOpen] = useState(false);
 
   const month = startDate
@@ -40,7 +41,7 @@ export default function CountryProfileSection({ countryCodes, startDate }: Props
                 {countryCodes.length > 1 && (
                   <p className="text-xs font-medium text-gray-400 dark:text-[#9fb8b8] mb-2">{name}</p>
                 )}
-                <CountryProfileCard countryName={name} month={month} />
+                <CountryProfileCard countryName={name} month={month} homeCountryName={homeCountryName} />
               </div>
             );
           })}

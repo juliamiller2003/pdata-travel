@@ -78,8 +78,8 @@ export default async function TripDetailPage({ params }: TripPageProps) {
     .eq("trip_id", id)
     .order("day_number");
 
-  // Fetch journal entries, flights, and expenses in parallel
-  const [{ data: journal }, { data: flightsData }, { data: expensesData }] = await Promise.all([
+  // Fetch journal entries, flights, expenses, and user settings in parallel
+  const [{ data: journal }, { data: flightsData }, { data: expensesData }, { data: userSettings }] = await Promise.all([
     db
       .from("journal_entries")
       .select("*")
@@ -95,12 +95,19 @@ export default async function TripDetailPage({ params }: TripPageProps) {
       .select("*")
       .eq("trip_id", id)
       .order("date", { ascending: false }),
+    db
+      .from("user_settings")
+      .select("home_country_code")
+      .eq("user_id", user.id)
+      .single(),
   ]);
 
   const itinerary = days ?? [];
   const entries = journal ?? [];
   const flights = flightsData ?? [];
   const tripStatus = effectiveStatus(trip);
+  const homeCountryCode = userSettings?.home_country_code ?? null;
+  const homeCountryName = homeCountryCode ? (byAlpha2[homeCountryCode]?.name ?? null) : null;
 
   // Flatten all activities across itinerary days for the map
   const allActivities = itinerary.flatMap((day: any) => // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -196,6 +203,7 @@ export default async function TripDetailPage({ params }: TripPageProps) {
           <CountryProfileSection
             countryCodes={trip.country_codes as string[]}
             startDate={trip.start_date ?? null}
+            homeCountryName={homeCountryName}
           />
         )}
 
@@ -246,7 +254,13 @@ export default async function TripDetailPage({ params }: TripPageProps) {
       </SectionGuard>
 
       <SectionGuard section="expenses">
-        <ExpensesSection tripId={id} budget={trip.budget} initialExpenses={expensesData ?? []} />
+        <ExpensesSection
+          tripId={id}
+          budget={trip.budget}
+          initialExpenses={expensesData ?? []}
+          startDate={trip.start_date ?? null}
+          endDate={trip.end_date ?? null}
+        />
       </SectionGuard>
 
       <SectionGuard section="journal">
