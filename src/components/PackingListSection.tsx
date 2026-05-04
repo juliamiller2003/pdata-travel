@@ -1,125 +1,200 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-type PackingItem = {
-  id: string;
-  name: string;
-  category: string;
-  packed: boolean;
-};
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type PackingItem = { id: string; name: string; category: string; packed: boolean };
+type TemplateItem = { name: string; category: string };
+type CustomTemplate = { id: string; name: string; items: TemplateItem[] };
+type View = "list" | "select" | "edit";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
-  "Documents", "Clothing", "Toiletries", "Electronics", "Health", "Sleep & Hostel", "Money", "Other",
+  "Documents", "Clothing", "Toiletries", "Electronics",
+  "Health", "Sleep & Hostel", "Money", "Other",
 ];
 
-const TEMPLATES: Record<string, { name: string; category: string }[]> = {
-  backpacker: [
-    // Documents
-    { name: "Passport + copies", category: "Documents" },
-    { name: "Travel insurance details", category: "Documents" },
-    { name: "Visas / e-visas", category: "Documents" },
-    { name: "Booking confirmations", category: "Documents" },
-    // Clothing
-    { name: "T-shirts (3–4)", category: "Clothing" },
-    { name: "Underwear (4–5)", category: "Clothing" },
-    { name: "Socks (4–5)", category: "Clothing" },
-    { name: "Long pants / jeans (1)", category: "Clothing" },
-    { name: "Shorts (2)", category: "Clothing" },
-    { name: "Light jacket / hoodie", category: "Clothing" },
-    { name: "Rain jacket", category: "Clothing" },
-    { name: "Swimwear", category: "Clothing" },
-    { name: "Flip flops (hostel showers)", category: "Clothing" },
-    { name: "Walking shoes", category: "Clothing" },
-    // Toiletries
-    { name: "Toothbrush & toothpaste", category: "Toiletries" },
-    { name: "Shampoo / bar soap", category: "Toiletries" },
-    { name: "Deodorant", category: "Toiletries" },
-    { name: "Sunscreen", category: "Toiletries" },
-    { name: "Insect repellent", category: "Toiletries" },
-    { name: "Razor", category: "Toiletries" },
-    // Electronics
-    { name: "Phone + charger", category: "Electronics" },
-    { name: "Power bank / portable charger", category: "Electronics" },
-    { name: "Universal adapter", category: "Electronics" },
-    { name: "Earphones / headphones", category: "Electronics" },
-    // Health
-    { name: "Painkillers", category: "Health" },
-    { name: "Antihistamines", category: "Health" },
-    { name: "Diarrhea medication", category: "Health" },
-    { name: "Plasters / band-aids", category: "Health" },
-    { name: "Prescribed medication", category: "Health" },
-    // Sleep & Hostel
-    { name: "Padlock (for hostel lockers)", category: "Sleep & Hostel" },
-    { name: "Quick-dry travel towel", category: "Sleep & Hostel" },
-    { name: "Earplugs", category: "Sleep & Hostel" },
-    { name: "Eye mask", category: "Sleep & Hostel" },
-    { name: "Sleeping bag liner", category: "Sleep & Hostel" },
-    // Money
-    { name: "Local cash", category: "Money" },
-    { name: "Travel card / debit card", category: "Money" },
-    { name: "Emergency backup card", category: "Money" },
-  ],
-  carryon: [
-    { name: "Passport + copies", category: "Documents" },
-    { name: "Travel insurance details", category: "Documents" },
-    { name: "T-shirts (2)", category: "Clothing" },
-    { name: "Underwear (3)", category: "Clothing" },
-    { name: "Socks (3)", category: "Clothing" },
-    { name: "1 versatile outfit", category: "Clothing" },
-    { name: "Light layer / jacket", category: "Clothing" },
-    { name: "Toothbrush & toothpaste (travel size)", category: "Toiletries" },
-    { name: "Deodorant (travel size)", category: "Toiletries" },
-    { name: "Sunscreen (travel size)", category: "Toiletries" },
-    { name: "Phone + charger", category: "Electronics" },
-    { name: "Power bank", category: "Electronics" },
-    { name: "Universal adapter", category: "Electronics" },
-    { name: "Basic meds (painkillers, antihistamines)", category: "Health" },
-    { name: "Padlock", category: "Sleep & Hostel" },
-    { name: "Travel card / debit card", category: "Money" },
-    { name: "Local cash", category: "Money" },
-  ],
-  weekend: [
-    { name: "Passport / ID", category: "Documents" },
-    { name: "T-shirts (2)", category: "Clothing" },
-    { name: "Underwear (2)", category: "Clothing" },
-    { name: "Socks (2)", category: "Clothing" },
-    { name: "1 going-out outfit", category: "Clothing" },
-    { name: "Toiletry bag", category: "Toiletries" },
-    { name: "Phone + charger", category: "Electronics" },
-    { name: "Power bank", category: "Electronics" },
-    { name: "Painkillers", category: "Health" },
-    { name: "Cash + card", category: "Money" },
-  ],
+const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[] }> = {
+  backpacker: {
+    label: "Backpacker", sub: "50L pack · 30+ items",
+    items: [
+      { name: "Passport + copies",            category: "Documents"     },
+      { name: "Travel insurance details",     category: "Documents"     },
+      { name: "Visas / e-visas",              category: "Documents"     },
+      { name: "Booking confirmations",        category: "Documents"     },
+      { name: "T-shirts (3–4)",               category: "Clothing"      },
+      { name: "Underwear (4–5)",              category: "Clothing"      },
+      { name: "Socks (4–5)",                  category: "Clothing"      },
+      { name: "Long pants / jeans (1)",       category: "Clothing"      },
+      { name: "Shorts (2)",                   category: "Clothing"      },
+      { name: "Light jacket / hoodie",        category: "Clothing"      },
+      { name: "Rain jacket",                  category: "Clothing"      },
+      { name: "Swimwear",                     category: "Clothing"      },
+      { name: "Flip flops (hostel showers)",  category: "Clothing"      },
+      { name: "Walking shoes",                category: "Clothing"      },
+      { name: "Toothbrush & toothpaste",      category: "Toiletries"    },
+      { name: "Shampoo / bar soap",           category: "Toiletries"    },
+      { name: "Deodorant",                    category: "Toiletries"    },
+      { name: "Sunscreen",                    category: "Toiletries"    },
+      { name: "Insect repellent",             category: "Toiletries"    },
+      { name: "Razor",                        category: "Toiletries"    },
+      { name: "Phone + charger",              category: "Electronics"   },
+      { name: "Power bank",                   category: "Electronics"   },
+      { name: "Universal adapter",            category: "Electronics"   },
+      { name: "Earphones / headphones",       category: "Electronics"   },
+      { name: "Painkillers",                  category: "Health"        },
+      { name: "Antihistamines",               category: "Health"        },
+      { name: "Diarrhea medication",          category: "Health"        },
+      { name: "Plasters / band-aids",         category: "Health"        },
+      { name: "Prescribed medication",        category: "Health"        },
+      { name: "Padlock (hostel lockers)",     category: "Sleep & Hostel"},
+      { name: "Quick-dry travel towel",       category: "Sleep & Hostel"},
+      { name: "Earplugs",                     category: "Sleep & Hostel"},
+      { name: "Eye mask",                     category: "Sleep & Hostel"},
+      { name: "Sleeping bag liner",           category: "Sleep & Hostel"},
+      { name: "Local cash",                   category: "Money"         },
+      { name: "Travel card / debit card",     category: "Money"         },
+      { name: "Emergency backup card",        category: "Money"         },
+    ],
+  },
+  carryon: {
+    label: "Carry-on", sub: "Minimal · 16 items",
+    items: [
+      { name: "Passport + copies",                        category: "Documents"     },
+      { name: "Travel insurance details",                 category: "Documents"     },
+      { name: "T-shirts (2)",                             category: "Clothing"      },
+      { name: "Underwear (3)",                            category: "Clothing"      },
+      { name: "Socks (3)",                                category: "Clothing"      },
+      { name: "1 versatile outfit",                       category: "Clothing"      },
+      { name: "Light layer / jacket",                     category: "Clothing"      },
+      { name: "Toothbrush & toothpaste (travel size)",    category: "Toiletries"    },
+      { name: "Deodorant (travel size)",                  category: "Toiletries"    },
+      { name: "Sunscreen (travel size)",                  category: "Toiletries"    },
+      { name: "Phone + charger",                          category: "Electronics"   },
+      { name: "Power bank",                               category: "Electronics"   },
+      { name: "Universal adapter",                        category: "Electronics"   },
+      { name: "Basic meds (painkillers, antihistamines)", category: "Health"        },
+      { name: "Padlock",                                  category: "Sleep & Hostel"},
+      { name: "Travel card / debit card",                 category: "Money"         },
+      { name: "Local cash",                               category: "Money"         },
+    ],
+  },
+  weekend: {
+    label: "Weekend", sub: "Short trip · 10 items",
+    items: [
+      { name: "Passport / ID",        category: "Documents"  },
+      { name: "T-shirts (2)",         category: "Clothing"   },
+      { name: "Underwear (2)",        category: "Clothing"   },
+      { name: "Socks (2)",            category: "Clothing"   },
+      { name: "1 going-out outfit",   category: "Clothing"   },
+      { name: "Toiletry bag",         category: "Toiletries" },
+      { name: "Phone + charger",      category: "Electronics"},
+      { name: "Power bank",           category: "Electronics"},
+      { name: "Painkillers",          category: "Health"     },
+      { name: "Cash + card",          category: "Money"      },
+    ],
+  },
+  hiking: {
+    label: "Hiking", sub: "Trails · 18 items",
+    items: [
+      { name: "Trail map / offline map downloaded",   category: "Documents"  },
+      { name: "Hiking boots / trail shoes",           category: "Clothing"   },
+      { name: "Moisture-wicking shirts",              category: "Clothing"   },
+      { name: "Hiking socks",                         category: "Clothing"   },
+      { name: "Waterproof rain jacket",               category: "Clothing"   },
+      { name: "Sun hat / cap",                        category: "Clothing"   },
+      { name: "Warm mid-layer / fleece",              category: "Clothing"   },
+      { name: "Sunscreen SPF 50+",                    category: "Toiletries" },
+      { name: "Insect repellent",                     category: "Toiletries" },
+      { name: "Headlamp + spare batteries",           category: "Electronics"},
+      { name: "First aid kit",                        category: "Health"     },
+      { name: "Blister treatment / moleskin",         category: "Health"     },
+      { name: "Water purification tablets / filter",  category: "Health"     },
+      { name: "Trekking poles",                       category: "Other"      },
+      { name: "Water bottle / hydration bladder",     category: "Other"      },
+      { name: "High-energy snacks / trail bars",      category: "Other"      },
+      { name: "Dry bags / waterproof sacks",          category: "Other"      },
+      { name: "Emergency whistle",                    category: "Other"      },
+    ],
+  },
 };
 
-interface Props {
-  tripId: string;
-  initialItems: PackingItem[];
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function dedup(items: TemplateItem[]): TemplateItem[] {
+  const seen = new Set<string>();
+  return items.filter(({ name }) => {
+    const key = name.trim().toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+interface Props { tripId: string; initialItems: PackingItem[] }
 
 export default function PackingListSection({ tripId, initialItems }: Props) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = createClient() as any;
-  const [items, setItems] = useState<PackingItem[]>(initialItems);
-  const [newItem, setNewItem] = useState("");
-  const [newCategory, setNewCategory] = useState("Other");
-  const [showAdd, setShowAdd] = useState(false);
-  const [showTemplates, setShowTemplates] = useState(items.length === 0);
-  const [loading, setLoading] = useState(false);
 
+  // ── Packing list state ──────────────────────────────────────────────────────
+  const [items, setItems]         = useState<PackingItem[]>(initialItems);
+  const [newItem, setNewItem]     = useState("");
+  const [newCat, setNewCat]       = useState("Other");
+  const [showAdd, setShowAdd]     = useState(false);
+  const [clearing, setClearing]   = useState(false);
+
+  // ── View state ──────────────────────────────────────────────────────────────
+  const [view, setView] = useState<View>(initialItems.length === 0 ? "select" : "list");
+
+  // ── Template selector state ─────────────────────────────────────────────────
+  const [selBuiltin, setSelBuiltin]           = useState<Set<string>>(new Set());
+  const [selCustom, setSelCustom]             = useState<Set<string>>(new Set());
+  const [customTemplates, setCustomTemplates] = useState<CustomTemplate[]>([]);
+  const [tplsLoaded, setTplsLoaded]           = useState(false);
+  const [applying, setApplying]               = useState(false);
+
+  // ── Template editor state ───────────────────────────────────────────────────
+  const [editingTpl, setEditingTpl]     = useState<CustomTemplate | null>(null);
+  const [tplName, setTplName]           = useState("");
+  const [tplItems, setTplItems]         = useState<TemplateItem[]>([]);
+  const [tplNewItem, setTplNewItem]     = useState("");
+  const [tplNewCat, setTplNewCat]       = useState("Other");
+  const [tplSaving, setTplSaving]       = useState(false);
+
+  // ── Derived ─────────────────────────────────────────────────────────────────
   const packed = items.filter((i) => i.packed).length;
-  const pct = items.length > 0 ? Math.round((packed / items.length) * 100) : 0;
+  const pct    = items.length > 0 ? Math.round((packed / items.length) * 100) : 0;
 
-  const grouped = CATEGORIES.map((cat) => ({
-    cat,
-    items: items.filter((i) => i.category === cat),
-  })).filter((g) => g.items.length > 0);
+  const grouped = [
+    ...CATEGORIES.map((cat) => ({ cat, items: items.filter((i) => i.category === cat) })).filter((g) => g.items.length > 0),
+    ...(items.some((i) => !CATEGORIES.includes(i.category))
+      ? [{ cat: "Other", items: items.filter((i) => !CATEGORIES.includes(i.category)) }]
+      : []),
+  ];
 
-  const uncategorized = items.filter((i) => !CATEGORIES.includes(i.category));
-  if (uncategorized.length > 0) grouped.push({ cat: "Other", items: uncategorized });
+  const totalSelected = selBuiltin.size + selCustom.size;
 
+  // ── Load custom templates ────────────────────────────────────────────────────
+  async function loadTemplates() {
+    if (tplsLoaded) return;
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+    const { data } = await db.from("packing_templates").select("*").eq("user_id", user.id).order("created_at");
+    if (data) setCustomTemplates(data.map((t: { id: string; name: string; items: TemplateItem[] }) => ({
+      id: t.id, name: t.name, items: t.items ?? [],
+    })));
+    setTplsLoaded(true);
+  }
+
+  function openSelect() { loadTemplates(); setView("select"); }
+
+  // ── Packing list actions ─────────────────────────────────────────────────────
   async function togglePacked(item: PackingItem) {
     const updated = !item.packed;
     await db.from("packing_items").update({ packed: updated }).eq("id", item.id);
@@ -129,12 +204,11 @@ export default function PackingListSection({ tripId, initialItems }: Props) {
   async function addItem(e: React.FormEvent) {
     e.preventDefault();
     if (!newItem.trim()) return;
-    const { data, error } = await db.from("packing_items").insert({
-      trip_id: tripId, name: newItem.trim(), category: newCategory, packed: false,
-    }).select().single();
+    const { data, error } = await db.from("packing_items")
+      .insert({ trip_id: tripId, name: newItem.trim(), category: newCat, packed: false })
+      .select().single();
     if (!error && data) setItems((prev) => [...prev, data]);
-    setNewItem("");
-    setShowAdd(false);
+    setNewItem(""); setShowAdd(false);
   }
 
   async function deleteItem(id: string) {
@@ -142,25 +216,103 @@ export default function PackingListSection({ tripId, initialItems }: Props) {
     setItems((prev) => prev.filter((i) => i.id !== id));
   }
 
-  async function applyTemplate(key: keyof typeof TEMPLATES) {
-    setLoading(true);
-    setShowTemplates(false);
-    const templateItems = TEMPLATES[key];
-    const toInsert = templateItems.map((t) => ({ trip_id: tripId, name: t.name, category: t.category, packed: false }));
-    const { data, error } = await db.from("packing_items").insert(toInsert).select();
-    if (!error && data) setItems((prev) => [...prev, ...data]);
-    setLoading(false);
-  }
-
   async function clearAll() {
     if (!confirm("Clear all packing items?")) return;
+    setClearing(true);
     await db.from("packing_items").delete().eq("trip_id", tripId);
-    setItems([]);
-    setShowTemplates(true);
+    setItems([]); setClearing(false); openSelect();
   }
 
+  // ── Apply selected templates ─────────────────────────────────────────────────
+  async function applySelected() {
+    if (totalSelected === 0) return;
+    setApplying(true);
+
+    const combined: TemplateItem[] = [];
+    selBuiltin.forEach((key) => combined.push(...(BUILTIN[key]?.items ?? [])));
+    selCustom.forEach((id) => {
+      const tpl = customTemplates.find((t) => t.id === id);
+      if (tpl) combined.push(...tpl.items);
+    });
+
+    const unique = dedup(combined);
+
+    // Exclude items already in the list
+    const existingNames = new Set(items.map((i) => i.name.trim().toLowerCase()));
+    const toAdd = unique.filter(({ name }) => !existingNames.has(name.trim().toLowerCase()));
+
+    if (toAdd.length > 0) {
+      const { data, error } = await db.from("packing_items")
+        .insert(toAdd.map((t) => ({ trip_id: tripId, name: t.name, category: t.category, packed: false })))
+        .select();
+      if (!error && data) setItems((prev) => [...prev, ...data]);
+    }
+
+    setSelBuiltin(new Set()); setSelCustom(new Set());
+    setApplying(false); setView("list");
+  }
+
+  // ── Template editor actions ──────────────────────────────────────────────────
+  function openCreateTemplate() {
+    setEditingTpl(null); setTplName(""); setTplItems([]);
+    setTplNewItem(""); setTplNewCat("Other"); setView("edit");
+  }
+
+  function openEditTemplate(tpl: CustomTemplate) {
+    setEditingTpl(tpl); setTplName(tpl.name); setTplItems([...tpl.items]);
+    setTplNewItem(""); setTplNewCat("Other"); setView("edit");
+  }
+
+  function addTplItem(e: React.FormEvent) {
+    e.preventDefault();
+    if (!tplNewItem.trim()) return;
+    setTplItems((prev) => [...prev, { name: tplNewItem.trim(), category: tplNewCat }]);
+    setTplNewItem("");
+  }
+
+  function removeTplItem(idx: number) {
+    setTplItems((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  async function saveTemplate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!tplName.trim()) return;
+    setTplSaving(true);
+
+    if (editingTpl) {
+      const { data, error } = await db.from("packing_templates")
+        .update({ name: tplName.trim(), items: tplItems })
+        .eq("id", editingTpl.id).select().single();
+      if (!error && data) {
+        setCustomTemplates((prev) => prev.map((t) => t.id === editingTpl.id
+          ? { id: t.id, name: data.name, items: data.items ?? [] } : t));
+      }
+    } else {
+      const { data: { user } } = await db.auth.getUser();
+      if (user) {
+        const { data, error } = await db.from("packing_templates")
+          .insert({ user_id: user.id, name: tplName.trim(), items: tplItems })
+          .select().single();
+        if (!error && data) {
+          setCustomTemplates((prev) => [...prev, { id: data.id, name: data.name, items: data.items ?? [] }]);
+        }
+      }
+    }
+    setTplSaving(false); setView("select");
+  }
+
+  async function deleteTemplate(id: string) {
+    if (!confirm("Delete this template?")) return;
+    await db.from("packing_templates").delete().eq("id", id);
+    setCustomTemplates((prev) => prev.filter((t) => t.id !== id));
+    setSelCustom((prev) => { const s = new Set(prev); s.delete(id); return s; });
+  }
+
+  // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <section className="mb-8">
+
+      {/* ── Header ── */}
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-[#efefef] shrink-0">Packing List</h2>
@@ -169,127 +321,256 @@ export default function PackingListSection({ tripId, initialItems }: Props) {
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {items.length > 0 && (
-            <button onClick={clearAll} className="text-xs text-gray-400 dark:text-[#9fb8b8] hover:text-red-400 transition-colors">
+          {items.length > 0 && view === "list" && (
+            <button onClick={clearAll} disabled={clearing} className="text-xs text-gray-400 dark:text-[#9fb8b8] hover:text-red-400 transition-colors">
               Clear all
             </button>
           )}
-          <button onClick={() => setShowAdd((v) => !v)} className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-[#2e2e2e] bg-white dark:bg-transparent px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-[#9fb8b8] hover:border-[#9fb8b8] hover:text-[#9fb8b8] transition-colors">
-            + Add item
-          </button>
+          {view === "list" && (
+            <>
+              <button onClick={openSelect} className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-[#2e2e2e] bg-white dark:bg-transparent px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-[#9fb8b8] hover:border-[#9fb8b8] hover:text-[#9fb8b8] transition-colors">
+                Templates
+              </button>
+              <button onClick={() => setShowAdd((v) => !v)} className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-[#2e2e2e] bg-white dark:bg-transparent px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-[#9fb8b8] hover:border-[#9fb8b8] hover:text-[#9fb8b8] transition-colors">
+                + Add item
+              </button>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Progress bar */}
-      {items.length > 0 && (
-        <div className="mb-4">
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-[#2e2e2e]">
-            <div
-              className="h-full rounded-full bg-[#9fb8b8] transition-all"
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-          {pct === 100 && (
-            <p className="mt-1.5 text-xs font-medium text-[#9fb8b8] text-center">All packed!</p>
-          )}
-        </div>
-      )}
-
-      {/* Templates */}
-      {showTemplates && (
-        <div className="mb-4 rounded-xl border border-[#e0e0e0] dark:border-[#2e2e2e] p-4">
-          <p className="text-xs font-semibold text-gray-500 dark:text-[#9fb8b8] mb-3">Start with a template</p>
-          <div className="grid grid-cols-3 gap-2">
-            {([
-              { key: "backpacker", label: "Backpacker", sub: "50L pack · 30+ items" },
-              { key: "carryon",    label: "Carry-on",   sub: "Minimal · 16 items"  },
-              { key: "weekend",    label: "Weekend",    sub: "Short trip · 10 items"},
-            ] as const).map(({ key, label, sub }) => (
-              <button
-                key={key}
-                onClick={() => applyTemplate(key)}
-                disabled={loading}
-                className="rounded-lg border border-[#e0e0e0] dark:border-[#2e2e2e] p-3 text-left hover:border-[#9fb8b8] transition-colors"
-              >
-                <p className="text-sm font-semibold text-gray-800 dark:text-[#efefef]">{label}</p>
-                <p className="text-[10px] text-gray-400 dark:text-[#9fb8b8] mt-0.5">{sub}</p>
-              </button>
-            ))}
-          </div>
+      {/* ── LIST VIEW ── */}
+      {view === "list" && (
+        <>
+          {/* Progress */}
           {items.length > 0 && (
-            <button onClick={() => setShowTemplates(false)} className="mt-3 text-xs text-gray-400 hover:underline">
-              Cancel
-            </button>
+            <div className="mb-4">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-[#2e2e2e]">
+                <div className="h-full rounded-full bg-[#9fb8b8] transition-all" style={{ width: `${pct}%` }} />
+              </div>
+              {pct === 100 && <p className="mt-1.5 text-xs font-medium text-[#9fb8b8] text-center">All packed!</p>}
+            </div>
           )}
-        </div>
-      )}
 
-      {/* Add item form */}
-      {showAdd && (
-        <form onSubmit={addItem} className="mb-4 flex gap-2">
-          <input
-            type="text"
-            value={newItem}
-            onChange={(e) => setNewItem(e.target.value)}
-            placeholder="Item name"
-            className="input flex-1"
-            autoFocus
-          />
-          <select value={newCategory} onChange={(e) => setNewCategory(e.target.value)} className="input w-36 shrink-0">
-            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <button type="submit" className="btn-primary shrink-0">Add</button>
-          <button type="button" onClick={() => setShowAdd(false)} className="btn-secondary shrink-0">Cancel</button>
-        </form>
-      )}
+          {/* Add item form */}
+          {showAdd && (
+            <form onSubmit={addItem} className="mb-4 flex gap-2 flex-wrap sm:flex-nowrap">
+              <input type="text" value={newItem} onChange={(e) => setNewItem(e.target.value)} placeholder="Item name" className="input flex-1 min-w-0" autoFocus />
+              <select value={newCat} onChange={(e) => setNewCat(e.target.value)} className="input w-36 shrink-0">
+                {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <button type="submit" className="btn-primary shrink-0">Add</button>
+              <button type="button" onClick={() => setShowAdd(false)} className="btn-secondary shrink-0">Cancel</button>
+            </form>
+          )}
 
-      {/* List */}
-      {items.length === 0 && !showTemplates && !loading ? (
-        <div className="rounded-xl border-2 border-dashed border-gray-200 dark:border-[#2e2e2e] py-12 text-center text-sm text-gray-400 dark:text-[#9fb8b8]">
-          No items yet.{" "}
-          <button onClick={() => setShowTemplates(true)} className="underline hover:text-[#9fb8b8]">
-            Start from a template
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {grouped.map(({ cat, items: catItems }) => (
-            <div key={cat}>
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8] mb-2">{cat}</p>
-              <div className="space-y-1">
-                {catItems.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3 group">
-                    <button
-                      onClick={() => togglePacked(item)}
-                      className={`h-4 w-4 shrink-0 rounded border transition-colors flex items-center justify-center ${
-                        item.packed
-                          ? "border-[#9fb8b8] bg-[#9fb8b8]"
-                          : "border-gray-300 dark:border-[#3a3a3a] bg-white dark:bg-transparent"
-                      }`}
-                    >
-                      {item.packed && (
-                        <svg className="h-2.5 w-2.5 text-white dark:text-[#1e1e1e]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                        </svg>
-                      )}
-                    </button>
-                    <span className={`flex-1 text-sm transition-colors ${item.packed ? "line-through text-gray-300 dark:text-[#3a3a3a]" : "text-gray-700 dark:text-[#efefef]"}`}>
-                      {item.name}
-                    </span>
-                    <button
-                      onClick={() => deleteItem(item.id)}
-                      className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all"
-                    >
-                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
+          {/* Items */}
+          {items.length === 0 ? (
+            <div className="rounded-xl border-2 border-dashed border-gray-200 dark:border-[#2e2e2e] py-12 text-center text-sm text-gray-400 dark:text-[#9fb8b8]">
+              No items yet.{" "}
+              <button onClick={openSelect} className="underline hover:text-[#9fb8b8]">Start from a template</button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {grouped.map(({ cat, items: catItems }) => (
+                <div key={cat}>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8] mb-2">{cat}</p>
+                  <div className="space-y-1">
+                    {catItems.map((item) => (
+                      <div key={item.id} className="flex items-center gap-3 group">
+                        <button
+                          onClick={() => togglePacked(item)}
+                          className={`h-4 w-4 shrink-0 rounded border flex items-center justify-center transition-colors ${item.packed ? "border-[#9fb8b8] bg-[#9fb8b8]" : "border-gray-300 dark:border-[#3a3a3a] bg-white dark:bg-transparent"}`}
+                        >
+                          {item.packed && (
+                            <svg className="h-2.5 w-2.5 text-white dark:text-[#1e1e1e]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                            </svg>
+                          )}
+                        </button>
+                        <span className={`flex-1 text-sm transition-colors ${item.packed ? "line-through text-gray-300 dark:text-[#3a3a3a]" : "text-gray-700 dark:text-[#efefef]"}`}>
+                          {item.name}
+                        </span>
+                        <button onClick={() => deleteItem(item.id)} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all">
+                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
                   </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── SELECT TEMPLATES VIEW ── */}
+      {view === "select" && (
+        <div className="rounded-xl border border-[#e0e0e0] dark:border-[#2e2e2e] overflow-hidden">
+          <div className="px-4 py-3 bg-[#efefef] dark:bg-[#2e2e2e]/60 flex items-center justify-between">
+            <p className="text-xs font-semibold text-gray-600 dark:text-[#efefef]">Select templates to combine</p>
+            <p className="text-[10px] text-gray-400 dark:text-[#9fb8b8]">Duplicates removed automatically</p>
+          </div>
+
+          <div className="p-4 space-y-5">
+            {/* Built-in */}
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8] mb-2">Built-in</p>
+              <div className="space-y-1">
+                {Object.entries(BUILTIN).map(([key, tpl]) => (
+                  <label key={key} className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-[#2e2e2e] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selBuiltin.has(key)}
+                      onChange={() => setSelBuiltin((prev) => { const s = new Set(prev); s.has(key) ? s.delete(key) : s.add(key); return s; })}
+                      className="h-4 w-4 rounded border-gray-300 dark:border-[#3a3a3a] accent-[#9fb8b8]"
+                    />
+                    <span className="flex-1 text-sm font-medium text-gray-800 dark:text-[#efefef]">{tpl.label}</span>
+                    <span className="text-[10px] text-gray-400 dark:text-[#9fb8b8]">{tpl.sub}</span>
+                  </label>
                 ))}
               </div>
             </div>
-          ))}
+
+            {/* Custom */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8]">My Templates</p>
+                <button onClick={openCreateTemplate} className="text-[10px] font-medium text-[#9fb8b8] hover:underline">+ Create template</button>
+              </div>
+              {!tplsLoaded ? (
+                <p className="text-xs text-gray-400 dark:text-[#9fb8b8] px-3">Loading…</p>
+              ) : customTemplates.length === 0 ? (
+                <p className="text-xs text-gray-400 dark:text-[#9fb8b8] px-3">No custom templates yet.</p>
+              ) : (
+                <div className="space-y-1">
+                  {customTemplates.map((tpl) => (
+                    <div key={tpl.id} className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-[#2e2e2e]">
+                      <input
+                        type="checkbox"
+                        checked={selCustom.has(tpl.id)}
+                        onChange={() => setSelCustom((prev) => { const s = new Set(prev); s.has(tpl.id) ? s.delete(tpl.id) : s.add(tpl.id); return s; })}
+                        className="h-4 w-4 rounded border-gray-300 dark:border-[#3a3a3a] accent-[#9fb8b8]"
+                      />
+                      <span className="flex-1 text-sm font-medium text-gray-800 dark:text-[#efefef]">{tpl.name}</span>
+                      <span className="text-[10px] text-gray-400 dark:text-[#9fb8b8]">{tpl.items.length} items</span>
+                      <button onClick={() => openEditTemplate(tpl)} className="text-gray-300 hover:text-sky-500 transition-colors ml-1">
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                        </svg>
+                      </button>
+                      <button onClick={() => deleteTemplate(tpl.id)} className="text-gray-300 hover:text-red-400 transition-colors">
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Footer actions */}
+          <div className="border-t border-[#e0e0e0] dark:border-[#2e2e2e] px-4 py-3 flex items-center gap-3">
+            <button
+              onClick={applySelected}
+              disabled={totalSelected === 0 || applying}
+              className="btn-primary flex-1"
+            >
+              {applying ? "Applying…" : totalSelected === 0 ? "Select templates above" : `Apply ${totalSelected} template${totalSelected > 1 ? "s" : ""} →`}
+            </button>
+            {items.length > 0 && (
+              <button onClick={() => setView("list")} className="btn-secondary">Cancel</button>
+            )}
+          </div>
         </div>
+      )}
+
+      {/* ── EDIT TEMPLATE VIEW ── */}
+      {view === "edit" && (
+        <form onSubmit={saveTemplate} className="rounded-xl border border-[#e0e0e0] dark:border-[#2e2e2e] overflow-hidden">
+          <div className="px-4 py-3 bg-[#efefef] dark:bg-[#2e2e2e]/60">
+            <p className="text-xs font-semibold text-gray-600 dark:text-[#efefef]">
+              {editingTpl ? "Edit template" : "Create template"}
+            </p>
+          </div>
+
+          <div className="p-4 space-y-4">
+            <div>
+              <label className="label">Template name *</label>
+              <input
+                type="text"
+                required
+                value={tplName}
+                onChange={(e) => setTplName(e.target.value)}
+                placeholder="e.g. Diving, Winter, Festival…"
+                className="input"
+                autoFocus
+              />
+            </div>
+
+            {/* Add item to template */}
+            <div>
+              <label className="label">Add items</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={tplNewItem}
+                  onChange={(e) => setTplNewItem(e.target.value)}
+                  placeholder="Item name"
+                  className="input flex-1 min-w-0"
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (tplNewItem.trim()) { setTplItems((p) => [...p, { name: tplNewItem.trim(), category: tplNewCat }]); setTplNewItem(""); } } }}
+                />
+                <select value={tplNewCat} onChange={(e) => setTplNewCat(e.target.value)} className="input w-32 shrink-0">
+                  {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <button type="button" onClick={(e) => { e.preventDefault(); if (tplNewItem.trim()) { setTplItems((p) => [...p, { name: tplNewItem.trim(), category: tplNewCat }]); setTplNewItem(""); } }} className="btn-secondary shrink-0">
+                  Add
+                </button>
+              </div>
+            </div>
+
+            {/* Items list in editor */}
+            {tplItems.length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8] mb-2">
+                  {tplItems.length} item{tplItems.length !== 1 ? "s" : ""}
+                </p>
+                <div className="space-y-1 max-h-64 overflow-y-auto">
+                  {CATEGORIES.map((cat) => {
+                    const catItems = tplItems.map((item, idx) => ({ ...item, idx })).filter((i) => i.category === cat);
+                    if (catItems.length === 0) return null;
+                    return (
+                      <div key={cat}>
+                        <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-300 dark:text-[#3a3a3a] mt-2 mb-1">{cat}</p>
+                        {catItems.map(({ name, idx }) => (
+                          <div key={idx} className="flex items-center gap-2 py-1 group">
+                            <span className="flex-1 text-sm text-gray-700 dark:text-[#efefef]">{name}</span>
+                            <button type="button" onClick={() => removeTplItem(idx)} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all">
+                              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-[#e0e0e0] dark:border-[#2e2e2e] px-4 py-3 flex gap-2">
+            <button type="submit" disabled={tplSaving || !tplName.trim()} className="btn-primary flex-1">
+              {tplSaving ? "Saving…" : editingTpl ? "Save changes" : "Create template"}
+            </button>
+            <button type="button" onClick={() => setView("select")} className="btn-secondary">Cancel</button>
+          </div>
+        </form>
       )}
     </section>
   );
