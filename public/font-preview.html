@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Font Preview – Pathway Travel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=Syne:wght@600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #c8c8c8; font-size: 14px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+      min-height: 100vh;
+    }
+
+    .option {
+      background: #f5f5f4;
+      padding: 40px 36px;
+    }
+
+    .option-label {
+      font-family: monospace;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: #9fb8b8;
+      text-transform: uppercase;
+      border-bottom: 1px solid #e0e0e0;
+      padding-bottom: 12px;
+      margin-bottom: 28px;
+    }
+
+    /* Nav mock */
+    .nav { display: flex; align-items: center; justify-content: space-between; padding-bottom: 14px; border-bottom: 1px solid #e0e0e0; margin-bottom: 24px; }
+    .nav-logo { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; color: #1e1e1e; }
+    .nav-dot { width: 22px; height: 22px; border-radius: 50%; background: #cadede; flex-shrink: 0; }
+    .nav-links { display: flex; gap: 20px; font-size: 13px; color: #6b7280; }
+
+    /* Content */
+    .h1 { color: #1e1e1e; line-height: 1.1; }
+    .sub { font-size: 13px; color: #6b7280; margin-top: 4px; letter-spacing: -0.01em; }
+    .section { margin-top: 20px; }
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .h2 { color: #1e1e1e; }
+    .add { font-size: 11px; font-weight: 600; color: #9fb8b8; }
+    .card { background: #fff; border: 1px solid #e0e0e0; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 8px; }
+    .card-row { display: flex; justify-content: space-between; align-items: center; }
+    .tag { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #9fb8b8; }
+    .badge { font-size: 10px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: #e5dd83; color: #1e1e1e; }
+    .divider { height: 1px; background: #f0f0f0; margin: 2px 0; }
+    .body { font-size: 13px; color: #374151; line-height: 1.6; }
+    .amount { color: #1e1e1e; }
+
+    /* ── Option A: DM Sans, medium, tight ── */
+    .opt-a .nav-logo, .opt-a .nav-links, .opt-a .sub, .opt-a .body, .opt-a .add, .opt-a .tag { font-family: 'DM Sans', system-ui, sans-serif; }
+    .opt-a .h1 { font-family: 'DM Sans', system-ui, sans-serif; font-size: 28px; font-weight: 500; letter-spacing: -0.04em; }
+    .opt-a .h2, .opt-a .amount { font-family: 'DM Sans', system-ui, sans-serif; font-size: 17px; font-weight: 500; letter-spacing: -0.03em; }
+
+    /* ── Option B: Space Grotesk, bold ── */
+    .opt-b .nav-logo, .opt-b .nav-links, .opt-b .sub, .opt-b .body, .opt-b .add, .opt-b .tag { font-family: 'Space Grotesk', sans-serif; }
+    .opt-b .h1 { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; letter-spacing: -0.04em; }
+    .opt-b .h2, .opt-b .amount { font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: -0.03em; }
+
+    /* ── Option C: Syne headings + DM Sans body ── */
+    .opt-c .nav-logo { font-family: 'Syne', sans-serif; }
+    .opt-c .nav-links, .opt-c .sub, .opt-c .body, .opt-c .add { font-family: 'DM Sans', sans-serif; }
+    .opt-c .h1 { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+    .opt-c .h2, .opt-c .amount { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+    .opt-c .tag { font-family: 'Syne', sans-serif; }
+
+    /* ── Option D: Plus Jakarta Sans, semibold ── */
+    .opt-d .nav-logo, .opt-d .nav-links, .opt-d .sub, .opt-d .body, .opt-d .add, .opt-d .tag { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .opt-d .h1 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 28px; font-weight: 600; letter-spacing: -0.03em; }
+    .opt-d .h2, .opt-d .amount { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
+  </style>
+</head>
+<body>
+  <div class="grid">
+
+    <!-- Option A -->
+    <div class="option opt-a">
+      <div class="option-label">A — DM Sans · medium weight · tight tracking · precision</div>
+      <div class="nav">
+        <div class="nav-logo"><div class="nav-dot"></div> Pathway Travel</div>
+        <div class="nav-links"><span>My Trips</span><span>Stats</span><span>Settings</span></div>
+      </div>
+      <div class="h1">Tokyo, Japan</div>
+      <div class="sub">Mar 14 – Mar 28, 2025 · 14 days</div>
+      <div class="section">
+        <div class="section-header"><div class="h2">Itinerary</div><div class="add">+ Add day</div></div>
+        <div class="card">
+          <div class="card-row"><span class="tag">Day 1 · Mon Mar 14</span><span class="badge">Planning</span></div>
+          <div class="divider"></div>
+          <div class="body">Arrive at Narita · Check in to hostel in Shinjuku · Explore Kabukicho and Golden Gai at night</div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header"><div class="h2">Expenses</div></div>
+        <div class="card">
+          <div class="card-row">
+            <div><div class="body" style="font-weight:500;color:#1e1e1e">Shinkansen – Tokyo to Kyoto</div><div class="tag" style="margin-top:3px">Transport</div></div>
+            <div class="amount">¥13,850</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Option B -->
+    <div class="option opt-b">
+      <div class="option-label">B — Space Grotesk · bold · geometric letterforms · high energy</div>
+      <div class="nav">
+        <div class="nav-logo"><div class="nav-dot"></div> Pathway Travel</div>
+        <div class="nav-links"><span>My Trips</span><span>Stats</span><span>Settings</span></div>
+      </div>
+      <div class="h1">Tokyo, Japan</div>
+      <div class="sub">Mar 14 – Mar 28, 2025 · 14 days</div>
+      <div class="section">
+        <div class="section-header"><div class="h2">Itinerary</div><div class="add">+ Add day</div></div>
+        <div class="card">
+          <div class="card-row"><span class="tag">Day 1 · Mon Mar 14</span><span class="badge">Planning</span></div>
+          <div class="divider"></div>
+          <div class="body">Arrive at Narita · Check in to hostel in Shinjuku · Explore Kabukicho and Golden Gai at night</div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header"><div class="h2">Expenses</div></div>
+        <div class="card">
+          <div class="card-row">
+            <div><div class="body" style="font-weight:500;color:#1e1e1e">Shinkansen – Tokyo to Kyoto</div><div class="tag" style="margin-top:3px">Transport</div></div>
+            <div class="amount">¥13,850</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Option C -->
+    <div class="option opt-c">
+      <div class="option-label">C — Syne headings + DM Sans body · editorial · architectural</div>
+      <div class="nav">
+        <div class="nav-logo"><div class="nav-dot"></div> Pathway Travel</div>
+        <div class="nav-links"><span>My Trips</span><span>Stats</span><span>Settings</span></div>
+      </div>
+      <div class="h1">Tokyo, Japan</div>
+      <div class="sub">Mar 14 – Mar 28, 2025 · 14 days</div>
+      <div class="section">
+        <div class="section-header"><div class="h2">Itinerary</div><div class="add">+ Add day</div></div>
+        <div class="card">
+          <div class="card-row"><span class="tag">Day 1 · Mon Mar 14</span><span class="badge">Planning</span></div>
+          <div class="divider"></div>
+          <div class="body">Arrive at Narita · Check in to hostel in Shinjuku · Explore Kabukicho and Golden Gai at night</div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header"><div class="h2">Expenses</div></div>
+        <div class="card">
+          <div class="card-row">
+            <div><div class="body" style="font-weight:500;color:#1e1e1e">Shinkansen – Tokyo to Kyoto</div><div class="tag" style="margin-top:3px">Transport</div></div>
+            <div class="amount">¥13,850</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Option D -->
+    <div class="option opt-d">
+      <div class="option-label">D — Plus Jakarta Sans · semibold · soft modern · approachable</div>
+      <div class="nav">
+        <div class="nav-logo"><div class="nav-dot"></div> Pathway Travel</div>
+        <div class="nav-links"><span>My Trips</span><span>Stats</span><span>Settings</span></div>
+      </div>
+      <div class="h1">Tokyo, Japan</div>
+      <div class="sub">Mar 14 – Mar 28, 2025 · 14 days</div>
+      <div class="section">
+        <div class="section-header"><div class="h2">Itinerary</div><div class="add">+ Add day</div></div>
+        <div class="card">
+          <div class="card-row"><span class="tag">Day 1 · Mon Mar 14</span><span class="badge">Planning</span></div>
+          <div class="divider"></div>
+          <div class="body">Arrive at Narita · Check in to hostel in Shinjuku · Explore Kabukicho and Golden Gai at night</div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header"><div class="h2">Expenses</div></div>
+        <div class="card">
+          <div class="card-row">
+            <div><div class="body" style="font-weight:500;color:#1e1e1e">Shinkansen – Tokyo to Kyoto</div><div class="tag" style="margin-top:3px">Transport</div></div>
+            <div class="amount">¥13,850</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

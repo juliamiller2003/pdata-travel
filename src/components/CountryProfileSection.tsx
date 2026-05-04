@@ -11,7 +11,7 @@ interface Props {
 }
 
 export default function CountryProfileSection({ countryCodes, startDate, homeCountryName }: Props) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
 
   const month = startDate
     ? new Date(startDate).toLocaleString("en-US", { month: "long" })

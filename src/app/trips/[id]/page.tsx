@@ -232,7 +232,7 @@ export default async function TripDetailPage({ params }: TripPageProps) {
           </div>
         </dl>
 
-        {trip.country_codes && trip.country_codes.length > 0 && tripStatus !== "completed" && (
+        {trip.country_codes && trip.country_codes.length > 0 && (
           <CountryProfileSection
             countryCodes={trip.country_codes as string[]}
             startDate={trip.start_date ?? null}
