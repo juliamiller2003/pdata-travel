@@ -5,7 +5,12 @@
 @layer base {
   body {
     @apply bg-[#efefef] text-[#1e1e1e] antialiased dark:text-[#efefef];
-    font-family: Helvetica, Arial, sans-serif;
+    font-family: var(--font-jakarta), system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4 {
+    font-weight: 600;
+    letter-spacing: -0.02em;
   }
   body:has(.login-page) header {
     display: none;
