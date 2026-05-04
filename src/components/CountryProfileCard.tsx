@@ -6,6 +6,7 @@ interface CountryProfile {
   outlet: string;
   currency: string;
   weather: string;
+  sim: string;
   visa: string | null;
 }
 
@@ -15,39 +16,44 @@ interface Props {
   homeCountryName: string | null;
 }
 
-const OUTLET_ICON = (
-  <svg className="h-3.5 w-3.5 shrink-0 text-[#9fb8b8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <circle cx="12" cy="12" r="9" />
-    <circle cx="9" cy="10" r="1" fill="currentColor" stroke="none" />
-    <circle cx="15" cy="10" r="1" fill="currentColor" stroke="none" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9 14h6" />
-  </svg>
-);
-
-const CURRENCY_ICON = (
-  <svg className="h-3.5 w-3.5 shrink-0 text-[#9fb8b8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33" />
-  </svg>
-);
-
-const WEATHER_ICON = (
-  <svg className="h-3.5 w-3.5 shrink-0 text-[#9fb8b8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.758-3.848 5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z" />
-  </svg>
-);
-
-const VISA_ICON = (
-  <svg className="h-3.5 w-3.5 shrink-0 text-[#9fb8b8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z" />
-  </svg>
-);
+const ICONS: Record<string, JSX.Element> = {
+  outlet: (
+    <svg className="h-3.5 w-3.5 shrink-0 text-[#9fb8b8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="9" cy="10" r="1" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="10" r="1" fill="currentColor" stroke="none" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 14h6" />
+    </svg>
+  ),
+  currency: (
+    <svg className="h-3.5 w-3.5 shrink-0 text-[#9fb8b8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33" />
+    </svg>
+  ),
+  weather: (
+    <svg className="h-3.5 w-3.5 shrink-0 text-[#9fb8b8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.758-3.848 5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z" />
+    </svg>
+  ),
+  sim: (
+    <svg className="h-3.5 w-3.5 shrink-0 text-[#9fb8b8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V6.75l-4.5-5.25h-3z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 10.5h4.5M9.75 13.5h4.5M9.75 16.5h2.25" />
+    </svg>
+  ),
+  visa: (
+    <svg className="h-3.5 w-3.5 shrink-0 text-[#9fb8b8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z" />
+    </svg>
+  ),
+};
 
 export default function CountryProfileCard({ countryName, month, homeCountryName }: Props) {
   const [profile, setProfile] = useState<CountryProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const cacheKey = `pdata-profile-${countryName}-${month ?? ""}-${homeCountryName ?? ""}`;
+    const cacheKey = `pdata-profile-v2-${countryName}-${month ?? ""}-${homeCountryName ?? ""}`;
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) {
       try { setProfile(JSON.parse(cached)); setLoading(false); return; } catch {}
@@ -68,13 +74,10 @@ export default function CountryProfileCard({ countryName, month, homeCountryName
       .finally(() => setLoading(false));
   }, [countryName, month, homeCountryName]);
 
-  const colCount = profile?.visa ? 4 : 3;
-  const skeletonCols = homeCountryName ? 4 : 3;
-
   if (loading) {
     return (
-      <div className={`grid grid-cols-1 sm:grid-cols-${skeletonCols} gap-3`}>
-        {Array.from({ length: skeletonCols }).map((_, i) => (
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {Array.from({ length: homeCountryName ? 5 : 4 }).map((_, i) => (
           <div key={i} className="h-14 rounded-lg bg-[#e0e0e0] dark:bg-[#2e2e2e] animate-pulse" />
         ))}
       </div>
@@ -84,22 +87,19 @@ export default function CountryProfileCard({ countryName, month, homeCountryName
   if (!profile) return null;
 
   const items = [
-    { icon: OUTLET_ICON, label: "Outlet", value: profile.outlet },
-    { icon: CURRENCY_ICON, label: "Currency", value: profile.currency },
-    { icon: WEATHER_ICON, label: month ? `Weather in ${month}` : "Climate", value: profile.weather },
-    ...(profile.visa ? [{ icon: VISA_ICON, label: "Visa", value: profile.visa }] : []),
+    { key: "outlet",   label: "Outlet",                          value: profile.outlet },
+    { key: "currency", label: "Currency",                        value: profile.currency },
+    { key: "weather",  label: month ? `Weather in ${month}` : "Climate", value: profile.weather },
+    { key: "sim",      label: "SIM Card",                        value: profile.sim },
+    ...(profile.visa ? [{ key: "visa", label: "Visa", value: profile.visa }] : []),
   ];
 
-  const gridClass = colCount === 4
-    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
-    : "grid grid-cols-1 sm:grid-cols-3 gap-3";
-
   return (
-    <div className={gridClass}>
-      {items.map(({ icon, label, value }) => (
-        <div key={label} className="rounded-lg border border-[#e0e0e0] dark:border-[#2e2e2e] bg-white dark:bg-[#2e2e2e]/60 p-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {items.map(({ key, label, value }) => (
+        <div key={key} className="rounded-lg border border-[#e0e0e0] dark:border-[#2e2e2e] bg-white dark:bg-[#2e2e2e]/60 p-3">
           <div className="flex items-center gap-1.5 mb-1">
-            {icon}
+            {ICONS[key]}
             <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8]">{label}</span>
           </div>
           <p className="text-xs text-gray-700 dark:text-[#efefef] leading-snug">{value}</p>

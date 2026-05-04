@@ -260,12 +260,17 @@ export default function TakeAChancePage() {
                   <p className="text-sm text-sky-600 dark:text-sky-400">{trip.destination}</p>
                 </div>
                 {trip.estimated_cost > 0 && (
-                  <div className="shrink-0 text-right">
+                  <div className="shrink-0 text-right space-y-0.5">
                     <span className="block rounded-full bg-[#cadede] dark:bg-[#2e2e2e] px-2.5 py-1 text-xs font-semibold text-[#1e1e1e] dark:text-[#cadede]">
                       ~${trip.estimated_cost.toLocaleString()} total
                     </span>
+                    {parseInt(duration) > 0 && (
+                      <span className="block text-center text-[10px] font-medium text-[#9fb8b8]">
+                        ~${Math.round((trip.estimated_cost - (trip.estimated_flights ?? 0)) / parseInt(duration)).toLocaleString()}/day
+                      </span>
+                    )}
                     {trip.estimated_flights > 0 && (
-                      <span className="mt-0.5 block text-center text-[10px] text-gray-400 dark:text-[#9fb8b8]">
+                      <span className="block text-center text-[10px] text-gray-400 dark:text-[#9fb8b8]">
                         incl. ~${trip.estimated_flights.toLocaleString()} flights
                       </span>
                     )}

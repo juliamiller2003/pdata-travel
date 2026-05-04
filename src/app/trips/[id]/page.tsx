@@ -11,6 +11,8 @@ import JournalSection from "@/components/JournalSection";
 import SectionGuard from "@/components/SectionGuard";
 import { byAlpha2 } from "@/lib/countries";
 import CountryProfileSection from "@/components/CountryProfileSection";
+import AccommodationSection from "@/components/AccommodationSection";
+import PackingListSection from "@/components/PackingListSection";
 
 const STATUS_STYLES: Record<TripStatus, string> = {
   planning:  "bg-[#e5dd83] dark:bg-[#f5ee9e] text-[#1e1e1e]",
@@ -78,8 +80,15 @@ export default async function TripDetailPage({ params }: TripPageProps) {
     .eq("trip_id", id)
     .order("day_number");
 
-  // Fetch journal entries, flights, expenses, and user settings in parallel
-  const [{ data: journal }, { data: flightsData }, { data: expensesData }, { data: userSettings }] = await Promise.all([
+  // Fetch journal, flights, expenses, user settings, accommodations, packing in parallel
+  const [
+    { data: journal },
+    { data: flightsData },
+    { data: expensesData },
+    { data: userSettings },
+    { data: accommodationsData },
+    { data: packingData },
+  ] = await Promise.all([
     db
       .from("journal_entries")
       .select("*")
@@ -100,6 +109,16 @@ export default async function TripDetailPage({ params }: TripPageProps) {
       .select("home_country_code")
       .eq("user_id", user.id)
       .single(),
+    db
+      .from("accommodations")
+      .select("*")
+      .eq("trip_id", id)
+      .order("check_in", { ascending: true }),
+    db
+      .from("packing_items")
+      .select("*")
+      .eq("trip_id", id)
+      .order("created_at"),
   ]);
 
   const itinerary = days ?? [];
@@ -253,6 +272,8 @@ export default async function TripDetailPage({ params }: TripPageProps) {
         <FlightsSection tripId={id} initialFlights={flights} />
       </SectionGuard>
 
+      <AccommodationSection tripId={id} initialAccommodations={accommodationsData ?? []} />
+
       <SectionGuard section="expenses">
         <ExpensesSection
           tripId={id}
@@ -262,6 +283,8 @@ export default async function TripDetailPage({ params }: TripPageProps) {
           endDate={trip.end_date ?? null}
         />
       </SectionGuard>
+
+      <PackingListSection tripId={id} initialItems={packingData ?? []} />
 
       <SectionGuard section="journal">
         <section>
