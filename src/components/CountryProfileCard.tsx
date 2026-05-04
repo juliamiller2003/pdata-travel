@@ -8,7 +8,6 @@ interface CountryProfile {
   weather: string;
   sim: string;
   visa: string | null;
-  exchangeRate?: string;
 }
 
 interface Props {
@@ -102,12 +101,7 @@ export default function CountryProfileCard({ countryName, month, homeCountryName
   const items = [
     // Outlet always comes from the static lookup — never from the API or cache
     ...(outlet ? [{ key: "outlet", label: "Outlet", value: outlet, sub: null }] : []),
-    {
-      key: "currency",
-      label: "Currency",
-      value: profile.currency,
-      sub: profile.exchangeRate ?? null,
-    },
+    { key: "currency", label: "Currency", value: profile.currency, sub: null },
     {
       key: "weather",
       label: month ? `Weather in ${month}` : "Climate",

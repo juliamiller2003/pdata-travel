@@ -15,6 +15,7 @@ import PackingListSection from "@/components/PackingListSection";
 import WhereNextSection from "@/components/WhereNextSection";
 import TransportationSection from "@/components/TransportationSection";
 import OfflineMapsSection from "@/components/OfflineMapsSection";
+import CurrencySection from "@/components/CurrencySection";
 import { effectiveStatus, formatDate } from "@/lib/tripUtils";
 
 const STATUS_STYLES: Record<TripStatus, string> = {
@@ -269,6 +270,13 @@ export default async function TripDetailPage({ params }: TripPageProps) {
           initialLegs={transportLegsData ?? []}
         />
       </SectionGuard>
+
+      {trip.country_codes && trip.country_codes.length > 0 && (
+        <CurrencySection
+          countryCodes={trip.country_codes as string[]}
+          homeCountryCode={homeCountryCode}
+        />
+      )}
 
       <OfflineMapsSection
         tripId={id}
