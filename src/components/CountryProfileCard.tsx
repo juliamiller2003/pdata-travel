@@ -59,7 +59,7 @@ export default function CountryProfileCard({ countryName, month, homeCountryName
   const outlet = OUTLET_LOOKUP[countryName] ?? null;
 
   useEffect(() => {
-    const cacheKey = `pathway-profile-v7-${countryName}-${month ?? ""}-${homeCountryName ?? ""}`;
+    const cacheKey = `pathway-profile-v8-${countryName}-${month ?? ""}-${homeCountryName ?? ""}`;
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) {
       try { setProfile(JSON.parse(cached)); setLoading(false); return; } catch {}
