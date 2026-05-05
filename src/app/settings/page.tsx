@@ -6,10 +6,12 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { SORTED_COUNTRIES } from "@/lib/countries";
 import { TRIP_SECTIONS, getSectionVisibility, setSectionVisibility, type SectionKey } from "@/lib/tripSections";
+import { getClockFormat, setClockFormat, type ClockFormat } from "@/lib/timeFormat";
 import type { MapView, UserSettings } from "@/types/database";
 
 export default function SettingsPage() {
   const [isDark, setIsDark] = useState(false);
+  const [clockFormat, setClockFormatState] = useState<ClockFormat>("12h");
   const router = useRouter();
   const supabase = createClient();
 
@@ -27,6 +29,7 @@ export default function SettingsPage() {
     const preferred = window.matchMedia("(prefers-color-scheme: dark)").matches;
     setIsDark(stored ? stored === "dark" : preferred);
     setSectionVisibilityState(getSectionVisibility());
+    setClockFormatState(getClockFormat());
   }, []);
 
   useEffect(() => {
@@ -211,6 +214,32 @@ export default function SettingsPage() {
                 </button>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Clock format */}
+        <div className="mt-6 border-t border-gray-100 pt-6 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Time format</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">How activity times appear in your itinerary.</p>
+            </div>
+            <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden text-sm font-medium">
+              {(["12h", "24h"] as ClockFormat[]).map((fmt) => (
+                <button
+                  key={fmt}
+                  type="button"
+                  onClick={() => { setClockFormatState(fmt); setClockFormat(fmt); }}
+                  className={`px-3 py-1.5 transition-colors ${
+                    clockFormat === fmt
+                      ? "bg-[#1e1e1e] dark:bg-[#cadede] text-white dark:text-[#1e1e1e]"
+                      : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  }`}
+                >
+                  {fmt}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
