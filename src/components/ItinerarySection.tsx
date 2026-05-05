@@ -119,8 +119,9 @@ export default function ItinerarySection({
 
   function dateForDayNum(dayNum: number) {
     if (!tripStartDate) return null;
-    return new Date(new Date(tripStartDate + "T00:00:00").getTime() + (dayNum - 1) * 86400000)
-      .toISOString().split("T")[0];
+    // Parse as UTC components to avoid timezone-offset shifting the date
+    const [y, m, d] = tripStartDate.split("-").map(Number);
+    return new Date(Date.UTC(y, m - 1, d + dayNum - 1)).toISOString().split("T")[0];
   }
 
   // ── Day CRUD ─────────────────────────────────────────────────
@@ -324,15 +325,15 @@ export default function ItinerarySection({
     </button>
   );
 
-  function DayHeader({ day }: { day: DayRow }) {
+  function DayHeader({ day, displayNum }: { day: DayRow; displayNum: number }) {
     return (
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white dark:text-[#1e1e1e]">
-            {day.day_number}
+            {displayNum}
           </span>
           <span className="text-sm font-medium text-gray-700 dark:text-[#efefef]">
-            Day {day.day_number}
+            Day {displayNum}
             {day.date && <span className="ml-2 text-gray-400 dark:text-[#9fb8b8]">· {formatDayDate(day.date)}</span>}
           </span>
         </div>
@@ -518,9 +519,9 @@ export default function ItinerarySection({
           </div>
         )}
         <div className="space-y-4 mb-3">
-          {days.map((day) => (
+          {days.map((day, idx) => (
             <div key={day.id} className="card p-4">
-              <DayHeader day={day} />
+              <DayHeader day={day} displayNum={idx + 1} />
               <textarea
                 value={dayNotes[day.id]?.["notes"] ?? ""}
                 onChange={(e) => updateSectionNote(day.id, "notes", e.target.value)}
@@ -550,9 +551,9 @@ export default function ItinerarySection({
           </div>
         )}
         <div className="space-y-4 mb-3">
-          {days.map((day) => (
+          {days.map((day, idx) => (
             <div key={day.id} className="card p-4">
-              <DayHeader day={day} />
+              <DayHeader day={day} displayNum={idx + 1} />
               <div className="space-y-3">
                 {sections.map(({ key, label }) => (
                   <div key={key}>
@@ -587,9 +588,9 @@ export default function ItinerarySection({
         </div>
       )}
       <div className="space-y-4 mb-3">
-        {days.map((day) => (
+        {days.map((day, idx) => (
           <div key={day.id} className="card p-4">
-            <DayHeader day={day} />
+            <DayHeader day={day} displayNum={idx + 1} />
             {day.activities.length > 0 && (
               <ul className="space-y-2 mb-3">
                 {day.activities.map((act) =>
