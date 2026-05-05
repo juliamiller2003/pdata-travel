@@ -189,49 +189,26 @@ export default function ItinerarySection({
       const res = await fetch("/api/suggest-itinerary", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ destination, num_days, style, preferences }),
+        body: JSON.stringify({ destination, num_days, style, preferences: preferences ?? "" }),
       });
 
-      if (!res.ok || !res.body) { setAiError("Something went wrong. Try again."); setGenerating(false); return; }
+      const data = await res.json();
 
-      // Stream the response — show notes text live as it arrives
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let accumulated = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        accumulated += decoder.decode(value, { stream: true });
-
-        // For notes style, render partial text as it streams in (strip leading JSON noise)
-        if (style === "notes") {
-          const match = accumulated.match(/"content"\s*:\s*"([\s\S]*)/);
-          if (match) {
-            // Unescape newlines while still streaming
-            const partial = match[1].replace(/\\n/g, "\n").replace(/\\"/g, '"').replace(/"?\s*}?\s*$/, "");
-            setNotesSuggestion(partial);
-          }
-        }
+      if (!res.ok || data.error) {
+        setAiError(data.error ?? "Something went wrong. Try again.");
+        return;
       }
 
-      setGenerating(false);
-
-      // Parse the completed JSON
-      const text = accumulated.trim()
-        .replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
-
-      try {
-        const data = JSON.parse(text);
-        if (data.error) { setAiError(data.error); return; }
-        if (style === "structured") setStructuredSuggestion(data.days);
-        else if (style === "notes") setNotesSuggestion(data.content);
-        else setDayNotesSuggestion(data.days);
-      } catch {
-        setAiError("Something went wrong. Try again.");
+      if (style === "structured") {
+        setStructuredSuggestion(data.days ?? []);
+      } else if (style === "notes") {
+        setNotesSuggestion(data.content ?? "");
+      } else {
+        setDayNotesSuggestion(data.days ?? []);
       }
     } catch {
       setAiError("Something went wrong. Try again.");
+    } finally {
       setGenerating(false);
     }
   }
