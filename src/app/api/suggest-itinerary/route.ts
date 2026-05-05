@@ -27,11 +27,12 @@ Return ONLY a JSON object with this exact structure (no markdown, no commentary)
 }
 
 Rules:
-- Include exactly 4 activities per day (no more)
-- Keep title under 6 words
+- Include 4–6 activities per day
+- Every activity must be a specific named experience — a real place, dish, market, trail, neighbourhood, viewpoint, temple, etc. No generic filler like "rest and reflection", "leisurely walk", or "art gallery tour"
+- Meals: only include if it is a specific named restaurant, street food spot, night market, or notable food experience. Do not add generic "lunch" or "dinner" as activities
 - Use 24-hour time strings (e.g. "09:00", "14:30")
-- place_name should be a specific venue/landmark name only, or null
-- Cover a good mix: sightseeing, food, culture, downtime`;
+- place_name must be the actual venue or landmark name, never null for sightseeing activities
+- Vary the pace: mix high-energy and low-key activities across the day`;
   }
 
   if (style === "notes") {
