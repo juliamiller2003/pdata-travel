@@ -635,32 +635,25 @@ export default function ItinerarySection({
                       </div>
                     </li>
                   ) : (
-                    <li key={act.id} className="group flex items-start gap-3 text-sm">
+                    <li key={act.id} className="flex items-start gap-3 text-sm">
                       <span className="mt-0.5 w-12 shrink-0 font-mono text-xs text-gray-400 dark:text-[#9fb8b8]">{act.time?.slice(0, 5) ?? "—"}</span>
-                      <div className="flex-1 min-w-0">
+                      <button
+                        onClick={() => startEditActivity(act)}
+                        className="flex-1 min-w-0 text-left hover:opacity-70 transition-opacity"
+                        title="Edit activity"
+                      >
                         <p className="font-medium text-gray-800 dark:text-[#efefef]">{act.title}</p>
                         {act.place_name && <p className="text-xs text-gray-400 dark:text-[#9fb8b8]">{act.place_name}</p>}
-                      </div>
-                      <div className="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => startEditActivity(act)}
-                          className="text-gray-300 hover:text-sky-400 transition-colors"
-                          title="Edit activity"
-                        >
-                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => handleDeleteActivity(act.id, day.id)}
-                          className="text-gray-300 hover:text-red-400 transition-colors"
-                          title="Delete activity"
-                        >
-                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteActivity(act.id, day.id)}
+                        className="mt-0.5 shrink-0 text-gray-300 hover:text-red-400 transition-colors"
+                        title="Delete activity"
+                      >
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
                     </li>
                   )
                 )}
