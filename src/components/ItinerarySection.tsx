@@ -206,8 +206,8 @@ export default function ItinerarySection({
       } else {
         setDayNotesSuggestion(data.days ?? []);
       }
-    } catch {
-      setAiError("Something went wrong. Try again.");
+    } catch (err) {
+      setAiError(`Something went wrong: ${String(err)}`);
     } finally {
       setGenerating(false);
     }

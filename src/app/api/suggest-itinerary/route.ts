@@ -99,23 +99,34 @@ export async function POST(req: NextRequest) {
 
   const prompt = buildPrompt(destination, num_days, style, preferences ?? "");
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 2048,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
+  let anthropicRes: Response;
+  try {
+    anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 2048,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+  } catch (err) {
+    return NextResponse.json({ error: `Network error reaching AI: ${String(err)}` }, { status: 502 });
+  }
 
-  if (!res.ok) return NextResponse.json({ error: "AI request failed" }, { status: 500 });
+  if (!anthropicRes.ok) {
+    const errText = await anthropicRes.text().catch(() => "");
+    return NextResponse.json(
+      { error: `AI request failed (${anthropicRes.status}): ${errText.slice(0, 200)}` },
+      { status: 500 }
+    );
+  }
 
-  const result = await res.json();
+  const result = await anthropicRes.json();
   let text: string = result.content?.[0]?.text?.trim() ?? "";
   text = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
 
@@ -124,6 +135,6 @@ export async function POST(req: NextRequest) {
   try {
     return NextResponse.json(JSON.parse(text));
   } catch {
-    return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 });
+    return NextResponse.json({ error: `Failed to parse AI response: ${text.slice(0, 200)}` }, { status: 500 });
   }
 }
