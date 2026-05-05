@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import type { ItineraryStyle } from "@/types/database";
 
 interface SuggestRequest {
@@ -83,23 +83,23 @@ Write each section as short prose notes. Include specific places and food recomm
 
 export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: "Not configured" }, { status: 500 });
+  if (!apiKey) return new Response(JSON.stringify({ error: "Not configured" }), { status: 500 });
 
   const { destination, num_days, style, preferences }: SuggestRequest = await req.json();
 
   const VALID_STYLES: ItineraryStyle[] = ["structured", "notes", "notes_day_night", "notes_day_afternoon_night"];
 
   if (!destination || !num_days || num_days < 1 || num_days > 30) {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    return new Response(JSON.stringify({ error: "Invalid request" }), { status: 400 });
   }
 
   if (!VALID_STYLES.includes(style)) {
-    return NextResponse.json({ error: "Invalid itinerary style" }, { status: 400 });
+    return new Response(JSON.stringify({ error: "Invalid itinerary style" }), { status: 400 });
   }
 
   const prompt = buildPrompt(destination, num_days, style, preferences);
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "x-api-key": apiKey,
@@ -107,21 +107,61 @@ export async function POST(req: NextRequest) {
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 4096,
+      model: "claude-haiku-4-5",
+      max_tokens: 2048,
+      stream: true,
       messages: [{ role: "user", content: prompt }],
     }),
   });
 
-  if (!res.ok) return NextResponse.json({ error: "AI request failed" }, { status: 500 });
-
-  const result = await res.json();
-  let text: string = result.content[0].text.trim();
-  text = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
-
-  try {
-    return NextResponse.json(JSON.parse(text));
-  } catch {
-    return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 });
+  if (!anthropicRes.ok || !anthropicRes.body) {
+    return new Response(JSON.stringify({ error: "AI request failed" }), { status: 500 });
   }
+
+  // Stream text deltas straight to the client as plain text.
+  // The component accumulates the chunks and parses JSON when the stream closes.
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  let sseBuffer = "";
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      const reader = anthropicRes.body!.getReader();
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          sseBuffer += decoder.decode(value, { stream: true });
+          const lines = sseBuffer.split("\n");
+          sseBuffer = lines.pop() ?? "";
+
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            const payload = line.slice(6).trim();
+            if (!payload || payload === "[DONE]") continue;
+            try {
+              const event = JSON.parse(payload);
+              if (
+                event.type === "content_block_delta" &&
+                event.delta?.type === "text_delta" &&
+                event.delta.text
+              ) {
+                controller.enqueue(encoder.encode(event.delta.text));
+              }
+            } catch {
+              // skip malformed SSE lines
+            }
+          }
+        }
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
+  });
 }
