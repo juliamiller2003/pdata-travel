@@ -43,12 +43,8 @@ export async function GET(request: NextRequest) {
 
       const rawText = await res.text();
 
-      if (!res.ok) {
-        return NextResponse.json(
-          { error: `AeroDataBox error ${res.status}: ${rawText.slice(0, 200)}` },
-          { status: 502 }
-        );
-      }
+      // Fall through to next source on any auth/subscription error
+      if (!res.ok) throw new Error(`AeroDataBox ${res.status}`);
 
       const json = JSON.parse(rawText);
       const flights = Array.isArray(json) ? json : json.items ?? [];
