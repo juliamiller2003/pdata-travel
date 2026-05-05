@@ -249,7 +249,9 @@ export default function ItinerarySection({
           num_days,
           style,
           preferences: preferences ?? "",
-          existing_activities: days.flatMap((d) => d.activities.map((a) => a.title)),
+          existing_activities: days.flatMap((d) =>
+            d.activities.map((a) => a.place_name ? `${a.title} (${a.place_name})` : a.title)
+          ),
         }),
       });
 

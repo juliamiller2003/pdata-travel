@@ -32,12 +32,13 @@ Return ONLY a JSON object with this exact structure (no markdown, no commentary)
 
 Rules:
 - Include 4–6 activities per day
-- Every activity must be a specific named experience — a real place, dish, market, trail, neighbourhood, viewpoint, temple, etc. No generic filler like "rest and reflection", "leisurely walk", or "art gallery tour"
-- Meals: only include if it is a specific named restaurant, street food spot, night market, or notable food experience. Do not add generic "lunch" or "dinner" as activities
-- Schedule activities at realistic hours: morning markets open early, night markets open 17:00–18:00 at the earliest, sunset viewpoints in the evening, temples fine any time, etc. Do not schedule night markets, night views, or bars in the morning or early afternoon
+- Every activity must be a specific named experience — a real place, dish, market, trail, viewpoint, temple, etc. No generic filler like "rest and reflection", "leisurely walk", or vague descriptions like "local dim sum spot"
+- Meals: only include if it is a specific named restaurant, street food stall, or night market. Do not add generic "lunch" or "dinner". Be accurate — do not describe a famous chain as a "local" spot, and only suggest venues for meals they actually serve (e.g. do not schedule a dinner restaurant for breakfast)
+- No duplicates: do not suggest any place or experience that is already in the itinerary, even under a different title. If Elephant Mountain is already listed, do not suggest it again in any form
+- Geographic logic: group activities in the same day by area. If the day includes somewhere that is 45+ minutes from the city centre (e.g. Yangmingshan, Maokong, Jiufen, Yehliu), do not add other distant locations to the same day — allow travel time and keep the rest of the day nearby or at the destination
+- Realistic hours: morning markets early, night markets 18:00+, sunrise spots before 07:00, tea houses afternoon/evening, bars and clubs 21:00+. Never schedule a night market or bar before 17:00
 - Use 24-hour time strings (e.g. "09:00", "14:30")
-- place_name must be the actual venue or landmark name, never null for sightseeing activities
-- Vary the pace: mix high-energy and low-key activities across the day`;
+- place_name must be the exact venue or landmark name, never null for sightseeing activities`;
   }
 
   if (style === "notes") {
