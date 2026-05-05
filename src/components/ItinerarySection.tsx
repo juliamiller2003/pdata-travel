@@ -101,6 +101,7 @@ export default function ItinerarySection({
   // AI suggestions
   const [showAI, setShowAI] = useState(false);
   const [preferences, setPreferences] = useState("");
+  const [generationScope, setGenerationScope] = useState<"1" | "3" | "full">("full");
   const knownDays = computeDuration(tripStartDate, tripEndDate);
   const [numDaysInput, setNumDaysInput] = useState(String(knownDays ?? 3));
   const [generating, setGenerating] = useState(false);
@@ -183,7 +184,10 @@ export default function ItinerarySection({
     setNotesSuggestion(null);
     setDayNotesSuggestion(null);
 
-    const num_days = knownDays ?? parseInt(numDaysInput, 10);
+    const num_days =
+      generationScope === "1" ? 1 :
+      generationScope === "3" ? 3 :
+      (knownDays ?? parseInt(numDaysInput, 10));
 
     try {
       const res = await fetch("/api/suggest-itinerary", {
@@ -323,12 +327,44 @@ export default function ItinerarySection({
         </button>
       </div>
 
-      {!knownDays && (
-        <div>
-          <label className="label">Number of days</label>
-          <input type="number" min="1" max="30" value={numDaysInput} onChange={(e) => setNumDaysInput(e.target.value)} className="input w-28" />
+      {/* Scope selector */}
+      <div>
+        <label className="label">Generate for</label>
+        <div className="flex gap-2 flex-wrap">
+          {(["1", "3", "full"] as const).map((scope) => {
+            const label =
+              scope === "1" ? "1 day" :
+              scope === "3" ? "3 days" :
+              knownDays ? `Full trip (${knownDays} day${knownDays === 1 ? "" : "s"})` : "Full trip";
+            return (
+              <button
+                key={scope}
+                onClick={() => setGenerationScope(scope)}
+                className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                  generationScope === scope
+                    ? "bg-[#1e1e1e] dark:bg-[#cadede] text-white dark:text-[#1e1e1e]"
+                    : "bg-[#e0e0e0] dark:bg-[#2e2e2e] text-gray-600 dark:text-[#9fb8b8] hover:bg-[#cadede] dark:hover:bg-[#3e3e3e]"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
-      )}
+        {generationScope === "full" && !knownDays && (
+          <div className="mt-2">
+            <input
+              type="number"
+              min="1"
+              max="30"
+              value={numDaysInput}
+              onChange={(e) => setNumDaysInput(e.target.value)}
+              placeholder="Number of days"
+              className="input w-32"
+            />
+          </div>
+        )}
+      </div>
 
       <div>
         <label className="label">Preferences <span className="text-gray-400 font-normal">— optional</span></label>
