@@ -72,8 +72,8 @@ export async function GET(request: NextRequest) {
         distanceMiles: f.greatCircleDistance?.mile ? Math.round(f.greatCircleDistance.mile) : null,
       };
       return NextResponse.json(result);
-    } catch (e) {
-      return NextResponse.json({ error: `AeroDataBox exception: ${String(e)}` }, { status: 500 });
+    } catch {
+      // Fall through to next source
     }
   }
 
