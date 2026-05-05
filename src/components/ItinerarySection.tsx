@@ -122,6 +122,7 @@ export default function ItinerarySection({
   const [structuredSuggestion, setStructuredSuggestion] = useState<SuggestedDay[] | null>(null);
   const [notesSuggestion, setNotesSuggestion] = useState<string | null>(null);
   const [dayNotesSuggestion, setDayNotesSuggestion] = useState<SuggestedDayNotes[] | null>(null);
+  const [rejectedActivities, setRejectedActivities] = useState<string[]>([]);
 
   function dateForDayNum(dayNum: number) {
     if (!tripStartDate) return null;
@@ -228,7 +229,7 @@ export default function ItinerarySection({
 
   // ── AI generation ─────────────────────────────────────────────
 
-  async function handleGenerate() {
+  async function handleGenerate(additionalRejected: string[] = []) {
     setGenerating(true);
     setAiError(null);
     setStructuredSuggestion(null);
@@ -249,9 +250,13 @@ export default function ItinerarySection({
           num_days,
           style,
           preferences: preferences ?? "",
-          existing_activities: days.flatMap((d) =>
-            d.activities.map((a) => a.place_name ? `${a.title} (${a.place_name})` : a.title)
-          ),
+          existing_activities: [
+            ...days.flatMap((d) =>
+              d.activities.map((a) => a.place_name ? `${a.title} (${a.place_name})` : a.title)
+            ),
+            ...rejectedActivities,
+            ...additionalRejected,
+          ],
         }),
       });
 
@@ -304,6 +309,7 @@ export default function ItinerarySection({
 
     setDays((prev) => [...prev, ...newDays]);
     setStructuredSuggestion(null);
+    setRejectedActivities([]);
     setShowAI(false);
     setApplying(false);
   }
@@ -313,6 +319,7 @@ export default function ItinerarySection({
     setTripNotes(notesSuggestion);
     await db.from("trips").update({ itinerary_notes: notesSuggestion }).eq("id", tripId);
     setNotesSuggestion(null);
+    setRejectedActivities([]);
     setShowAI(false);
   }
 
@@ -337,6 +344,7 @@ export default function ItinerarySection({
     setDays((prev) => [...prev, ...newDays]);
     setDayNotes((prev) => ({ ...prev, ...newDayNotes }));
     setDayNotesSuggestion(null);
+    setRejectedActivities([]);
     setShowAI(false);
     setApplying(false);
   }
@@ -379,7 +387,7 @@ export default function ItinerarySection({
     <div className="mb-4 rounded-xl border border-sky-100 dark:border-[#2e2e2e] bg-sky-50/60 dark:bg-transparent p-4 space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold text-gray-700 dark:text-[#efefef]">AI itinerary suggestions</p>
-        <button onClick={() => { setShowAI(false); setStructuredSuggestion(null); setNotesSuggestion(null); setDayNotesSuggestion(null); setAiError(null); }} className="text-gray-400 hover:text-gray-600">
+        <button onClick={() => { setShowAI(false); setStructuredSuggestion(null); setNotesSuggestion(null); setDayNotesSuggestion(null); setAiError(null); setRejectedActivities([]); }} className="text-gray-400 hover:text-gray-600">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -439,7 +447,7 @@ export default function ItinerarySection({
       {aiError && <p className="text-sm text-red-600">{aiError}</p>}
 
       {!structuredSuggestion && !notesSuggestion && !dayNotesSuggestion && (
-        <button onClick={handleGenerate} disabled={generating} className="btn-primary w-full">
+        <button onClick={() => handleGenerate()} disabled={generating} className="btn-primary w-full">
           {generating ? (
             <span className="flex items-center justify-center gap-2">
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -473,7 +481,17 @@ export default function ItinerarySection({
             <button onClick={handleApplyStructured} disabled={applying} className="btn-primary flex-1">
               {applying ? "Adding…" : "Add to itinerary"}
             </button>
-            <button onClick={() => { setStructuredSuggestion(null); }} className="btn-secondary">Try again</button>
+            <button
+              onClick={() => {
+                const rejected = structuredSuggestion.flatMap((day) =>
+                  day.activities.map((act) => act.place_name ? `${act.title} (${act.place_name})` : act.title)
+                );
+                setRejectedActivities((prev) => [...prev, ...rejected]);
+                setStructuredSuggestion(null);
+                handleGenerate(rejected);
+              }}
+              className="btn-secondary"
+            >Try again</button>
           </div>
         </div>
       )}
@@ -486,7 +504,13 @@ export default function ItinerarySection({
           </div>
           <div className="flex gap-2">
             <button onClick={handleApplyNotes} className="btn-primary flex-1">Apply</button>
-            <button onClick={() => setNotesSuggestion(null)} className="btn-secondary">Try again</button>
+            <button
+              onClick={() => {
+                setNotesSuggestion(null);
+                handleGenerate();
+              }}
+              className="btn-secondary"
+            >Try again</button>
           </div>
         </div>
       )}
@@ -512,7 +536,13 @@ export default function ItinerarySection({
             <button onClick={handleApplyDayNotes} disabled={applying} className="btn-primary flex-1">
               {applying ? "Adding…" : "Add to itinerary"}
             </button>
-            <button onClick={() => setDayNotesSuggestion(null)} className="btn-secondary">Try again</button>
+            <button
+              onClick={() => {
+                setDayNotesSuggestion(null);
+                handleGenerate();
+              }}
+              className="btn-secondary"
+            >Try again</button>
           </div>
         </div>
       )}
@@ -523,7 +553,7 @@ export default function ItinerarySection({
     <div className="mb-4 flex items-center justify-between">
       <h2 className="text-lg font-semibold text-gray-900 dark:text-[#efefef]">Itinerary</h2>
       <button
-        onClick={() => { setShowAI((v) => !v); setStructuredSuggestion(null); setNotesSuggestion(null); setDayNotesSuggestion(null); setAiError(null); }}
+        onClick={() => { setShowAI((v) => !v); setStructuredSuggestion(null); setNotesSuggestion(null); setDayNotesSuggestion(null); setAiError(null); setRejectedActivities([]); }}
         className="flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-[#3a3a3a] bg-white dark:bg-[#2e2e2e] px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-[#9fb8b8] hover:border-[#9fb8b8] hover:text-[#9fb8b8] transition-colors"
       >
         <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>

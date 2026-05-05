@@ -194,11 +194,18 @@ export default function FlightSearch({ tripId, onFlightAdded }: FlightSearchProp
               <p className="font-bold text-gray-900 dark:text-[#efefef] text-lg">{lookupResult.flightNumber}</p>
               {lookupResult.airline && <p className="text-xs text-gray-400 dark:text-[#9fb8b8]">{lookupResult.airline}</p>}
             </div>
-            {lookupResult.status && (
-              <span className="rounded-full bg-green-100 dark:bg-[#cadede] px-2.5 py-0.5 text-xs font-medium text-green-700 dark:text-[#1e1e1e] capitalize">
-                {lookupResult.status}
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              {lookupResult.partial && (
+                <span className="rounded-full bg-amber-100 dark:bg-amber-900/30 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+                  Airline only
+                </span>
+              )}
+              {lookupResult.status && (
+                <span className="rounded-full bg-green-100 dark:bg-[#cadede] px-2.5 py-0.5 text-xs font-medium text-green-700 dark:text-[#1e1e1e] capitalize">
+                  {lookupResult.status}
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
@@ -209,6 +216,7 @@ export default function FlightSearch({ tripId, onFlightAdded }: FlightSearchProp
                 value={editDepartureIata}
                 onChange={(e) => setEditDepartureIata(e.target.value.toUpperCase())}
                 placeholder="DEP"
+                autoFocus={lookupResult.partial}
                 className="input text-center text-xl font-bold uppercase tracking-widest"
               />
               <input
@@ -248,7 +256,12 @@ export default function FlightSearch({ tripId, onFlightAdded }: FlightSearchProp
               )}
             </div>
           </div>
-          {(!editDepartureIata || !editArrivalIata) && (
+          {lookupResult.partial ? (
+            <p className="text-xs text-amber-600">
+              Airline identified, but route info isn&apos;t available without a flight data subscription.
+              Enter the 3-letter airport codes above to complete this flight.
+            </p>
+          ) : (!editDepartureIata || !editArrivalIata) && (
             <p className="text-xs text-amber-600">Enter the 3-letter airport codes above to enable the trip map.</p>
           )}
 

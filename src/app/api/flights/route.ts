@@ -14,6 +14,8 @@ export interface FlightResult {
   arrivalTime: string | null;
   status: string | null;
   distanceMiles: number | null;
+  /** True when only partial data was found (airline only — no route info) */
+  partial?: boolean;
 }
 
 export async function GET(request: NextRequest) {
@@ -107,26 +109,32 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // ── Claude fallback (airline name only) ──────────────────────
+  // ── Claude fallback (airline + best-guess route) ─────────────
   if (anthropicKey) {
     try {
-      const prompt = `You are a flight data assistant. Return information for flight ${flightNumber}.
+      const prompt = `You are a flight data assistant with knowledge of airline routes. Look up flight ${flightNumber}.
 
-The first 2 letters of a flight number are the airline's IATA code (e.g. AA = American Airlines, UA = United Airlines, BA = British Airways, SL = Thai Lion Air).
+The first 2 letters are the airline IATA code (UA = United Airlines, AA = American Airlines, DL = Delta, BA = British Airways, LH = Lufthansa, SQ = Singapore Airlines, CX = Cathay Pacific, JL = Japan Airlines, NH = ANA, QF = Qantas, EK = Emirates, etc.).
 
-Return ONLY a JSON object — no markdown, no commentary:
+Many flight numbers are operated on fixed routes. Use your training knowledge to identify the most likely route for this flight number. Major international and domestic routes are often consistent for years.
+
+Return ONLY a valid JSON object — no markdown, no commentary, no extra text:
 {
   "flightNumber": "${flightNumber}",
-  "airline": "Full airline name (derive from the 2-letter prefix — always provide this if you can identify the airline)",
-  "departureAirport": "Full airport name or null if you don't know this specific route",
-  "departureCity": "City name or null",
-  "departureIata": "3-letter IATA code or null",
-  "arrivalAirport": "Full airport name or null if you don't know this specific route",
-  "arrivalCity": "City name or null",
-  "arrivalIata": "3-letter IATA code or null"
+  "airline": "Full airline name derived from the 2-letter prefix",
+  "departureAirport": "Full airport name, or null only if truly unknown",
+  "departureCity": "City name, or null only if truly unknown",
+  "departureIata": "3-letter IATA code, or null only if truly unknown",
+  "arrivalAirport": "Full airport name, or null only if truly unknown",
+  "arrivalCity": "City name, or null only if truly unknown",
+  "arrivalIata": "3-letter IATA code, or null only if truly unknown"
 }
 
-Always try to identify the airline from the 2-letter prefix. Only return null for airport fields if you are not confident of the specific route.`;
+Rules:
+- Always provide the airline name — derive it from the 2-letter prefix
+- Provide your best guess for the route based on training data — most major flight numbers have well-known consistent routes
+- Only use null for airport fields if you genuinely have no information about this route
+- Do not return departure and arrival times (you don't have real-time data)`;
 
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
@@ -136,7 +144,7 @@ Always try to identify the airline from the 2-letter prefix. Only return null fo
           "content-type": "application/json",
         },
         body: JSON.stringify({
-          model: "claude-haiku-4-5-20251001",
+          model: "claude-sonnet-4-5",
           max_tokens: 512,
           messages: [{ role: "user", content: prompt }],
         }),
@@ -154,6 +162,7 @@ Always try to identify the airline from the 2-letter prefix. Only return null fo
         return NextResponse.json({ error: "Flight not found. Try saving manually." }, { status: 404 });
       }
 
+      const hasRouteInfo = !!(parsed.departureIata || parsed.arrivalIata);
       const result: FlightResult = {
         flightNumber: parsed.flightNumber ?? flightNumber,
         airline: parsed.airline ?? null,
@@ -167,6 +176,7 @@ Always try to identify the airline from the 2-letter prefix. Only return null fo
         arrivalTime: null,
         status: null,
         distanceMiles: null,
+        partial: !hasRouteInfo,
       };
       return NextResponse.json(result);
     } catch {
