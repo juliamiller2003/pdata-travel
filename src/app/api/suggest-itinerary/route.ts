@@ -27,9 +27,10 @@ Return ONLY a JSON object with this exact structure (no markdown, no commentary)
 }
 
 Rules:
-- Include 4–6 activities per day
+- Include exactly 4 activities per day (no more)
+- Keep title under 6 words
 - Use 24-hour time strings (e.g. "09:00", "14:30")
-- place_name should be a specific venue/landmark, or null
+- place_name should be a specific venue/landmark name only, or null
 - Cover a good mix: sightseeing, food, culture, downtime`;
   }
 
@@ -110,7 +111,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 4096,
+        max_tokens: 8192,
         messages: [{ role: "user", content: prompt }],
       }),
     });
