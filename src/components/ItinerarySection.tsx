@@ -225,7 +225,13 @@ export default function ItinerarySection({
       const res = await fetch("/api/suggest-itinerary", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ destination, num_days, style, preferences: preferences ?? "" }),
+        body: JSON.stringify({
+          destination,
+          num_days,
+          style,
+          preferences: preferences ?? "",
+          existing_activities: days.flatMap((d) => d.activities.map((a) => a.title)),
+        }),
       });
 
       const data = await res.json();

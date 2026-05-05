@@ -6,13 +6,17 @@ interface SuggestRequest {
   num_days: number;
   style: ItineraryStyle;
   preferences: string;
+  existing_activities: string[];
 }
 
-function buildPrompt(destination: string, num_days: number, style: ItineraryStyle, preferences: string) {
+function buildPrompt(destination: string, num_days: number, style: ItineraryStyle, preferences: string, existing_activities: string[]) {
   const pref = preferences.trim() ? `\nUser preferences: ${preferences.trim()}` : "";
+  const existing = existing_activities.length > 0
+    ? `\nAlready in the itinerary (do NOT repeat these or anything similar): ${existing_activities.join(", ")}`
+    : "";
 
   if (style === "structured") {
-    return `You are a travel expert. Create a ${num_days}-day itinerary for ${destination}.${pref}
+    return `You are a travel expert. Create a ${num_days}-day itinerary for ${destination}.${pref}${existing}
 
 Return ONLY a JSON object with this exact structure (no markdown, no commentary):
 {
@@ -30,22 +34,23 @@ Rules:
 - Include 4–6 activities per day
 - Every activity must be a specific named experience — a real place, dish, market, trail, neighbourhood, viewpoint, temple, etc. No generic filler like "rest and reflection", "leisurely walk", or "art gallery tour"
 - Meals: only include if it is a specific named restaurant, street food spot, night market, or notable food experience. Do not add generic "lunch" or "dinner" as activities
+- Schedule activities at realistic hours: morning markets open early, night markets open 17:00–18:00 at the earliest, sunset viewpoints in the evening, temples fine any time, etc. Do not schedule night markets, night views, or bars in the morning or early afternoon
 - Use 24-hour time strings (e.g. "09:00", "14:30")
 - place_name must be the actual venue or landmark name, never null for sightseeing activities
 - Vary the pace: mix high-energy and low-key activities across the day`;
   }
 
   if (style === "notes") {
-    return `You are a travel expert. Write a ${num_days}-day itinerary for ${destination} as flowing prose.${pref}
+    return `You are a travel expert. Write a ${num_days}-day itinerary for ${destination} as flowing prose.${pref}${existing}
 
 Return ONLY a JSON object:
 { "content": "Day 1 - Arrival\\n\\nStart by..." }
 
-Write naturally, like notes you'd make for yourself. Include specific places, restaurants, and tips. Use \\n for line breaks.`;
+Write naturally, like notes you'd make for yourself. Include specific places, restaurants, and tips. Schedule activities at realistic hours (night markets in the evening, sunrise spots early morning, etc.). Use \\n for line breaks.`;
   }
 
   if (style === "notes_day_night") {
-    return `You are a travel expert. Create a ${num_days}-day itinerary for ${destination} split into day and night.${pref}
+    return `You are a travel expert. Create a ${num_days}-day itinerary for ${destination} split into day and night.${pref}${existing}
 
 Return ONLY a JSON object:
 {
@@ -64,7 +69,7 @@ Write each section as short prose notes. Include specific places and food recomm
   }
 
   // notes_day_afternoon_night
-  return `You are a travel expert. Create a ${num_days}-day itinerary for ${destination} split into day, afternoon, and night.${pref}
+  return `You are a travel expert. Create a ${num_days}-day itinerary for ${destination} split into day, afternoon, and night.${pref}${existing}
 
 Return ONLY a JSON object:
 {
@@ -87,7 +92,7 @@ export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "Not configured" }, { status: 500 });
 
-  const { destination, num_days, style, preferences }: SuggestRequest = await req.json();
+  const { destination, num_days, style, preferences, existing_activities = [] }: SuggestRequest = await req.json();
 
   const VALID_STYLES: ItineraryStyle[] = ["structured", "notes", "notes_day_night", "notes_day_afternoon_night"];
 
@@ -99,7 +104,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid itinerary style" }, { status: 400 });
   }
 
-  const prompt = buildPrompt(destination, num_days, style, preferences ?? "");
+  const prompt = buildPrompt(destination, num_days, style, preferences ?? "", existing_activities);
 
   let anthropicRes: Response;
   try {
