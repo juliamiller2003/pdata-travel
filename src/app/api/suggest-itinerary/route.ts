@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
+        model: "claude-haiku-4-5",
         max_tokens: 8192,
         messages: [{ role: "user", content: prompt }],
       }),
@@ -128,14 +128,28 @@ export async function POST(req: NextRequest) {
   }
 
   const result = await anthropicRes.json();
-  let text: string = result.content?.[0]?.text?.trim() ?? "";
-  text = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
 
-  if (!text) return NextResponse.json({ error: "Empty response from AI" }, { status: 500 });
+  // Concatenate all text content blocks (Anthropic can split output across multiple blocks)
+  const allText: string = (result.content ?? [])
+    .filter((b: { type: string }) => b.type === "text")
+    .map((b: { text: string }) => b.text)
+    .join("");
+
+  const stopReason: string = result.stop_reason ?? "unknown";
+
+  let text = allText.trim()
+    .replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
+
+  if (!text) {
+    return NextResponse.json({ error: `Empty response from AI (stop_reason: ${stopReason})` }, { status: 500 });
+  }
 
   try {
     return NextResponse.json(JSON.parse(text));
   } catch {
-    return NextResponse.json({ error: `Failed to parse AI response: ${text.slice(0, 200)}` }, { status: 500 });
+    return NextResponse.json(
+      { error: `Truncated response (stop_reason: ${stopReason}): ${text.slice(0, 200)}` },
+      { status: 500 }
+    );
   }
 }
