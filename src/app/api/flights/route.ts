@@ -46,16 +46,24 @@ export async function GET(request: NextRequest) {
       });
 
       const rawText = await res.text();
-      console.log(`[AeroDataBox] status=${res.status} body=${rawText.slice(0, 300)}`);
 
-      if (!res.ok) throw new Error(`AeroDataBox ${res.status}: ${rawText.slice(0, 200)}`);
+      // Only fall through silently on auth/subscription errors — surface everything else
+      if (res.status === 403 || res.status === 401) {
+        throw new Error(`AeroDataBox auth error ${res.status}`);
+      }
+      if (!res.ok) {
+        return NextResponse.json(
+          { error: `AeroDataBox error ${res.status}: ${rawText.slice(0, 300)}` },
+          { status: 502 }
+        );
+      }
 
       const json = JSON.parse(rawText);
       const flights = Array.isArray(json) ? json : json.items ?? [];
 
       if (flights.length === 0) {
         return NextResponse.json(
-          { error: `No flight data found for ${flightNumber} on ${date}. The schedule may not be published yet for that date.` },
+          { error: `AeroDataBox returned no flights for ${flightNumber} on ${date}. The schedule may not be available that far in advance.` },
           { status: 404 }
         );
       }
