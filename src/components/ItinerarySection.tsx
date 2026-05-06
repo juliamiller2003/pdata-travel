@@ -4,6 +4,22 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { ItineraryStyle } from "@/types/database";
 import { getClockFormat, formatActivityTime, type ClockFormat } from "@/lib/timeFormat";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 type SectionNotes = Record<string, string>;
 
@@ -87,6 +103,11 @@ export default function ItinerarySection({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } })
+  );
+
   const [days, setDays] = useState<DayRow[]>(
     initialDays.map((d) => ({ ...d, activities: sortActivities(d.activities) }))
   );
@@ -160,6 +181,25 @@ export default function ItinerarySection({
     await db.from("itinerary_days").delete().eq("id", dayId);
     setDays((prev) => prev.filter((d) => d.id !== dayId));
     setDayNotes((prev) => { const n = { ...prev }; delete n[dayId]; return n; });
+  }
+
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    setDays((prev) => {
+      const oldIndex = prev.findIndex((d) => d.id === active.id);
+      const newIndex = prev.findIndex((d) => d.id === over.id);
+      const reordered = arrayMove(prev, oldIndex, newIndex);
+      // Persist new day_number values based on position
+      reordered.forEach((day, idx) => {
+        db.from("itinerary_days")
+          .update({ day_number: idx + 1 })
+          .eq("id", day.id)
+          .then(() => {});
+      });
+      return reordered;
+    });
   }
 
   // ── Activity CRUD ─────────────────────────────────────────────
@@ -362,10 +402,25 @@ export default function ItinerarySection({
     </button>
   );
 
-  function DayHeader({ day, displayNum }: { day: DayRow; displayNum: number }) {
+  function DayHeader({ day, displayNum, dragHandleProps }: {
+    day: DayRow;
+    displayNum: number;
+    dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>;
+  }) {
     return (
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
+          {dragHandleProps && (
+            <button
+              {...dragHandleProps}
+              className="cursor-grab active:cursor-grabbing touch-none text-gray-300 hover:text-gray-400 transition-colors"
+              title="Drag to reorder"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 8h16M4 16h16" />
+              </svg>
+            </button>
+          )}
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white dark:text-[#1e1e1e]">
             {displayNum}
           </span>
@@ -379,6 +434,24 @@ export default function ItinerarySection({
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
+      </div>
+    );
+  }
+
+  function SortableDayCard({ day, idx, children }: { day: DayRow; idx: number; children: React.ReactNode }) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: day.id });
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+      zIndex: isDragging ? 10 : undefined,
+    };
+    return (
+      <div ref={setNodeRef} style={style}>
+        <div className="card p-4">
+          <DayHeader day={day} displayNum={idx + 1} dragHandleProps={{ ...attributes, ...listeners } as React.HTMLAttributes<HTMLButtonElement>} />
+          {children}
+        </div>
       </div>
     );
   }
@@ -597,22 +670,25 @@ export default function ItinerarySection({
             No days yet — add your first day below.
           </div>
         )}
-        <div className="space-y-4 mb-3">
-          {days.map((day, idx) => (
-            <div key={day.id} className="card p-4">
-              <DayHeader day={day} displayNum={idx + 1} />
-              <ActivityList day={day} />
-              <textarea
-                value={dayNotes[day.id]?.["notes"] ?? ""}
-                onChange={(e) => updateSectionNote(day.id, "notes", e.target.value)}
-                onBlur={() => handleSectionNotesBlur(day.id)}
-                rows={4}
-                placeholder="Notes for this day…"
-                className="input w-full resize-none text-sm"
-              />
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={days.map((d) => d.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-4 mb-3">
+              {days.map((day, idx) => (
+                <SortableDayCard key={day.id} day={day} idx={idx}>
+                  <ActivityList day={day} />
+                  <textarea
+                    value={dayNotes[day.id]?.["notes"] ?? ""}
+                    onChange={(e) => updateSectionNote(day.id, "notes", e.target.value)}
+                    onBlur={() => handleSectionNotesBlur(day.id)}
+                    rows={4}
+                    placeholder="Notes for this day…"
+                    className="input w-full resize-none text-sm"
+                  />
+                </SortableDayCard>
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
         {addDayButton}
       </section>
     );
@@ -630,29 +706,32 @@ export default function ItinerarySection({
             No days yet — add your first day below.
           </div>
         )}
-        <div className="space-y-4 mb-3">
-          {days.map((day, idx) => (
-            <div key={day.id} className="card p-4">
-              <DayHeader day={day} displayNum={idx + 1} />
-              <ActivityList day={day} />
-              <div className="space-y-3">
-                {sections.map(({ key, label }) => (
-                  <div key={key}>
-                    <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8]">{label}</p>
-                    <textarea
-                      value={dayNotes[day.id]?.[key] ?? ""}
-                      onChange={(e) => updateSectionNote(day.id, key, e.target.value)}
-                      onBlur={() => handleSectionNotesBlur(day.id)}
-                      rows={3}
-                      placeholder={`${label} plans…`}
-                      className="input w-full resize-none text-sm"
-                    />
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={days.map((d) => d.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-4 mb-3">
+              {days.map((day, idx) => (
+                <SortableDayCard key={day.id} day={day} idx={idx}>
+                  <ActivityList day={day} />
+                  <div className="space-y-3">
+                    {sections.map(({ key, label }) => (
+                      <div key={key}>
+                        <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8]">{label}</p>
+                        <textarea
+                          value={dayNotes[day.id]?.[key] ?? ""}
+                          onChange={(e) => updateSectionNote(day.id, key, e.target.value)}
+                          onBlur={() => handleSectionNotesBlur(day.id)}
+                          rows={3}
+                          placeholder={`${label} plans…`}
+                          className="input w-full resize-none text-sm"
+                        />
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </SortableDayCard>
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
         {addDayButton}
       </section>
     );
@@ -668,10 +747,11 @@ export default function ItinerarySection({
           No days yet — add your first day below.
         </div>
       )}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={days.map((d) => d.id)} strategy={verticalListSortingStrategy}>
       <div className="space-y-4 mb-3">
         {days.map((day, idx) => (
-          <div key={day.id} className="card p-4">
-            <DayHeader day={day} displayNum={idx + 1} />
+          <SortableDayCard key={day.id} day={day} idx={idx}>
             {day.activities.length > 0 && (
               <ul className="space-y-2 mb-3">
                 {day.activities.map((act) =>
@@ -762,9 +842,11 @@ export default function ItinerarySection({
                 + Add activity
               </button>
             )}
-          </div>
+          </SortableDayCard>
         ))}
       </div>
+        </SortableContext>
+      </DndContext>
       {addDayButton}
     </section>
   );
