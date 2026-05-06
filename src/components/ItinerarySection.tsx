@@ -470,7 +470,7 @@ export default function ItinerarySection({
                 <ul className="space-y-1">
                   {day.activities.map((act, i) => (
                     <li key={i} className="flex gap-2 text-xs text-gray-600 dark:text-[#9fb8b8]">
-                      <span className="shrink-0 w-14 font-mono text-gray-400 dark:text-[#9fb8b8]">{formatActivityTime(act.time, clockFormat)}</span>
+                      <span className="shrink-0 w-16 whitespace-nowrap font-mono text-gray-400 dark:text-[#9fb8b8]">{formatActivityTime(act.time, clockFormat)}</span>
                       <span className="font-medium">{act.title}</span>
                       {act.place_name && <span className="text-gray-400">· {act.place_name}</span>}
                     </li>
@@ -695,7 +695,7 @@ export default function ItinerarySection({
                     </li>
                   ) : (
                     <li key={act.id} className="flex items-start gap-3 text-sm">
-                      <span className="mt-0.5 w-14 shrink-0 font-mono text-xs text-gray-400 dark:text-[#9fb8b8]">{formatActivityTime(act.time, clockFormat)}</span>
+                      <span className="mt-0.5 w-16 shrink-0 whitespace-nowrap font-mono text-xs text-gray-400 dark:text-[#9fb8b8]">{formatActivityTime(act.time, clockFormat)}</span>
                       <button
                         onClick={() => startEditActivity(act)}
                         className="flex-1 min-w-0 text-left hover:opacity-70 transition-opacity"
