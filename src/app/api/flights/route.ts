@@ -22,7 +22,7 @@ export interface FlightResult {
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const flightNumber = searchParams.get("flight")?.toUpperCase();
+  const flightNumber = searchParams.get("flight")?.toUpperCase().replace(/\s+/g, "");
   const date = searchParams.get("date");
 
   if (!flightNumber || !date) {
