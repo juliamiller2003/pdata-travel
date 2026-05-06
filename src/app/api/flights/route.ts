@@ -42,20 +42,20 @@ export async function GET(request: NextRequest) {
           "X-RapidAPI-Key": aeroKey,
           "X-RapidAPI-Host": "aerodatabox.p.rapidapi.com",
         },
-        next: { revalidate: 3600 },
+        cache: "no-store",
       });
 
       const rawText = await res.text();
+      console.log(`[AeroDataBox] status=${res.status} body=${rawText.slice(0, 300)}`);
 
-      // Fall through to next source on any auth/subscription error
-      if (!res.ok) throw new Error(`AeroDataBox ${res.status}`);
+      if (!res.ok) throw new Error(`AeroDataBox ${res.status}: ${rawText.slice(0, 200)}`);
 
       const json = JSON.parse(rawText);
       const flights = Array.isArray(json) ? json : json.items ?? [];
 
       if (flights.length === 0) {
         return NextResponse.json(
-          { error: `AeroDataBox returned no flights for ${flightNumber} on ${date}` },
+          { error: `No flight data found for ${flightNumber} on ${date}. The schedule may not be published yet for that date.` },
           { status: 404 }
         );
       }
@@ -77,7 +77,8 @@ export async function GET(request: NextRequest) {
         source: "live",
       };
       return NextResponse.json(result);
-    } catch {
+    } catch (err) {
+      console.error("[AeroDataBox] error, falling through:", err);
       // Fall through to next source
     }
   }
