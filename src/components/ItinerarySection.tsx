@@ -40,6 +40,15 @@ interface ItinerarySectionProps {
   initialNotes: string | null;
 }
 
+function sortActivities(activities: ActivityRow[]): ActivityRow[] {
+  return [...activities].sort((a, b) => {
+    if (!a.time && !b.time) return 0;
+    if (!a.time) return 1;
+    if (!b.time) return -1;
+    return a.time.slice(0, 5).localeCompare(b.time.slice(0, 5));
+  });
+}
+
 const SECTION_CONFIG: Record<string, { key: string; label: string }[]> = {
   notes_day_night: [
     { key: "day", label: "Day" },
@@ -78,7 +87,9 @@ export default function ItinerarySection({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
 
-  const [days, setDays] = useState<DayRow[]>(initialDays);
+  const [days, setDays] = useState<DayRow[]>(
+    initialDays.map((d) => ({ ...d, activities: sortActivities(d.activities) }))
+  );
   const [clockFormat, setClockFormatState] = useState<ClockFormat>("12h");
 
   useEffect(() => {
@@ -152,15 +163,6 @@ export default function ItinerarySection({
   }
 
   // ── Activity CRUD ─────────────────────────────────────────────
-
-  function sortActivities(activities: ActivityRow[]): ActivityRow[] {
-    return [...activities].sort((a, b) => {
-      if (!a.time && !b.time) return 0;
-      if (!a.time) return 1;
-      if (!b.time) return -1;
-      return a.time.localeCompare(b.time);
-    });
-  }
 
   async function handleAddActivity(dayId: string) {
     if (!actTitle.trim()) return;
