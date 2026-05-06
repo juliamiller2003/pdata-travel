@@ -191,14 +191,21 @@ export default function ItinerarySection({
       const oldIndex = prev.findIndex((d) => d.id === active.id);
       const newIndex = prev.findIndex((d) => d.id === over.id);
       const reordered = arrayMove(prev, oldIndex, newIndex);
-      // Persist new day_number values based on position
+      // Persist new day_number and date based on position
       reordered.forEach((day, idx) => {
+        const newDayNum = idx + 1;
+        const newDate = dateForDayNum(newDayNum);
         db.from("itinerary_days")
-          .update({ day_number: idx + 1 })
+          .update({ day_number: newDayNum, date: newDate })
           .eq("id", day.id)
           .then(() => {});
       });
-      return reordered;
+      // Return reordered days with updated day_number and date in local state too
+      return reordered.map((day, idx) => ({
+        ...day,
+        day_number: idx + 1,
+        date: dateForDayNum(idx + 1),
+      }));
     });
   }
 
