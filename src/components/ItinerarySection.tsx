@@ -566,6 +566,26 @@ export default function ItinerarySection({
     </div>
   );
 
+  // ── Shared: read-only activity list for notes-style views ────
+  function ActivityList({ day }: { day: DayRow }) {
+    if (day.activities.length === 0) return null;
+    return (
+      <ul className="mb-3 space-y-1.5 border-b border-gray-100 dark:border-[#2e2e2e] pb-3">
+        {day.activities.map((act) => (
+          <li key={act.id} className="flex items-start gap-3 text-sm">
+            <span className="w-16 shrink-0 whitespace-nowrap font-mono text-xs text-gray-400 dark:text-[#9fb8b8] mt-0.5">
+              {formatActivityTime(act.time, clockFormat)}
+            </span>
+            <div className="min-w-0">
+              <p className="font-medium text-gray-800 dark:text-[#efefef]">{act.title}</p>
+              {act.place_name && <p className="text-xs text-gray-400 dark:text-[#9fb8b8]">{act.place_name}</p>}
+            </div>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
   // ── Blank notes (per day) ─────────────────────────────────────
   if (style === "notes") {
     return (
@@ -581,6 +601,7 @@ export default function ItinerarySection({
           {days.map((day, idx) => (
             <div key={day.id} className="card p-4">
               <DayHeader day={day} displayNum={idx + 1} />
+              <ActivityList day={day} />
               <textarea
                 value={dayNotes[day.id]?.["notes"] ?? ""}
                 onChange={(e) => updateSectionNote(day.id, "notes", e.target.value)}
@@ -613,6 +634,7 @@ export default function ItinerarySection({
           {days.map((day, idx) => (
             <div key={day.id} className="card p-4">
               <DayHeader day={day} displayNum={idx + 1} />
+              <ActivityList day={day} />
               <div className="space-y-3">
                 {sections.map(({ key, label }) => (
                   <div key={key}>
