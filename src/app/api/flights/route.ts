@@ -48,21 +48,22 @@ export async function GET(request: NextRequest) {
       const rawText = await res.text();
 
       if (!res.ok) {
-        return NextResponse.json(
-          { error: `AeroDataBox error ${res.status}: ${rawText.slice(0, 400)}` },
-          { status: 502 }
-        );
+        // 403/401 = subscription issue, fall through silently
+        // Other errors = surface to user
+        if (res.status !== 403 && res.status !== 401) {
+          return NextResponse.json(
+            { error: `AeroDataBox error ${res.status}: ${rawText.slice(0, 300)}` },
+            { status: 502 }
+          );
+        }
+        throw new Error(`AeroDataBox auth ${res.status}`);
       }
 
       const json = JSON.parse(rawText);
       const flights = Array.isArray(json) ? json : json.items ?? [];
 
-      if (flights.length === 0) {
-        return NextResponse.json(
-          { error: `AeroDataBox returned no flights for ${flightNumber} on ${date}. The schedule may not be available that far in advance.` },
-          { status: 404 }
-        );
-      }
+      // No data for this date (e.g. schedule not published yet) — fall through to AI
+      if (flights.length === 0) throw new Error("AeroDataBox: no flights for this date");
 
       const f = flights[0];
       const result: FlightResult = {
