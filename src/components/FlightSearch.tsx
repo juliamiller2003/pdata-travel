@@ -195,9 +195,9 @@ export default function FlightSearch({ tripId, onFlightAdded }: FlightSearchProp
               {lookupResult.airline && <p className="text-xs text-gray-400 dark:text-[#9fb8b8]">{lookupResult.airline}</p>}
             </div>
             <div className="flex items-center gap-2">
-              {lookupResult.partial && (
+              {lookupResult.source === "ai" && (
                 <span className="rounded-full bg-amber-100 dark:bg-amber-900/30 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
-                  Airline only
+                  {lookupResult.partial ? "Airline only" : "AI estimate"}
                 </span>
               )}
               {lookupResult.status && (
@@ -256,12 +256,12 @@ export default function FlightSearch({ tripId, onFlightAdded }: FlightSearchProp
               )}
             </div>
           </div>
-          {lookupResult.partial ? (
+          {lookupResult.source === "ai" && (
             <p className="text-xs text-amber-600">
-              Airline identified, but route info isn&apos;t available without a flight data subscription.
-              Enter the 3-letter airport codes above to complete this flight.
+              ⚠️ Route estimated by AI — may be incorrect. Edit the airport codes and cities above if needed.
             </p>
-          ) : (!editDepartureIata || !editArrivalIata) && (
+          )}
+          {lookupResult.source !== "ai" && (!editDepartureIata || !editArrivalIata) && (
             <p className="text-xs text-amber-600">Enter the 3-letter airport codes above to enable the trip map.</p>
           )}
 

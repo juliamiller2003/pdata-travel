@@ -16,6 +16,8 @@ export interface FlightResult {
   distanceMiles: number | null;
   /** True when only partial data was found (airline only — no route info) */
   partial?: boolean;
+  /** Source of the data — live APIs vs AI estimate */
+  source?: "live" | "ai";
 }
 
 export async function GET(request: NextRequest) {
@@ -72,6 +74,7 @@ export async function GET(request: NextRequest) {
         arrivalTime: f.arrival?.scheduledTime?.local ?? f.arrival?.scheduledTime?.utc ?? null,
         status: f.status ?? null,
         distanceMiles: f.greatCircleDistance?.mile ? Math.round(f.greatCircleDistance.mile) : null,
+        source: "live",
       };
       return NextResponse.json(result);
     } catch {
@@ -101,6 +104,7 @@ export async function GET(request: NextRequest) {
           arrivalTime: f.arrival?.scheduled ?? null,
           status: f.flight_status ?? null,
           distanceMiles: null,
+          source: "live",
         };
         return NextResponse.json(result);
       }
@@ -177,6 +181,7 @@ Rules:
         status: null,
         distanceMiles: null,
         partial: !hasRouteInfo,
+        source: "ai",
       };
       return NextResponse.json(result);
     } catch {
