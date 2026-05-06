@@ -47,13 +47,9 @@ export async function GET(request: NextRequest) {
 
       const rawText = await res.text();
 
-      // Only fall through silently on auth/subscription errors — surface everything else
-      if (res.status === 403 || res.status === 401) {
-        throw new Error(`AeroDataBox auth error ${res.status}`);
-      }
       if (!res.ok) {
         return NextResponse.json(
-          { error: `AeroDataBox error ${res.status}: ${rawText.slice(0, 300)}` },
+          { error: `AeroDataBox error ${res.status}: ${rawText.slice(0, 400)}` },
           { status: 502 }
         );
       }
