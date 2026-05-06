@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import CountryMultiSelect from "@/components/CountryMultiSelect";
-import type { TripStatus } from "@/types/database";
+import { getDefaultItineraryStyle } from "@/lib/itineraryStyle";
+import type { TripStatus, ItineraryStyle } from "@/types/database";
 
 const STATUS_OPTIONS: { value: TripStatus; label: string }[] = [
   { value: "planning", label: "Planning" },
@@ -26,8 +27,13 @@ export default function NewTripPage() {
   const [endDateTouched, setEndDateTouched] = useState(false);
   const [status, setStatus] = useState<TripStatus>("planning");
   const [budget, setBudget] = useState("");
+  const [itineraryStyle, setItineraryStyle] = useState<ItineraryStyle>("structured");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setItineraryStyle(getDefaultItineraryStyle());
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -56,6 +62,7 @@ export default function NewTripPage() {
         end_date: endDate || null,
         budget: budget ? parseFloat(budget) : null,
         status,
+        itinerary_style: itineraryStyle,
       })
       .select()
       .single();

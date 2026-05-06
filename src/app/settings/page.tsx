@@ -7,11 +7,13 @@ import { createClient } from "@/lib/supabase/client";
 import { SORTED_COUNTRIES } from "@/lib/countries";
 import { TRIP_SECTIONS, getSectionVisibility, setSectionVisibility, type SectionKey } from "@/lib/tripSections";
 import { getClockFormat, setClockFormat, type ClockFormat } from "@/lib/timeFormat";
-import type { MapView, UserSettings } from "@/types/database";
+import { getDefaultItineraryStyle, setDefaultItineraryStyle, ITINERARY_STYLE_OPTIONS } from "@/lib/itineraryStyle";
+import type { MapView, UserSettings, ItineraryStyle } from "@/types/database";
 
 export default function SettingsPage() {
   const [isDark, setIsDark] = useState(false);
   const [clockFormat, setClockFormatState] = useState<ClockFormat>("12h");
+  const [defaultStyle, setDefaultStyleState] = useState<ItineraryStyle>("structured");
   const router = useRouter();
   const supabase = createClient();
 
@@ -30,6 +32,7 @@ export default function SettingsPage() {
     setIsDark(stored ? stored === "dark" : preferred);
     setSectionVisibilityState(getSectionVisibility());
     setClockFormatState(getClockFormat());
+    setDefaultStyleState(getDefaultItineraryStyle());
   }, []);
 
   useEffect(() => {
@@ -213,6 +216,29 @@ export default function SettingsPage() {
                   <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${sectionVisibility[key] ? "translate-x-5" : "translate-x-0"}`} />
                 </button>
               </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Default itinerary style */}
+        <div className="mt-6 border-t border-gray-100 pt-6 dark:border-gray-700">
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Default itinerary style</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Applied when creating a new trip. You can override it per trip in trip settings.</p>
+          <div className="grid grid-cols-2 gap-2">
+            {ITINERARY_STYLE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => { setDefaultStyleState(opt.value); setDefaultItineraryStyle(opt.value); }}
+                className={`rounded-lg border p-3 text-left transition-colors ${
+                  defaultStyle === opt.value
+                    ? "border-[#1e1e1e] dark:border-[#cadede] bg-[#1e1e1e] dark:bg-[#cadede] text-white dark:text-[#1e1e1e]"
+                    : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
+                }`}
+              >
+                <p className="text-sm font-medium">{opt.label}</p>
+                <p className={`text-xs mt-0.5 ${defaultStyle === opt.value ? "text-white/70 dark:text-[#1e1e1e]/70" : "text-gray-400 dark:text-gray-500"}`}>{opt.desc}</p>
+              </button>
             ))}
           </div>
         </div>

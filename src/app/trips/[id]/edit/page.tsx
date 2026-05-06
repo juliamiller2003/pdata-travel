@@ -8,6 +8,7 @@ import CountryMultiSelect from "@/components/CountryMultiSelect";
 import FlightsSection from "@/components/FlightsSection";
 import type { TripStatus, Flight, ItineraryStyle } from "@/types/database";
 import { effectiveStatus } from "@/lib/tripUtils";
+import { ITINERARY_STYLE_OPTIONS } from "@/lib/itineraryStyle";
 
 const STATUS_OPTIONS: { value: TripStatus; label: string }[] = [
   { value: "planning",  label: "Planning" },
@@ -265,14 +266,7 @@ export default function EditTripPage() {
           <div>
             <label className="label">Itinerary style</label>
             <div className="grid grid-cols-2 gap-2 mt-1">
-              {(
-                [
-                  { value: "structured",                  label: "Structured",         desc: "Timed activities per day" },
-                  { value: "notes",                       label: "Free notes",         desc: "One open text area" },
-                  { value: "notes_day_night",             label: "Day & Night",        desc: "Notes split by day and night" },
-                  { value: "notes_day_afternoon_night",   label: "Day, Afternoon & Night", desc: "Notes in three parts" },
-                ] as { value: ItineraryStyle; label: string; desc: string }[]
-              ).map((opt) => (
+              {ITINERARY_STYLE_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
