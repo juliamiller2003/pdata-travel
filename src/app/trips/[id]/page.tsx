@@ -118,10 +118,12 @@ export default async function TripDetailPage({ params }: TripPageProps) {
   const homeCountryCode = userSettings?.home_country_code ?? null;
   const homeCountryName = homeCountryCode ? (byAlpha2[homeCountryCode]?.name ?? null) : null;
 
-  // Flatten all activities across itinerary days for the map
+  // Flatten all activities across itinerary days for the map, preserving day_number for filtering
   const allActivities = itinerary.flatMap((day: any) => // eslint-disable-line @typescript-eslint/no-explicit-any
     ((day.activities ?? []) as { id: string; title: string; place_name: string | null; lat: number | null; lng: number | null }[])
+      .map((a) => ({ ...a, day_number: day.day_number as number }))
   );
+  const mapDays = itinerary.map((d: any) => ({ day_number: d.day_number as number, date: (d.date ?? null) as string | null })); // eslint-disable-line @typescript-eslint/no-explicit-any
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -259,7 +261,7 @@ export default async function TripDetailPage({ params }: TripPageProps) {
       </SectionGuard>
 
       <SectionGuard section="map">
-        <TripMapView flights={flights} activities={allActivities} />
+        <TripMapView flights={flights} activities={allActivities} days={mapDays} />
       </SectionGuard>
 
       <SectionGuard section="flights">

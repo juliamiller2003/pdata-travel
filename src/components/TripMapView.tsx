@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import type { TripMapData } from "@/app/api/trip-map/route";
 import type { Flight } from "@/types/database";
@@ -20,83 +20,184 @@ interface ActivityInput {
   place_name: string | null;
   lat: number | null;
   lng: number | null;
+  day_number?: number;
+}
+
+interface DayInfo {
+  day_number: number;
+  date: string | null;
 }
 
 interface TripMapViewProps {
   flights: Flight[];
   activities: ActivityInput[];
+  days: DayInfo[];
 }
 
-export default function TripMapView({ flights, activities }: TripMapViewProps) {
+export default function TripMapView({ flights, activities, days }: TripMapViewProps) {
   const [data, setData] = useState<TripMapData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [showFlights, setShowFlights] = useState(true);
+  const [selectedDays, setSelectedDays] = useState<Set<number>>(
+    new Set(days.map((d) => d.day_number))
+  );
 
-  const hasContent =
-    flights.some((f) => f.departure_iata && f.arrival_iata) ||
-    activities.some((a) => a.place_name || a.title);
+  const hasFlightRoutes = flights.some((f) => f.departure_iata && f.arrival_iata);
+  const hasContent = hasFlightRoutes || activities.some((a) => a.place_name || a.title);
+
+  // Build lookup: activity id → day_number
+  const activityDayMap = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const a of activities) {
+      if (a.day_number != null) m.set(a.id, a.day_number);
+    }
+    return m;
+  }, [activities]);
 
   useEffect(() => {
     if (!hasContent) { setLoading(false); return; }
 
-    const payload = {
-      flights: flights.map((f) => ({
-        id: f.id,
-        flight_number: f.flight_number,
-        departure_iata: f.departure_iata,
-        arrival_iata: f.arrival_iata,
-      })),
-      activities,
-    };
-    console.log("[trip-map] sending:", JSON.stringify(payload));
     fetch("/api/trip-map", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        flights: flights.map((f) => ({
+          id: f.id,
+          flight_number: f.flight_number,
+          departure_iata: f.departure_iata,
+          arrival_iata: f.arrival_iata,
+        })),
+        activities,
+      }),
     })
       .then((r) => r.json())
       .then((d: TripMapData & { error?: string }) => {
-        console.log("[trip-map] API response:", JSON.stringify(d));
         if (d.error && d.markers.length === 0) { setError(true); }
         else { setData(d); }
         setLoading(false);
       })
-      .catch((err) => { console.error("[trip-map] fetch error:", err); setError(true); setLoading(false); });
+      .catch(() => { setError(true); setLoading(false); });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Filter markers/routes based on control state
+  const filteredData = useMemo((): TripMapData | null => {
+    if (!data) return null;
+    const allDaysSelected = days.every((d) => selectedDays.has(d.day_number));
+    const markers = data.markers.filter((m) => {
+      if (m.type === "airport") return showFlights;
+      const dayNum = activityDayMap.get(m.id);
+      if (dayNum == null) return true;
+      return allDaysSelected || selectedDays.has(dayNum);
+    });
+    const routes = showFlights ? data.routes : [];
+    return { markers, routes };
+  }, [data, showFlights, selectedDays, activityDayMap, days]);
+
+  const allDaysSelected = days.every((d) => selectedDays.has(d.day_number));
+
+  function toggleDay(dayNum: number) {
+    setSelectedDays((prev) => {
+      const next = new Set(prev);
+      if (next.has(dayNum)) next.delete(dayNum); else next.add(dayNum);
+      return next;
+    });
+  }
+
   if (!hasContent) return null;
 
-  const isEmpty = data && data.markers.length === 0 && data.routes.length === 0;
+  const isEmpty = filteredData && filteredData.markers.length === 0 && filteredData.routes.length === 0;
 
   return (
     <section className="mb-8">
-      <h2 className="mb-4 text-lg font-semibold text-gray-900">Trip Map</h2>
-      <div className="overflow-hidden rounded-2xl border border-gray-100 shadow-sm" style={{ height: 380 }}>
+      {/* Header + controls */}
+      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-[#efefef]">Trip Map</h2>
+
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {/* Flights toggle — only shown when there are flight routes */}
+          {hasFlightRoutes && (
+            <button
+              onClick={() => setShowFlights((v) => !v)}
+              className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                showFlights
+                  ? "bg-[#1e1e1e] dark:bg-[#cadede] text-white dark:text-[#1e1e1e]"
+                  : "bg-gray-100 dark:bg-[#2e2e2e] text-gray-400 dark:text-[#9fb8b8]"
+              }`}
+            >
+              <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+              </svg>
+              Flights
+            </button>
+          )}
+
+          {/* Day filter chips — only shown when there are multiple days with activities */}
+          {days.length > 1 && (
+            <>
+              <button
+                onClick={() => setSelectedDays(new Set(days.map((d) => d.day_number)))}
+                className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                  allDaysSelected
+                    ? "bg-[#1e1e1e] dark:bg-[#cadede] text-white dark:text-[#1e1e1e]"
+                    : "bg-gray-100 dark:bg-[#2e2e2e] text-gray-400 dark:text-[#9fb8b8] hover:bg-gray-200 dark:hover:bg-[#3e3e3e]"
+                }`}
+              >
+                All
+              </button>
+              <div className="flex items-center gap-1 overflow-x-auto max-w-full">
+                {days.map((d) => {
+                  const active = !allDaysSelected && selectedDays.has(d.day_number);
+                  return (
+                    <button
+                      key={d.day_number}
+                      onClick={() => {
+                        if (allDaysSelected) {
+                          setSelectedDays(new Set([d.day_number]));
+                        } else {
+                          toggleDay(d.day_number);
+                        }
+                      }}
+                      className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                        active
+                          ? "bg-[#1e1e1e] dark:bg-[#cadede] text-white dark:text-[#1e1e1e]"
+                          : "bg-gray-100 dark:bg-[#2e2e2e] text-gray-400 dark:text-[#9fb8b8] hover:bg-gray-200 dark:hover:bg-[#3e3e3e]"
+                      }`}
+                    >
+                      {d.day_number}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Map */}
+      <div
+        className="overflow-hidden rounded-2xl border border-gray-100 dark:border-[#2e2e2e] shadow-sm"
+        style={{ height: 380 }}
+      >
         {loading && (
-          <div className="flex h-full items-center justify-center gap-2 bg-gray-50 text-sm text-gray-400">
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-sky-500" />
+          <div className="flex h-full items-center justify-center gap-2 bg-gray-50 dark:bg-[#1a1a1a] text-sm text-gray-400">
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-200 border-t-[#9fb8b8]" />
             Plotting your trip…
           </div>
         )}
-        {error && (
-          <div className="flex h-full items-center justify-center bg-gray-50 text-sm text-gray-400">
+        {error && !loading && (
+          <div className="flex h-full items-center justify-center bg-gray-50 dark:bg-[#1a1a1a] text-sm text-gray-400">
             Map unavailable
           </div>
         )}
-        {isEmpty && (
-          <div className="flex h-full items-center justify-center bg-gray-50 text-sm text-gray-400">
-            No locations found
+        {!loading && !error && isEmpty && (
+          <div className="flex h-full items-center justify-center bg-gray-50 dark:bg-[#1a1a1a] text-sm text-gray-400">
+            No locations to show
           </div>
         )}
-        {data && !isEmpty && <TripMapInner data={data} />}
+        {filteredData && !isEmpty && <TripMapInner data={filteredData} />}
       </div>
-      {data && (
-        <p className="mt-1.5 text-xs text-gray-400">
-          {data.markers.filter((m) => m.type === "airport").length > 0 && "✈ Airports  "}
-          {data.markers.filter((m) => m.type === "activity").length > 0 && "● Activities"}
-        </p>
-      )}
     </section>
   );
 }
