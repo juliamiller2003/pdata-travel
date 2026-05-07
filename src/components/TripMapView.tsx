@@ -53,7 +53,11 @@ export default function TripMapView({ flights, activities }: TripMapViewProps) {
       }),
     })
       .then((r) => r.json())
-      .then((d: TripMapData) => { setData(d); setLoading(false); })
+      .then((d: TripMapData & { error?: string }) => {
+        if (d.error && d.markers.length === 0) { setError(true); }
+        else { setData(d); }
+        setLoading(false);
+      })
       .catch(() => { setError(true); setLoading(false); });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

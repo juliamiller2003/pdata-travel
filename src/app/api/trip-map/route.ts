@@ -98,18 +98,23 @@ Only include entries you are confident about (within ~1km accuracy). Omit entrie
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
+        model: "claude-haiku-4-5",
         max_tokens: 2048,
         messages: [{ role: "user", content: prompt }],
       }),
     });
 
-    if (!res.ok) return NextResponse.json({ markers: [], routes: [] });
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      console.error(`trip-map geocode failed (${res.status}):`, errText.slice(0, 200));
+      return NextResponse.json({ markers: [], routes: [], error: `Geocode failed: ${res.status}` }, { status: 502 });
+    }
 
     const result = await res.json();
-    let text: string = result.content[0].text.trim();
+    let text: string = (result.content ?? []).filter((b: { type: string }) => b.type === "text").map((b: { text: string }) => b.text).join("").trim();
     text = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
 
+    if (!text) return NextResponse.json({ markers: [], routes: [] });
     const geocoded: GeocodeResult[] = JSON.parse(text);
 
     // Build lookup maps
