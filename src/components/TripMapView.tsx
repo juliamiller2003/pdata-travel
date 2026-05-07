@@ -39,26 +39,29 @@ export default function TripMapView({ flights, activities }: TripMapViewProps) {
   useEffect(() => {
     if (!hasContent) { setLoading(false); return; }
 
+    const payload = {
+      flights: flights.map((f) => ({
+        id: f.id,
+        flight_number: f.flight_number,
+        departure_iata: f.departure_iata,
+        arrival_iata: f.arrival_iata,
+      })),
+      activities,
+    };
+    console.log("[trip-map] sending:", JSON.stringify(payload));
     fetch("/api/trip-map", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        flights: flights.map((f) => ({
-          id: f.id,
-          flight_number: f.flight_number,
-          departure_iata: f.departure_iata,
-          arrival_iata: f.arrival_iata,
-        })),
-        activities,
-      }),
+      body: JSON.stringify(payload),
     })
       .then((r) => r.json())
       .then((d: TripMapData & { error?: string }) => {
+        console.log("[trip-map] API response:", JSON.stringify(d));
         if (d.error && d.markers.length === 0) { setError(true); }
         else { setData(d); }
         setLoading(false);
       })
-      .catch(() => { setError(true); setLoading(false); });
+      .catch((err) => { console.error("[trip-map] fetch error:", err); setError(true); setLoading(false); });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
