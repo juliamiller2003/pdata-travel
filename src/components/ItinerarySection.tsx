@@ -333,16 +333,30 @@ export default function ItinerarySection({
   async function handleApplyStructured() {
     if (!structuredSuggestion) return;
     setApplying(true);
-    const startNum = days.length > 0 ? Math.max(...days.map((d) => d.day_number)) + 1 : 1;
+    setAiError(null);
+
+    // Read max day_number from DB to avoid stale local state after drag reorder
+    const { data: existingDays } = await db
+      .from("itinerary_days")
+      .select("day_number")
+      .eq("trip_id", tripId);
+    const maxDayNum = existingDays && existingDays.length > 0
+      ? Math.max(...existingDays.map((d: { day_number: number }) => d.day_number))
+      : 0;
+    const startNum = maxDayNum + 1;
     const newDays: DayRow[] = [];
 
     for (const sugDay of structuredSuggestion) {
       const dayNum = startNum + sugDay.day_number - 1;
-      const { data: dayData } = await db
+      const { data: dayData, error: dayError } = await db
         .from("itinerary_days")
         .insert({ trip_id: tripId, day_number: dayNum, date: dateForDayNum(dayNum) })
         .select().single();
-      if (!dayData) continue;
+      if (dayError || !dayData) {
+        setAiError(`Failed to add Day ${sugDay.day_number}: ${dayError?.message ?? "unknown error"}`);
+        setApplying(false);
+        return;
+      }
 
       const activities: ActivityRow[] = [];
       for (let i = 0; i < sugDay.activities.length; i++) {
@@ -353,7 +367,7 @@ export default function ItinerarySection({
           .select().single();
         if (actData) activities.push(actData);
       }
-      newDays.push({ ...dayData, activities, section_notes: {} });
+      newDays.push({ ...dayData, activities: sortActivities(activities), section_notes: {} });
     }
 
     setDays((prev) => [...prev, ...newDays]);
@@ -375,17 +389,30 @@ export default function ItinerarySection({
   async function handleApplyDayNotes() {
     if (!dayNotesSuggestion) return;
     setApplying(true);
-    const startNum = days.length > 0 ? Math.max(...days.map((d) => d.day_number)) + 1 : 1;
+    setAiError(null);
+
+    const { data: existingDays } = await db
+      .from("itinerary_days")
+      .select("day_number")
+      .eq("trip_id", tripId);
+    const maxDayNum = existingDays && existingDays.length > 0
+      ? Math.max(...existingDays.map((d: { day_number: number }) => d.day_number))
+      : 0;
+    const startNum = maxDayNum + 1;
     const newDays: DayRow[] = [];
     const newDayNotes: Record<string, SectionNotes> = {};
 
     for (const sugDay of dayNotesSuggestion) {
       const dayNum = startNum + sugDay.day_number - 1;
-      const { data: dayData } = await db
+      const { data: dayData, error: dayError } = await db
         .from("itinerary_days")
         .insert({ trip_id: tripId, day_number: dayNum, date: dateForDayNum(dayNum), section_notes: sugDay.sections })
         .select().single();
-      if (!dayData) continue;
+      if (dayError || !dayData) {
+        setAiError(`Failed to add Day ${sugDay.day_number}: ${dayError?.message ?? "unknown error"}`);
+        setApplying(false);
+        return;
+      }
       newDays.push({ ...dayData, activities: [], section_notes: sugDay.sections });
       newDayNotes[dayData.id] = sugDay.sections;
     }
