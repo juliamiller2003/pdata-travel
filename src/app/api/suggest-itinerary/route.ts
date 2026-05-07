@@ -8,12 +8,16 @@ interface SuggestRequest {
   preferences: string;
   existing_activities: string[];
   existing_day_count: number;
+  existing_notes?: string;
 }
 
-function buildPrompt(destination: string, num_days: number, style: ItineraryStyle, preferences: string, existing_activities: string[], existing_day_count: number) {
+function buildPrompt(destination: string, num_days: number, style: ItineraryStyle, preferences: string, existing_activities: string[], existing_day_count: number, existing_notes?: string) {
   const pref = preferences.trim() ? `\nUser preferences: ${preferences.trim()}` : "";
   const existing = existing_activities.length > 0
     ? `\nBanned — do NOT suggest any of these or anything at the same venue, even under a different name or framing: ${existing_activities.join(", ")}`
+    : "";
+  const existingNotesContext = existing_notes?.trim()
+    ? `\nAlready planned (do NOT repeat any place, venue, market, restaurant, or activity already mentioned here):\n${existing_notes.trim()}`
     : "";
   const startDay = existing_day_count + 1;
   const tripContext = existing_day_count > 0
@@ -21,7 +25,7 @@ function buildPrompt(destination: string, num_days: number, style: ItineraryStyl
     : `Generate a ${num_days}-day itinerary.`;
 
   if (style === "structured") {
-    return `You are a travel expert planning a trip to ${destination}. ${tripContext}${pref}${existing}
+    return `You are a travel expert planning a trip to ${destination}. ${tripContext}${pref}${existing}${existingNotesContext}
 
 Return ONLY a JSON object with this exact structure (no markdown, no commentary):
 {
@@ -49,7 +53,7 @@ Rules:
   }
 
   if (style === "notes") {
-    return `You are a travel planner writing quick personal notes for a trip to ${destination}. ${tripContext}${pref}${existing}
+    return `You are a travel planner writing quick personal notes for a trip to ${destination}. ${tripContext}${pref}${existing}${existingNotesContext}
 
 Return ONLY a JSON object:
 { "content": "Day ${startDay}\\n\\n9am - ...\\n\\nAfternoon - ..." }
@@ -65,7 +69,7 @@ Style rules:
   }
 
   if (style === "notes_day_night") {
-    return `You are a travel planner writing quick personal notes for a trip to ${destination}. ${tripContext}${pref}${existing}
+    return `You are a travel planner writing quick personal notes for a trip to ${destination}. ${tripContext}${pref}${existing}${existingNotesContext}
 
 Return ONLY a JSON object:
 {
@@ -89,7 +93,7 @@ Style rules:
   }
 
   // notes_day_afternoon_night
-  return `You are a travel planner writing quick personal notes for a trip to ${destination}. ${tripContext}${pref}${existing}
+  return `You are a travel planner writing quick personal notes for a trip to ${destination}. ${tripContext}${pref}${existing}${existingNotesContext}
 
 Return ONLY a JSON object:
 {
@@ -117,7 +121,7 @@ export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "Not configured" }, { status: 500 });
 
-  const { destination, num_days, style, preferences, existing_activities = [], existing_day_count = 0 }: SuggestRequest = await req.json();
+  const { destination, num_days, style, preferences, existing_activities = [], existing_day_count = 0, existing_notes = "" }: SuggestRequest = await req.json();
 
   const VALID_STYLES: ItineraryStyle[] = ["structured", "notes", "notes_day_night", "notes_day_afternoon_night"];
 
@@ -129,7 +133,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid itinerary style" }, { status: 400 });
   }
 
-  const prompt = buildPrompt(destination, num_days, style, preferences ?? "", existing_activities, existing_day_count);
+  const prompt = buildPrompt(destination, num_days, style, preferences ?? "", existing_activities, existing_day_count, existing_notes);
 
   let anthropicRes: Response;
   try {

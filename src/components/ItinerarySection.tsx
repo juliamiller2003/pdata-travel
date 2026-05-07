@@ -307,6 +307,9 @@ export default function ItinerarySection({
             ...rejectedActivities,
             ...additionalRejected,
           ],
+          existing_notes: days
+            .flatMap((d) => Object.values(dayNotes[d.id] ?? {}).filter(Boolean))
+            .join("\n\n"),
         }),
       });
 
