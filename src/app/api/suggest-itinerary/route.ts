@@ -13,7 +13,7 @@ interface SuggestRequest {
 function buildPrompt(destination: string, num_days: number, style: ItineraryStyle, preferences: string, existing_activities: string[], existing_day_count: number) {
   const pref = preferences.trim() ? `\nUser preferences: ${preferences.trim()}` : "";
   const existing = existing_activities.length > 0
-    ? `\nAlready in the itinerary (do NOT repeat these or anything similar): ${existing_activities.join(", ")}`
+    ? `\nBanned — do NOT suggest any of these or anything at the same venue, even under a different name or framing: ${existing_activities.join(", ")}`
     : "";
   const startDay = existing_day_count + 1;
   const tripContext = existing_day_count > 0
@@ -37,10 +37,12 @@ Return ONLY a JSON object with this exact structure (no markdown, no commentary)
 
 Rules:
 - Include 4–6 activities per day
-- Every activity must be a specific named experience — a real place, dish, market, trail, viewpoint, temple, etc. No generic filler like "rest and reflection", "leisurely walk", or vague descriptions like "local dim sum spot"
-- Meals: only include if it is a specific named restaurant, street food stall, or night market. Do not add generic "lunch" or "dinner". Be accurate — do not describe a famous chain as a "local" spot, and only suggest venues for meals they actually serve (e.g. do not schedule a dinner restaurant for breakfast)
-- No duplicates: do not suggest any place or experience that is already in the itinerary, even under a different title. If Elephant Mountain is already listed, do not suggest it again in any form
-- Geographic logic: group activities in the same day by area. If the day includes somewhere that is 45+ minutes from the city centre (e.g. Yangmingshan, Maokong, Jiufen, Yehliu), do not add other distant locations to the same day — allow travel time and keep the rest of the day nearby or at the destination
+- SPECIFICITY IS MANDATORY: Every single activity must be a real, named place or experience that exists. Use the actual name — not a category or description of it. Bad examples that will be rejected: "Taipei culture and food workshop", "local cooking class", "beverage tasting", "learn traditional cuisine", "local market visit", "temple tour", "scenic viewpoint". Good examples: "Longshan Temple", "Addiction Aquatic Development seafood market", "Raw restaurant", "Beitou Hot Spring Museum", "Wistaria Tea House", "Raohe Street Night Market"
+- If you suggest a cooking class, name the specific school or operator (e.g. "Taipei Homecooking"). If you suggest a food experience, name the exact dish and stall or restaurant
+- Meals: only include if it is a specific named restaurant or stall. No generic "lunch", "dinner", "food tour", or "tasting". Only suggest a venue for a meal they actually serve
+- No duplicates: do not suggest any place or experience already in the itinerary, even under a different title
+- Vary restaurants and food stops every time — do not default to famous tourist staples. If Din Tai Fung, Shilin Night Market, or any chain has already been suggested, pick something genuinely different. Favour neighbourhood spots and less-covered options
+- Geographic logic: group activities in the same day by area. If the day includes somewhere 45+ minutes from the city centre (e.g. Yangmingshan, Maokong, Jiufen, Yehliu), do not add other distant locations to the same day
 - Realistic hours: morning markets early, night markets 18:00+, sunrise spots before 07:00, tea houses afternoon/evening, bars and clubs 21:00+. Never schedule a night market or bar before 17:00
 - Use 24-hour time strings (e.g. "09:00", "14:30")
 - place_name must be the exact venue or landmark name, never null for sightseeing activities`;
@@ -57,7 +59,7 @@ Style rules:
 - No adjectives like "vibrant", "bustling", "enchanting", "stunning", "picturesque", "delightful", or "charming"
 - No filler phrases like "immerse yourself", "soak up the atmosphere", "don't miss", or "be sure to"
 - Just facts: place names, rough times, what to do, what to eat, practical tips
-- Specific named places only — no generic "local restaurant" or "nearby café"
+- SPECIFICITY IS MANDATORY: every place must be a real named venue — no "local cooking class", "beverage tasting", "food workshop", "temple tour", or any other category label. Use the actual name of the place
 - Realistic timing (night markets from 6pm+, sunrise spots before 7am)
 - Use \\n for line breaks`;
   }
@@ -82,7 +84,8 @@ Style rules:
 - Short, direct notes — not prose, not a travel article
 - No adjectives like "vibrant", "bustling", "enchanting", "stunning", or "charming"
 - No filler phrases like "immerse yourself", "soak up", "don't miss"
-- Specific named places only. Include rough times where useful.`;
+- SPECIFICITY IS MANDATORY: every place must be a real named venue — not "cooking class", "beverage tasting", "food workshop", or any category label. Use the actual name
+- Include rough times where useful`;
   }
 
   // notes_day_afternoon_night
@@ -106,7 +109,8 @@ Style rules:
 - Short, direct notes — not prose, not a travel article
 - No adjectives like "vibrant", "bustling", "enchanting", "stunning", or "charming"
 - No filler phrases like "immerse yourself", "soak up", "don't miss"
-- Specific named places only. Include rough times where useful.`;
+- SPECIFICITY IS MANDATORY: every place must be a real named venue — not "cooking class", "beverage tasting", "food workshop", or any category label. Use the actual name
+- Include rough times where useful`;
 }
 
 export async function POST(req: NextRequest) {
