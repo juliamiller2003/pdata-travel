@@ -42,16 +42,23 @@ Rules:
   }
 
   if (style === "notes") {
-    return `You are a travel expert. Write a ${num_days}-day itinerary for ${destination} as flowing prose.${pref}${existing}
+    return `You are a travel planner writing quick personal notes for a trip to ${destination} (${num_days} days).${pref}${existing}
 
 Return ONLY a JSON object:
-{ "content": "Day 1 - Arrival\\n\\nStart by..." }
+{ "content": "Day 1\\n\\n9am - Arrive, check in at hotel. Head to X for lunch.\\n\\nAfternoon - ..." }
 
-Write naturally, like notes you'd make for yourself. Include specific places, restaurants, and tips. Schedule activities at realistic hours (night markets in the evening, sunrise spots early morning, etc.). Use \\n for line breaks.`;
+Style rules:
+- Write like a friend's shorthand notes, not a travel magazine
+- No adjectives like "vibrant", "bustling", "enchanting", "stunning", "picturesque", "delightful", or "charming"
+- No filler phrases like "immerse yourself", "soak up the atmosphere", "don't miss", or "be sure to"
+- Just facts: place names, rough times, what to do, what to eat, practical tips
+- Specific named places only — no generic "local restaurant" or "nearby café"
+- Realistic timing (night markets from 6pm+, sunrise spots before 7am)
+- Use \\n for line breaks`;
   }
 
   if (style === "notes_day_night") {
-    return `You are a travel expert. Create a ${num_days}-day itinerary for ${destination} split into day and night.${pref}${existing}
+    return `You are a travel planner writing quick personal notes for a trip to ${destination} (${num_days} days).${pref}${existing}
 
 Return ONLY a JSON object:
 {
@@ -59,18 +66,22 @@ Return ONLY a JSON object:
     {
       "day_number": 1,
       "sections": {
-        "day": "Morning and afternoon plans...",
-        "night": "Evening plans..."
+        "day": "9am Chiang Kai-shek Memorial Hall. Grab lunch at Din Tai Fung (Xinyi). Afternoon: Songshan Cultural Park.",
+        "night": "Shilin Night Market from 6pm. Try oyster vermicelli and stinky tofu."
       }
     }
   ]
 }
 
-Write each section as short prose notes. Include specific places and food recommendations.`;
+Style rules:
+- Short, direct notes — not prose, not a travel article
+- No adjectives like "vibrant", "bustling", "enchanting", "stunning", or "charming"
+- No filler phrases like "immerse yourself", "soak up", "don't miss"
+- Specific named places only. Include rough times where useful.`;
   }
 
   // notes_day_afternoon_night
-  return `You are a travel expert. Create a ${num_days}-day itinerary for ${destination} split into day, afternoon, and night.${pref}${existing}
+  return `You are a travel planner writing quick personal notes for a trip to ${destination} (${num_days} days).${pref}${existing}
 
 Return ONLY a JSON object:
 {
@@ -78,15 +89,19 @@ Return ONLY a JSON object:
     {
       "day_number": 1,
       "sections": {
-        "day": "Morning plans...",
-        "afternoon": "Afternoon plans...",
-        "night": "Evening plans..."
+        "day": "9am Longshan Temple. Walk to Ximending after.",
+        "afternoon": "Zhongshan District — check out the design shops on Chifeng St.",
+        "night": "Raohe Street Night Market from 6pm."
       }
     }
   ]
 }
 
-Write each section as short prose notes. Include specific places and food recommendations.`;
+Style rules:
+- Short, direct notes — not prose, not a travel article
+- No adjectives like "vibrant", "bustling", "enchanting", "stunning", or "charming"
+- No filler phrases like "immerse yourself", "soak up", "don't miss"
+- Specific named places only. Include rough times where useful.`;
 }
 
 export async function POST(req: NextRequest) {
