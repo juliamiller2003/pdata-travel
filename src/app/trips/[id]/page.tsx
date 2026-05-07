@@ -257,6 +257,8 @@ export default async function TripDetailPage({ params }: TripPageProps) {
           destination={trip.destination}
           style={trip.itinerary_style ?? "structured"}
           initialNotes={trip.itinerary_notes ?? null}
+          flights={flights}
+          transportLegs={transportLegsData ?? []}
         />
       </SectionGuard>
 

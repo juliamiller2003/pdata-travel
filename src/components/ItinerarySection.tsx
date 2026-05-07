@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { ItineraryStyle } from "@/types/database";
+import type { ItineraryStyle, Flight, TransportLeg } from "@/types/database";
 import { getClockFormat, formatActivityTime, type ClockFormat } from "@/lib/timeFormat";
 import {
   DndContext,
@@ -54,6 +54,8 @@ interface ItinerarySectionProps {
   destination: string;
   style: ItineraryStyle;
   initialNotes: string | null;
+  flights?: Flight[];
+  transportLegs?: TransportLeg[];
 }
 
 function sortActivities(activities: ActivityRow[]): ActivityRow[] {
@@ -98,6 +100,8 @@ export default function ItinerarySection({
   destination,
   style,
   initialNotes,
+  flights = [],
+  transportLegs = [],
 }: ItinerarySectionProps) {
   const supabase = createClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -141,6 +145,22 @@ export default function ItinerarySection({
     for (const day of initialDays) init[day.id] = (day.section_notes as SectionNotes) ?? {};
     return init;
   });
+
+  // Build date-keyed lookup maps for flights and transport
+  const flightsByDate = new Map<string, Flight[]>();
+  for (const f of flights) {
+    if (!f.flight_date) continue;
+    const arr = flightsByDate.get(f.flight_date) ?? [];
+    arr.push(f);
+    flightsByDate.set(f.flight_date, arr);
+  }
+  const transportByDate = new Map<string, TransportLeg[]>();
+  for (const t of transportLegs) {
+    if (!t.travel_date) continue;
+    const arr = transportByDate.get(t.travel_date) ?? [];
+    arr.push(t);
+    transportByDate.set(t.travel_date, arr);
+  }
 
   // Collapse state
   const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set());
@@ -460,6 +480,28 @@ export default function ItinerarySection({
     </button>
   );
 
+  function flightTimeToHHMM(iso: string | null): string {
+    if (!iso) return "";
+    // ISO timestamptz: extract HH:MM from position 11
+    if (iso.includes("T")) {
+      try {
+        const d = new Date(iso);
+        return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+      } catch {
+        return iso.slice(11, 16);
+      }
+    }
+    return iso.slice(0, 5);
+  }
+
+  function transportModeIcon(mode: string): string {
+    const icons: Record<string, string> = {
+      bus: "🚌", train: "🚆", ferry: "⛴", taxi: "🚕",
+      car: "🚗", motorbike: "🛵", subway: "🚇", other: "🚐",
+    };
+    return icons[mode] ?? "🚐";
+  }
+
   function DayHeader({ day, displayNum, dragHandleProps }: {
     day: DayRow;
     displayNum: number;
@@ -753,6 +795,84 @@ export default function ItinerarySection({
     );
   }
 
+  function TravelEventList({ day }: { day: DayRow }) {
+    if (!day.date) return null;
+    const dayFlights = flightsByDate.get(day.date) ?? [];
+    const dayTransport = transportByDate.get(day.date) ?? [];
+    if (dayFlights.length === 0 && dayTransport.length === 0) return null;
+
+    type TravelEvent =
+      | { kind: "flight"; data: Flight; sortKey: string }
+      | { kind: "transport"; data: TransportLeg; sortKey: string };
+
+    const events: TravelEvent[] = [
+      ...dayFlights.map((f) => ({
+        kind: "flight" as const,
+        data: f,
+        sortKey: flightTimeToHHMM(f.departure_time) || "99:99",
+      })),
+      ...dayTransport.map((t) => ({
+        kind: "transport" as const,
+        data: t,
+        sortKey: t.departure_time ? t.departure_time.slice(0, 5) : "99:99",
+      })),
+    ].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+
+    return (
+      <div className="mb-3 space-y-1.5">
+        {events.map((ev, i) => {
+          if (ev.kind === "flight") {
+            const f = ev.data;
+            const depTime = flightTimeToHHMM(f.departure_time);
+            const arrTime = flightTimeToHHMM(f.arrival_time);
+            const depFormatted = depTime ? formatActivityTime(depTime, clockFormat) : null;
+            const arrFormatted = arrTime ? formatActivityTime(arrTime, clockFormat) : null;
+            return (
+              <div key={i} className="flex items-center gap-2 rounded-lg bg-[#f5f5f5] dark:bg-[#252525] px-2.5 py-2 text-xs">
+                <svg className="h-3.5 w-3.5 shrink-0 text-gray-400 dark:text-[#9fb8b8]" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+                </svg>
+                {depFormatted && (
+                  <span className="w-16 shrink-0 whitespace-nowrap font-mono text-gray-400 dark:text-[#9fb8b8]">{depFormatted}</span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <span className="font-medium text-gray-700 dark:text-[#efefef]">{f.flight_number}</span>
+                  {(f.departure_iata || f.arrival_iata) && (
+                    <span className="ml-1.5 text-gray-400 dark:text-[#9fb8b8]">
+                      {f.departure_iata ?? f.departure_city ?? "—"} → {f.arrival_iata ?? f.arrival_city ?? "—"}
+                    </span>
+                  )}
+                </div>
+                {arrFormatted && (
+                  <span className="shrink-0 text-gray-400 dark:text-[#9fb8b8]">arr. {arrFormatted}</span>
+                )}
+              </div>
+            );
+          } else {
+            const t = ev.data;
+            const depFormatted = t.departure_time ? formatActivityTime(t.departure_time.slice(0, 5), clockFormat) : null;
+            const arrFormatted = t.arrival_time ? formatActivityTime(t.arrival_time.slice(0, 5), clockFormat) : null;
+            return (
+              <div key={i} className="flex items-center gap-2 rounded-lg bg-[#f5f5f5] dark:bg-[#252525] px-2.5 py-2 text-xs">
+                <span className="shrink-0 text-sm leading-none">{transportModeIcon(t.mode)}</span>
+                {depFormatted && (
+                  <span className="w-16 shrink-0 whitespace-nowrap font-mono text-gray-400 dark:text-[#9fb8b8]">{depFormatted}</span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <span className="font-medium text-gray-700 dark:text-[#efefef] capitalize">{t.mode}</span>
+                  <span className="ml-1.5 text-gray-400 dark:text-[#9fb8b8]">{t.from_location} → {t.to_location}</span>
+                </div>
+                {arrFormatted && (
+                  <span className="shrink-0 text-gray-400 dark:text-[#9fb8b8]">arr. {arrFormatted}</span>
+                )}
+              </div>
+            );
+          }
+        })}
+      </div>
+    );
+  }
+
   // ── Blank notes (per day) ─────────────────────────────────────
   if (style === "notes") {
     return (
@@ -772,6 +892,7 @@ export default function ItinerarySection({
                   {days.map((day, idx) => (
                     <SortableDayCard key={day.id} day={day} idx={idx}>
                       <ActivityList day={day} />
+                      <TravelEventList day={day} />
                       <textarea
                         value={dayNotes[day.id]?.["notes"] ?? ""}
                         onChange={(e) => updateSectionNote(day.id, "notes", e.target.value)}
@@ -812,6 +933,7 @@ export default function ItinerarySection({
                   {days.map((day, idx) => (
                     <SortableDayCard key={day.id} day={day} idx={idx}>
                       <ActivityList day={day} />
+                      <TravelEventList day={day} />
                       <div className="space-y-3">
                         {sections.map(({ key, label }) => (
                           <div key={key}>
@@ -856,6 +978,7 @@ export default function ItinerarySection({
       <div className="space-y-4 mb-3">
         {days.map((day, idx) => (
           <SortableDayCard key={day.id} day={day} idx={idx}>
+            <TravelEventList day={day} />
             {day.activities.length > 0 && (
               <ul className="space-y-2 mb-3">
                 {day.activities.map((act) =>
