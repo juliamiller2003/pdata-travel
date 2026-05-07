@@ -36,13 +36,15 @@ export interface TripMapData {
   routes: MapRoute[];
 }
 
-interface GeocodeResult {
-  type: "airport" | "place";
-  iata?: string;
-  id?: string;
-  lat: number;
-  lng: number;
-  name?: string;
+/** Extract the first JSON array from a string, even if wrapped in prose or code fences */
+function extractJsonArray(text: string): string {
+  // Strip code fences
+  text = text.replace(/^```json\s*/im, "").replace(/^```\s*/im, "").replace(/```\s*$/im, "").trim();
+  // Find the outermost [ ... ]
+  const start = text.indexOf("[");
+  const end = text.lastIndexOf("]");
+  if (start === -1 || end === -1 || end < start) return "[]";
+  return text.slice(start, end + 1);
 }
 
 export async function POST(req: NextRequest) {
@@ -52,18 +54,16 @@ export async function POST(req: NextRequest) {
   const { flights, activities }: { flights: FlightInput[]; activities: ActivityInput[] } = await req.json();
 
   // Collect unique IATAs from flights
-  const iatas = new Set<string>();
-  for (const f of flights) {
-    if (f.departure_iata) iatas.add(f.departure_iata);
-    if (f.arrival_iata) iatas.add(f.arrival_iata);
-  }
+  const iatas = [...new Set<string>(
+    flights.flatMap((f) => [f.departure_iata, f.arrival_iata].filter(Boolean) as string[])
+  )];
 
-  // Activities needing geocoding (have place_name or title, but no coordinates)
+  // Activities needing geocoding (no coordinates stored)
   const toGeocode = activities.filter((a) => (a.place_name || a.title) && (a.lat == null || a.lng == null));
   const preGeocoded = activities.filter((a) => (a.place_name || a.title) && a.lat != null && a.lng != null);
 
-  // Skip API call if nothing to geocode
-  if (iatas.size === 0 && toGeocode.length === 0) {
+  // If nothing to geocode, return pre-geocoded markers only
+  if (iatas.length === 0 && toGeocode.length === 0) {
     const markers: MapMarker[] = preGeocoded.map((a) => ({
       id: a.id,
       type: "activity",
@@ -75,19 +75,30 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ markers, routes: [] });
   }
 
-  const airportLines = [...iatas].map((iata) => `- ${iata}`).join("\n");
-  const placeLines = toGeocode.map((a) => `- id:"${a.id}" name:"${a.place_name ?? a.title}"`).join("\n");
+  // Build prompt using indices (not UUIDs) for reliable matching
+  const airportSection = iatas.length > 0
+    ? `Airports (return type "airport", use the iata field as given):\n${iatas.map((c) => `  ${c}`).join("\n")}`
+    : "";
 
-  const prompt = `Return precise latitude/longitude coordinates for these locations. Return ONLY a JSON array, no commentary.
+  const placeSection = toGeocode.length > 0
+    ? `Places (return type "place", use the exact index 0…${toGeocode.length - 1}):\n${
+        toGeocode.map((a, i) => `  ${i}: "${a.place_name ?? a.title}"`).join("\n")
+      }`
+    : "";
 
-${iatas.size > 0 ? `Airports:\n${airportLines}` : ""}
-${toGeocode.length > 0 ? `Places:\n${placeLines}` : ""}
+  const prompt = `Return precise latitude/longitude coordinates for these locations.
+Return ONLY a valid JSON array with no extra text or markdown.
 
-Format each entry as one of:
-{ "type": "airport", "iata": "JFK", "lat": 40.6413, "lng": -73.7781, "name": "John F. Kennedy International Airport" }
-{ "type": "place", "id": "abc123", "lat": 48.8584, "lng": 2.2945 }
+${airportSection}
+${placeSection}
 
-Only include entries you are confident about (within ~1km accuracy). Omit entries you are unsure of.`;
+For airports use this shape:
+{ "type": "airport", "iata": "TPE", "lat": 25.0777, "lng": 121.2322, "name": "Taiwan Taoyuan International Airport" }
+
+For places use this shape (index must be the integer from the list above):
+{ "type": "place", "index": 0, "lat": 25.0369, "lng": 121.4996 }
+
+Only include entries you are confident about. Omit any you are unsure of.`;
 
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -106,23 +117,35 @@ Only include entries you are confident about (within ~1km accuracy). Omit entrie
 
     if (!res.ok) {
       const errText = await res.text().catch(() => "");
-      console.error(`trip-map geocode failed (${res.status}):`, errText.slice(0, 200));
-      return NextResponse.json({ markers: [], routes: [], error: `Geocode failed: ${res.status}` }, { status: 502 });
+      console.error(`trip-map geocode failed (${res.status}):`, errText.slice(0, 300));
+      return NextResponse.json({ markers: [], routes: [], error: `Geocode API error: ${res.status}` }, { status: 502 });
     }
 
     const result = await res.json();
-    let text: string = (result.content ?? []).filter((b: { type: string }) => b.type === "text").map((b: { text: string }) => b.text).join("").trim();
-    text = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
+    const rawText: string = (result.content ?? [])
+      .filter((b: { type: string }) => b.type === "text")
+      .map((b: { text: string }) => b.text)
+      .join("")
+      .trim();
 
-    if (!text) return NextResponse.json({ markers: [], routes: [] });
-    const geocoded: GeocodeResult[] = JSON.parse(text);
+    const jsonText = extractJsonArray(rawText);
+    type GeoEntry =
+      | { type: "airport"; iata: string; lat: number; lng: number; name?: string }
+      | { type: "place"; index: number; lat: number; lng: number };
+
+    const geocoded: GeoEntry[] = JSON.parse(jsonText);
 
     // Build lookup maps
-    const airportCoords = new Map<string, GeocodeResult>();
-    const placeCoords = new Map<string, GeocodeResult>();
+    const airportCoords = new Map<string, { lat: number; lng: number; name?: string }>();
+    const placeCoords = new Map<number, { lat: number; lng: number }>();
+
     for (const g of geocoded) {
-      if (g.type === "airport" && g.iata) airportCoords.set(g.iata, g);
-      if (g.type === "place" && g.id) placeCoords.set(g.id, g);
+      if (g.type === "airport" && g.iata) {
+        airportCoords.set(g.iata, { lat: g.lat, lng: g.lng, name: (g as { type: "airport"; iata: string; lat: number; lng: number; name?: string }).name });
+      }
+      if (g.type === "place" && typeof g.index === "number") {
+        placeCoords.set(g.index, { lat: g.lat, lng: g.lng });
+      }
     }
 
     // Build markers
@@ -130,24 +153,25 @@ Only include entries you are confident about (within ~1km accuracy). Omit entrie
     const seenAirports = new Set<string>();
 
     for (const f of flights) {
-      if (f.departure_iata && airportCoords.has(f.departure_iata) && !seenAirports.has(f.departure_iata)) {
-        const g = airportCoords.get(f.departure_iata)!;
-        markers.push({ id: `airport-${f.departure_iata}`, type: "airport", lat: g.lat, lng: g.lng, label: f.departure_iata, sublabel: g.name });
-        seenAirports.add(f.departure_iata);
-      }
-      if (f.arrival_iata && airportCoords.has(f.arrival_iata) && !seenAirports.has(f.arrival_iata)) {
-        const g = airportCoords.get(f.arrival_iata)!;
-        markers.push({ id: `airport-${f.arrival_iata}`, type: "airport", lat: g.lat, lng: g.lng, label: f.arrival_iata, sublabel: g.name });
-        seenAirports.add(f.arrival_iata);
+      for (const iata of [f.departure_iata, f.arrival_iata]) {
+        if (iata && airportCoords.has(iata) && !seenAirports.has(iata)) {
+          const c = airportCoords.get(iata)!;
+          markers.push({ id: `airport-${iata}`, type: "airport", lat: c.lat, lng: c.lng, label: iata, sublabel: c.name });
+          seenAirports.add(iata);
+        }
       }
     }
 
     for (const a of preGeocoded) {
       markers.push({ id: a.id, type: "activity", lat: a.lat!, lng: a.lng!, label: a.title, sublabel: a.place_name ?? undefined });
     }
-    for (const a of toGeocode) {
-      const g = placeCoords.get(a.id);
-      if (g) markers.push({ id: a.id, type: "activity", lat: g.lat, lng: g.lng, label: a.title, sublabel: a.place_name ?? a.title });
+
+    for (let i = 0; i < toGeocode.length; i++) {
+      const coords = placeCoords.get(i);
+      if (coords) {
+        const a = toGeocode[i];
+        markers.push({ id: a.id, type: "activity", lat: coords.lat, lng: coords.lng, label: a.title, sublabel: a.place_name ?? undefined });
+      }
     }
 
     // Build routes
@@ -157,17 +181,13 @@ Only include entries you are confident about (within ~1km accuracy). Omit entrie
       const dep = airportCoords.get(f.departure_iata);
       const arr = airportCoords.get(f.arrival_iata);
       if (dep && arr) {
-        routes.push({
-          id: f.id,
-          from: [dep.lat, dep.lng],
-          to: [arr.lat, arr.lng],
-          label: f.flight_number,
-        });
+        routes.push({ id: f.id, from: [dep.lat, dep.lng], to: [arr.lat, arr.lng], label: f.flight_number });
       }
     }
 
     return NextResponse.json({ markers, routes } satisfies TripMapData);
-  } catch {
+  } catch (err) {
+    console.error("trip-map error:", err);
     return NextResponse.json({ markers: [], routes: [] });
   }
 }
