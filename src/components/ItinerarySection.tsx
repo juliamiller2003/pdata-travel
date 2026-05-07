@@ -299,6 +299,7 @@ export default function ItinerarySection({
           num_days,
           style,
           preferences: preferences ?? "",
+          existing_day_count: days.length,
           existing_activities: [
             ...days.flatMap((d) =>
               d.activities.map((a) => a.place_name ? `${a.title} (${a.place_name})` : a.title)

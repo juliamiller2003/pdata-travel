@@ -7,22 +7,27 @@ interface SuggestRequest {
   style: ItineraryStyle;
   preferences: string;
   existing_activities: string[];
+  existing_day_count: number;
 }
 
-function buildPrompt(destination: string, num_days: number, style: ItineraryStyle, preferences: string, existing_activities: string[]) {
+function buildPrompt(destination: string, num_days: number, style: ItineraryStyle, preferences: string, existing_activities: string[], existing_day_count: number) {
   const pref = preferences.trim() ? `\nUser preferences: ${preferences.trim()}` : "";
   const existing = existing_activities.length > 0
     ? `\nAlready in the itinerary (do NOT repeat these or anything similar): ${existing_activities.join(", ")}`
     : "";
+  const startDay = existing_day_count + 1;
+  const tripContext = existing_day_count > 0
+    ? `This trip already has ${existing_day_count} day${existing_day_count === 1 ? "" : "s"} planned. Generate ${num_days} additional day${num_days === 1 ? "" : "s"} starting from Day ${startDay}.`
+    : `Generate a ${num_days}-day itinerary.`;
 
   if (style === "structured") {
-    return `You are a travel expert. Create a ${num_days}-day itinerary for ${destination}.${pref}${existing}
+    return `You are a travel expert planning a trip to ${destination}. ${tripContext}${pref}${existing}
 
 Return ONLY a JSON object with this exact structure (no markdown, no commentary):
 {
   "days": [
     {
-      "day_number": 1,
+      "day_number": ${startDay},
       "activities": [
         { "time": "09:00", "title": "Activity name", "place_name": "Specific place or null" }
       ]
@@ -42,10 +47,10 @@ Rules:
   }
 
   if (style === "notes") {
-    return `You are a travel planner writing quick personal notes for a trip to ${destination} (${num_days} days).${pref}${existing}
+    return `You are a travel planner writing quick personal notes for a trip to ${destination}. ${tripContext}${pref}${existing}
 
 Return ONLY a JSON object:
-{ "content": "Day 1\\n\\n9am - Arrive, check in at hotel. Head to X for lunch.\\n\\nAfternoon - ..." }
+{ "content": "Day ${startDay}\\n\\n9am - ...\\n\\nAfternoon - ..." }
 
 Style rules:
 - Write like a friend's shorthand notes, not a travel magazine
@@ -58,13 +63,13 @@ Style rules:
   }
 
   if (style === "notes_day_night") {
-    return `You are a travel planner writing quick personal notes for a trip to ${destination} (${num_days} days).${pref}${existing}
+    return `You are a travel planner writing quick personal notes for a trip to ${destination}. ${tripContext}${pref}${existing}
 
 Return ONLY a JSON object:
 {
   "days": [
     {
-      "day_number": 1,
+      "day_number": ${startDay},
       "sections": {
         "day": "9am Chiang Kai-shek Memorial Hall. Grab lunch at Din Tai Fung (Xinyi). Afternoon: Songshan Cultural Park.",
         "night": "Shilin Night Market from 6pm. Try oyster vermicelli and stinky tofu."
@@ -81,13 +86,13 @@ Style rules:
   }
 
   // notes_day_afternoon_night
-  return `You are a travel planner writing quick personal notes for a trip to ${destination} (${num_days} days).${pref}${existing}
+  return `You are a travel planner writing quick personal notes for a trip to ${destination}. ${tripContext}${pref}${existing}
 
 Return ONLY a JSON object:
 {
   "days": [
     {
-      "day_number": 1,
+      "day_number": ${startDay},
       "sections": {
         "day": "9am Longshan Temple. Walk to Ximending after.",
         "afternoon": "Zhongshan District — check out the design shops on Chifeng St.",
@@ -108,7 +113,7 @@ export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "Not configured" }, { status: 500 });
 
-  const { destination, num_days, style, preferences, existing_activities = [] }: SuggestRequest = await req.json();
+  const { destination, num_days, style, preferences, existing_activities = [], existing_day_count = 0 }: SuggestRequest = await req.json();
 
   const VALID_STYLES: ItineraryStyle[] = ["structured", "notes", "notes_day_night", "notes_day_afternoon_night"];
 
@@ -120,7 +125,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid itinerary style" }, { status: 400 });
   }
 
-  const prompt = buildPrompt(destination, num_days, style, preferences ?? "", existing_activities);
+  const prompt = buildPrompt(destination, num_days, style, preferences ?? "", existing_activities, existing_day_count);
 
   let anthropicRes: Response;
   try {
