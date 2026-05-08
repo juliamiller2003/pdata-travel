@@ -263,7 +263,12 @@ export default async function TripDetailPage({ params }: TripPageProps) {
       </SectionGuard>
 
       <SectionGuard section="map">
-        <TripMapView flights={flights} activities={allActivities} days={mapDays} />
+        <TripMapView
+          flights={flights}
+          activities={allActivities}
+          days={mapDays}
+          accommodations={(accommodationsData ?? []).map((a: any) => ({ id: a.id, name: a.name, city: a.city ?? null, type: a.type ?? null }))} // eslint-disable-line @typescript-eslint/no-explicit-any
+        />
       </SectionGuard>
 
       <SectionGuard section="flights">

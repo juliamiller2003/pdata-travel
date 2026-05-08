@@ -15,9 +15,16 @@ interface ActivityInput {
   lng: number | null;
 }
 
+interface AccommodationInput {
+  id: string;
+  name: string;
+  city: string | null;
+  type: string | null;
+}
+
 export interface MapMarker {
   id: string;
-  type: "airport" | "activity";
+  type: "airport" | "activity" | "accommodation";
   lat: number;
   lng: number;
   label: string;
@@ -51,7 +58,7 @@ export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return NextResponse.json({ markers: [], routes: [] });
 
-  const { flights, activities }: { flights: FlightInput[]; activities: ActivityInput[] } = await req.json();
+  const { flights, activities, accommodations = [] }: { flights: FlightInput[]; activities: ActivityInput[]; accommodations: AccommodationInput[] } = await req.json();
 
   // Collect unique IATAs from flights
   const iatas = [...new Set<string>(
@@ -62,8 +69,14 @@ export async function POST(req: NextRequest) {
   const toGeocode = activities.filter((a) => (a.place_name || a.title) && (a.lat == null || a.lng == null));
   const preGeocoded = activities.filter((a) => (a.place_name || a.title) && a.lat != null && a.lng != null);
 
+  // All accommodations need geocoding (no coords in schema)
+  const accomToGeocode = accommodations.filter((a) => a.name);
+
+  // Offsets: activities use indices 0…N-1, accommodations use N…N+M-1
+  const accomOffset = toGeocode.length;
+
   // If nothing to geocode, return pre-geocoded markers only
-  if (iatas.length === 0 && toGeocode.length === 0) {
+  if (iatas.length === 0 && toGeocode.length === 0 && accomToGeocode.length === 0) {
     const markers: MapMarker[] = preGeocoded.map((a) => ({
       id: a.id,
       type: "activity",
@@ -86,16 +99,23 @@ export async function POST(req: NextRequest) {
       }`
     : "";
 
+  const accomSection = accomToGeocode.length > 0
+    ? `Accommodations (return type "place", use indices ${accomOffset}…${accomOffset + accomToGeocode.length - 1}):\n${
+        accomToGeocode.map((a, i) => `  ${accomOffset + i}: "${a.name}${a.city ? `, ${a.city}` : ""}"`).join("\n")
+      }`
+    : "";
+
   const prompt = `Return precise latitude/longitude coordinates for these locations.
 Return ONLY a valid JSON array with no extra text or markdown.
 
 ${airportSection}
 ${placeSection}
+${accomSection}
 
 For airports use this shape:
 { "type": "airport", "iata": "TPE", "lat": 25.0777, "lng": 121.2322, "name": "Taiwan Taoyuan International Airport" }
 
-For places use this shape (index must be the integer from the list above):
+For places and accommodations use this shape (index must be the integer from the list above):
 { "type": "place", "index": 0, "lat": 25.0369, "lng": 121.4996 }
 
 Only include entries you are confident about. Omit any you are unsure of.`;
@@ -171,6 +191,15 @@ Only include entries you are confident about. Omit any you are unsure of.`;
       if (coords) {
         const a = toGeocode[i];
         markers.push({ id: a.id, type: "activity", lat: coords.lat, lng: coords.lng, label: a.title, sublabel: a.place_name ?? undefined });
+      }
+    }
+
+    // Accommodation markers (indices start at accomOffset)
+    for (let i = 0; i < accomToGeocode.length; i++) {
+      const coords = placeCoords.get(accomOffset + i);
+      if (coords) {
+        const a = accomToGeocode[i];
+        markers.push({ id: `accom-${a.id}`, type: "accommodation", lat: coords.lat, lng: coords.lng, label: a.name, sublabel: a.city ?? undefined });
       }
     }
 

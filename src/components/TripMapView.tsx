@@ -28,23 +28,32 @@ interface DayInfo {
   date: string | null;
 }
 
+interface AccommodationInput {
+  id: string;
+  name: string;
+  city: string | null;
+  type: string | null;
+}
+
 interface TripMapViewProps {
   flights: Flight[];
   activities: ActivityInput[];
   days: DayInfo[];
+  accommodations?: AccommodationInput[];
 }
 
-export default function TripMapView({ flights, activities, days }: TripMapViewProps) {
+export default function TripMapView({ flights, activities, days, accommodations = [] }: TripMapViewProps) {
   const [data, setData] = useState<TripMapData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [showFlights, setShowFlights] = useState(true);
+  const [showAccommodations, setShowAccommodations] = useState(true);
   const [selectedDays, setSelectedDays] = useState<Set<number>>(
     new Set(days.map((d) => d.day_number))
   );
 
   const hasFlightRoutes = flights.some((f) => f.departure_iata && f.arrival_iata);
-  const hasContent = hasFlightRoutes || activities.some((a) => a.place_name || a.title);
+  const hasContent = hasFlightRoutes || activities.some((a) => a.place_name || a.title) || accommodations.length > 0;
 
   // Build lookup: activity id → day_number
   const activityDayMap = useMemo(() => {
@@ -69,6 +78,12 @@ export default function TripMapView({ flights, activities, days }: TripMapViewPr
           arrival_iata: f.arrival_iata,
         })),
         activities,
+        accommodations: accommodations.map((a) => ({
+          id: a.id,
+          name: a.name,
+          city: a.city,
+          type: a.type,
+        })),
       }),
     })
       .then((r) => r.json())
@@ -87,13 +102,14 @@ export default function TripMapView({ flights, activities, days }: TripMapViewPr
     const allDaysSelected = days.every((d) => selectedDays.has(d.day_number));
     const markers = data.markers.filter((m) => {
       if (m.type === "airport") return showFlights;
+      if (m.type === "accommodation") return showAccommodations;
       const dayNum = activityDayMap.get(m.id);
       if (dayNum == null) return true;
       return allDaysSelected || selectedDays.has(dayNum);
     });
     const routes = showFlights ? data.routes : [];
     return { markers, routes };
-  }, [data, showFlights, selectedDays, activityDayMap, days]);
+  }, [data, showFlights, showAccommodations, selectedDays, activityDayMap, days]);
 
   const allDaysSelected = days.every((d) => selectedDays.has(d.day_number));
 
@@ -130,6 +146,23 @@ export default function TripMapView({ flights, activities, days }: TripMapViewPr
                 <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
               </svg>
               Flights
+            </button>
+          )}
+
+          {/* Accommodations toggle */}
+          {accommodations.length > 0 && (
+            <button
+              onClick={() => setShowAccommodations((v) => !v)}
+              className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                showAccommodations
+                  ? "bg-[#1e1e1e] dark:bg-[#cadede] text-white dark:text-[#1e1e1e]"
+                  : "bg-gray-100 dark:bg-[#2e2e2e] text-gray-400 dark:text-[#9fb8b8]"
+              }`}
+            >
+              <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7 13c1.66 0 3-1.34 3-3S8.66 7 7 7s-3 1.34-3 3 1.34 3 3 3zm12-6h-8v7H3V5H1v15h2v-3h18v3h2v-9c0-2.21-1.79-4-4-4z"/>
+              </svg>
+              Stays
             </button>
           )}
 

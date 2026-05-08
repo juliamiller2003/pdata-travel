@@ -23,13 +23,24 @@ function arcPoints(from: [number, number], to: [number, number], steps = 60): [n
 }
 
 function makeIcon(type: MapMarker["type"]) {
-  const isAirport = type === "airport";
-  // Palette: dark charcoal for airports, teal accent for activities
-  const bg = isAirport ? "#1e1e1e" : "#9fb8b8";
-  const border = isAirport ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.6)";
-  const svg = isAirport
-    ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="13" height="13"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>`
-    : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="11" height="11"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`;
+  // Palette colours:
+  //  airport       → #1e1e1e  (charcoal)
+  //  activity      → #9fb8b8  (teal accent)
+  //  accommodation → #7a9d9d  (slightly deeper teal, distinct from activity)
+  const bg =
+    type === "airport" ? "#1e1e1e" :
+    type === "accommodation" ? "#7a9d9d" :
+    "#9fb8b8";
+  const border =
+    type === "airport" ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.55)";
+
+  const svg =
+    type === "airport"
+      ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="13" height="13"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>`
+      : type === "accommodation"
+      ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="12" height="12"><path d="M7 13c1.66 0 3-1.34 3-3S8.66 7 7 7s-3 1.34-3 3 1.34 3 3 3zm12-6h-8v7H3V5H1v15h2v-3h18v3h2v-9c0-2.21-1.79-4-4-4z"/></svg>`
+      : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="11" height="11"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`;
+
   return L.divIcon({
     className: "",
     html: `<div style="background:${bg};width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid ${border};box-shadow:0 2px 8px rgba(0,0,0,0.18);">${svg}</div>`,
