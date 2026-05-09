@@ -14,7 +14,6 @@ import AccommodationSection from "@/components/AccommodationSection";
 import PackingListSection from "@/components/PackingListSection";
 import WhereNextSection from "@/components/WhereNextSection";
 import TransportationSection from "@/components/TransportationSection";
-import OfflineMapsSection from "@/components/OfflineMapsSection";
 import CurrencySection from "@/components/CurrencySection";
 import { effectiveStatus, formatDate } from "@/lib/tripUtils";
 
@@ -67,7 +66,6 @@ export default async function TripDetailPage({ params }: TripPageProps) {
     { data: accommodationsData },
     { data: packingData },
     { data: transportLegsData },
-    { data: savedMapLinksData },
   ] = await Promise.all([
     db
       .from("journal_entries")
@@ -104,11 +102,6 @@ export default async function TripDetailPage({ params }: TripPageProps) {
       .select("*")
       .eq("trip_id", id)
       .order("travel_date"),
-    db
-      .from("saved_map_links")
-      .select("*")
-      .eq("trip_id", id)
-      .order("created_at"),
   ]);
 
   const itinerary = days ?? [];
@@ -286,12 +279,6 @@ export default async function TripDetailPage({ params }: TripPageProps) {
           homeCountryCode={homeCountryCode}
         />
       )}
-
-      <OfflineMapsSection
-        tripId={id}
-        destination={trip.destination}
-        initialLinks={savedMapLinksData ?? []}
-      />
 
       <AccommodationSection tripId={id} initialAccommodations={accommodationsData ?? []} />
 
