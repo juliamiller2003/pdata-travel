@@ -107,13 +107,6 @@ function flightTimeToHHMM(iso: string | null): string {
   return iso.slice(0, 5);
 }
 
-function transportModeIcon(mode: string): string {
-  const icons: Record<string, string> = {
-    bus: "🚌", train: "🚆", ferry: "⛴", taxi: "🚕",
-    car: "🚗", motorbike: "🛵", subway: "🚇", other: "🚐",
-  };
-  return icons[mode] ?? "🚐";
-}
 
 // ── Module-level sub-components ───────────────────────────────────────────────
 // These MUST live outside ItinerarySection so React sees a stable component
@@ -297,7 +290,6 @@ function TravelEventList({ day, flightsByDate, transportByDate, clockFormat }: T
           const arrFormatted = t.arrival_time ? formatActivityTime(t.arrival_time.slice(0, 5), clockFormat) : null;
           return (
             <div key={i} className="flex items-center gap-2 rounded-lg bg-[#f5f5f5] dark:bg-[#252525] px-2.5 py-2 text-xs">
-              <span className="shrink-0 text-sm leading-none">{transportModeIcon(t.mode)}</span>
               {depFormatted && (
                 <span className="w-16 shrink-0 whitespace-nowrap font-mono text-gray-400 dark:text-[#9fb8b8]">{depFormatted}</span>
               )}
