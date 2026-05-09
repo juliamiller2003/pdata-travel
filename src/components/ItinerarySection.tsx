@@ -598,22 +598,35 @@ function ItinerarySection({
     transportByDate.set(t.travel_date, arr);
   }
 
-  // Collapse state — persisted to localStorage so refreshing keeps days collapsed
+  // Collapse state — persisted to localStorage so refreshing keeps days collapsed.
+  // Must be loaded in a useEffect (not useState initializer) because Next.js SSR
+  // renders this component on the server where localStorage is unavailable, and
+  // React reuses that server state during hydration without re-running the initializer.
   const collapseKey = `pathway-collapsed-days-${tripId}`;
-  const [collapsedDays, setCollapsedDays] = useState<Set<string>>(() => {
-    try {
-      const stored = localStorage.getItem(collapseKey);
-      if (stored) return new Set<string>(JSON.parse(stored));
-    } catch {}
-    return new Set<string>();
-  });
+  const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set());
+  const [collapseStorageLoaded, setCollapseStorageLoaded] = useState(false);
   const [sectionCollapsed, setSectionCollapsed] = useState(false);
 
+  // Load saved collapsed days from localStorage after mount (client-only)
   useEffect(() => {
+    try {
+      const stored = localStorage.getItem(collapseKey);
+      if (stored) {
+        const ids = JSON.parse(stored);
+        if (Array.isArray(ids)) setCollapsedDays(new Set<string>(ids));
+      }
+    } catch {}
+    setCollapseStorageLoaded(true);
+  }, [collapseKey]);
+
+  // Save to localStorage whenever collapsed state changes, but not before the
+  // initial load completes (otherwise the empty initial state would overwrite the data).
+  useEffect(() => {
+    if (!collapseStorageLoaded) return;
     try {
       localStorage.setItem(collapseKey, JSON.stringify([...collapsedDays]));
     } catch {}
-  }, [collapsedDays, collapseKey]);
+  }, [collapsedDays, collapseKey, collapseStorageLoaded]);
 
   const toggleDayCollapsed = useCallback((dayId: string) => {
     setCollapsedDays((prev) => {
