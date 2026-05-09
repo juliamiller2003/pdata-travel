@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, memo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { ItineraryStyle, Flight, TransportLeg } from "@/types/database";
 import { getClockFormat, formatActivityTime, type ClockFormat } from "@/lib/timeFormat";
@@ -92,7 +92,370 @@ function computeDuration(start: string | null, end: string | null): number | nul
   return Math.max(1, diff);
 }
 
-export default function ItinerarySection({
+// ── Module-level helpers (no closure deps) ────────────────────────────────────
+
+function flightTimeToHHMM(iso: string | null): string {
+  if (!iso) return "";
+  if (iso.includes("T")) {
+    try {
+      const d = new Date(iso);
+      return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+    } catch {
+      return iso.slice(11, 16);
+    }
+  }
+  return iso.slice(0, 5);
+}
+
+function transportModeIcon(mode: string): string {
+  const icons: Record<string, string> = {
+    bus: "🚌", train: "🚆", ferry: "⛴", taxi: "🚕",
+    car: "🚗", motorbike: "🛵", subway: "🚇", other: "🚐",
+  };
+  return icons[mode] ?? "🚐";
+}
+
+// ── Module-level sub-components ───────────────────────────────────────────────
+// These MUST live outside ItinerarySection so React sees a stable component
+// type on every render. Defining them inside would cause unmount/remount on
+// every keystroke, which scrolls the page back to the top.
+
+interface DayHeaderProps {
+  day: DayRow;
+  displayNum: number;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
+  onDelete: () => void;
+  dragHandleProps?: Record<string, unknown>;
+}
+
+function DayHeader({ day, displayNum, isCollapsed, onToggleCollapse, onDelete, dragHandleProps }: DayHeaderProps) {
+  return (
+    <div className={`flex items-center justify-between ${isCollapsed ? "" : "mb-3"}`}>
+      <div className="flex items-center gap-2 min-w-0">
+        {dragHandleProps && (
+          <button
+            {...(dragHandleProps as React.ButtonHTMLAttributes<HTMLButtonElement>)}
+            tabIndex={-1}
+            className="cursor-grab active:cursor-grabbing touch-none text-gray-300 hover:text-gray-400 transition-colors shrink-0"
+            title="Drag to reorder"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 8h16M4 16h16" />
+            </svg>
+          </button>
+        )}
+        <button
+          onClick={onToggleCollapse}
+          className="flex items-center gap-2 min-w-0 hover:opacity-70 transition-opacity"
+        >
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white dark:text-[#1e1e1e]">
+            {displayNum}
+          </span>
+          <span className="text-sm font-medium text-gray-700 dark:text-[#efefef] truncate">
+            Day {displayNum}
+            {day.date && <span className="ml-2 text-gray-400 dark:text-[#9fb8b8]">· {formatDayDate(day.date)}</span>}
+          </span>
+          <svg
+            className={`h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform duration-150 ${isCollapsed ? "-rotate-90" : ""}`}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      </div>
+      <button onClick={onDelete} className="ml-2 shrink-0 text-gray-300 hover:text-red-400 transition-colors" title="Delete day">
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+interface SortableDayCardProps {
+  day: DayRow;
+  idx: number;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
+  onDelete: () => void;
+  children: React.ReactNode;
+}
+
+function SortableDayCard({ day, idx, isCollapsed, onToggleCollapse, onDelete, children }: SortableDayCardProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: day.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : undefined,
+  };
+  return (
+    <div ref={setNodeRef} style={style}>
+      <div className="card p-4">
+        <DayHeader
+          day={day}
+          displayNum={idx + 1}
+          isCollapsed={isCollapsed}
+          onToggleCollapse={onToggleCollapse}
+          onDelete={onDelete}
+          dragHandleProps={{ ...attributes, ...listeners } as Record<string, unknown>}
+        />
+        {!isCollapsed && children}
+      </div>
+    </div>
+  );
+}
+
+interface ActivityListProps {
+  day: DayRow;
+  clockFormat: ClockFormat;
+}
+
+function ActivityList({ day, clockFormat }: ActivityListProps) {
+  if (day.activities.length === 0) return null;
+  return (
+    <ul className="mb-3 space-y-1.5 border-b border-gray-100 dark:border-[#2e2e2e] pb-3">
+      {day.activities.map((act) => (
+        <li key={act.id} className="flex items-start gap-3 text-sm">
+          <span className="w-16 shrink-0 whitespace-nowrap font-mono text-xs text-gray-400 dark:text-[#9fb8b8] mt-0.5">
+            {formatActivityTime(act.time, clockFormat)}
+          </span>
+          <div className="min-w-0">
+            <p className="font-medium text-gray-800 dark:text-[#efefef]">{act.title}</p>
+            {act.place_name && <p className="text-xs text-gray-400 dark:text-[#9fb8b8]">{act.place_name}</p>}
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+interface TravelEventListProps {
+  day: DayRow;
+  flightsByDate: Map<string, Flight[]>;
+  transportByDate: Map<string, TransportLeg[]>;
+  clockFormat: ClockFormat;
+}
+
+function TravelEventList({ day, flightsByDate, transportByDate, clockFormat }: TravelEventListProps) {
+  if (!day.date) return null;
+  const dayFlights = flightsByDate.get(day.date) ?? [];
+  const dayTransport = transportByDate.get(day.date) ?? [];
+  if (dayFlights.length === 0 && dayTransport.length === 0) return null;
+
+  type TravelEvent =
+    | { kind: "flight"; data: Flight; sortKey: string }
+    | { kind: "transport"; data: TransportLeg; sortKey: string };
+
+  const events: TravelEvent[] = [
+    ...dayFlights.map((f) => ({
+      kind: "flight" as const,
+      data: f,
+      sortKey: flightTimeToHHMM(f.departure_time) || "99:99",
+    })),
+    ...dayTransport.map((t) => ({
+      kind: "transport" as const,
+      data: t,
+      sortKey: t.departure_time ? t.departure_time.slice(0, 5) : "99:99",
+    })),
+  ].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+
+  return (
+    <div className="mb-3 space-y-1.5">
+      {events.map((ev, i) => {
+        if (ev.kind === "flight") {
+          const f = ev.data;
+          const depTime = flightTimeToHHMM(f.departure_time);
+          const arrTime = flightTimeToHHMM(f.arrival_time);
+          const depFormatted = depTime ? formatActivityTime(depTime, clockFormat) : null;
+          const arrFormatted = arrTime ? formatActivityTime(arrTime, clockFormat) : null;
+          return (
+            <div key={i} className="flex items-center gap-2 rounded-lg bg-[#f5f5f5] dark:bg-[#252525] px-2.5 py-2 text-xs">
+              <svg className="h-3.5 w-3.5 shrink-0 text-gray-400 dark:text-[#9fb8b8]" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+              </svg>
+              {depFormatted && (
+                <span className="w-16 shrink-0 whitespace-nowrap font-mono text-gray-400 dark:text-[#9fb8b8]">{depFormatted}</span>
+              )}
+              <div className="min-w-0 flex-1">
+                <span className="font-medium text-gray-700 dark:text-[#efefef]">{f.flight_number}</span>
+                {(f.departure_iata || f.arrival_iata) && (
+                  <span className="ml-1.5 text-gray-400 dark:text-[#9fb8b8]">
+                    {f.departure_iata ?? f.departure_city ?? "—"} → {f.arrival_iata ?? f.arrival_city ?? "—"}
+                  </span>
+                )}
+              </div>
+              {arrFormatted && (
+                <span className="shrink-0 text-gray-400 dark:text-[#9fb8b8]">arr. {arrFormatted}</span>
+              )}
+            </div>
+          );
+        } else {
+          const t = ev.data;
+          const depFormatted = t.departure_time ? formatActivityTime(t.departure_time.slice(0, 5), clockFormat) : null;
+          const arrFormatted = t.arrival_time ? formatActivityTime(t.arrival_time.slice(0, 5), clockFormat) : null;
+          return (
+            <div key={i} className="flex items-center gap-2 rounded-lg bg-[#f5f5f5] dark:bg-[#252525] px-2.5 py-2 text-xs">
+              <span className="shrink-0 text-sm leading-none">{transportModeIcon(t.mode)}</span>
+              {depFormatted && (
+                <span className="w-16 shrink-0 whitespace-nowrap font-mono text-gray-400 dark:text-[#9fb8b8]">{depFormatted}</span>
+              )}
+              <div className="min-w-0 flex-1">
+                <span className="font-medium text-gray-700 dark:text-[#efefef] capitalize">{t.mode}</span>
+                <span className="ml-1.5 text-gray-400 dark:text-[#9fb8b8]">{t.from_location} → {t.to_location}</span>
+              </div>
+              {arrFormatted && (
+                <span className="shrink-0 text-gray-400 dark:text-[#9fb8b8]">arr. {arrFormatted}</span>
+              )}
+            </div>
+          );
+        }
+      })}
+    </div>
+  );
+}
+
+// ── NotesTextarea ─────────────────────────────────────────────────────────────
+// Uncontrolled textarea — the browser manages the value natively so React
+// never touches the DOM on every keystroke. The parent learns the new value
+// only on blur (onBlur). When the parent needs to push new content in (e.g.
+// after AI applies suggestions), it bumps refreshKey which changes the `key`
+// prop and remounts the textarea with the fresh defaultValue.
+
+interface NotesTextareaProps {
+  initialValue: string;
+  rows: number;
+  placeholder: string;
+  onBlur: (value: string) => void;
+  refreshKey: number;
+}
+
+function NotesTextarea({ initialValue, rows, placeholder, onBlur, refreshKey }: NotesTextareaProps) {
+  return (
+    <textarea
+      key={refreshKey}
+      defaultValue={initialValue}
+      onBlur={(e) => onBlur(e.target.value)}
+      rows={rows}
+      placeholder={placeholder}
+      className="input w-full resize-none text-sm"
+    />
+  );
+}
+
+// ── AddActivityForm ───────────────────────────────────────────────────────────
+// Owns its own time/title/place/saving state so typing never re-renders
+// ItinerarySection (and never triggers dnd-kit's scroll-to-top side-effect).
+
+interface AddActivityFormProps {
+  dayId: string;
+  orderIndex: number;
+  onAdded: (activity: ActivityRow) => void;
+  onCancel: () => void;
+}
+
+function AddActivityForm({ dayId, orderIndex, onAdded, onCancel }: AddActivityFormProps) {
+  const [time, setTime] = useState("");
+  const [title, setTitle] = useState("");
+  const [place, setPlace] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit() {
+    if (!title.trim()) return;
+    setSaving(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = createClient() as any;
+    const { data, error } = await db
+      .from("activities")
+      .insert({ day_id: dayId, time: time || null, title: title.trim(), place_name: place.trim() || null, order_index: orderIndex })
+      .select().single();
+    setSaving(false);
+    if (!error && data) onAdded(data);
+  }
+
+  return (
+    <div className="space-y-2 rounded-lg border border-sky-100 dark:border-[#2e2e2e] bg-sky-50/50 dark:bg-transparent p-3">
+      <div className="grid grid-cols-3 gap-2">
+        <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="input text-sm" />
+        <input
+          type="text" value={title} onChange={(e) => setTitle(e.target.value)}
+          className="input col-span-2 text-sm" placeholder="Activity name *" autoFocus
+          onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); if (e.key === "Escape") onCancel(); }}
+        />
+      </div>
+      <input
+        type="text" value={place} onChange={(e) => setPlace(e.target.value)}
+        className="input w-full text-sm" placeholder="Place name (optional)"
+        onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); if (e.key === "Escape") onCancel(); }}
+      />
+      <div className="flex gap-2">
+        <button onClick={handleSubmit} disabled={saving || !title.trim()} className="btn-primary px-3 py-1 text-sm">
+          {saving ? "Saving…" : "Add"}
+        </button>
+        <button onClick={onCancel} className="btn-secondary px-3 py-1 text-sm">Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+// ── EditActivityInline ────────────────────────────────────────────────────────
+// Same rationale — owns its own state so editing never re-renders the parent.
+
+interface EditActivityInlineProps {
+  activity: ActivityRow;
+  onUpdated: (activity: ActivityRow) => void;
+  onCancel: () => void;
+}
+
+function EditActivityInline({ activity, onUpdated, onCancel }: EditActivityInlineProps) {
+  const [time, setTime] = useState(activity.time?.slice(0, 5) ?? "");
+  const [title, setTitle] = useState(activity.title);
+  const [place, setPlace] = useState(activity.place_name ?? "");
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    if (!title.trim()) return;
+    setSaving(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = createClient() as any;
+    const { data, error } = await db
+      .from("activities")
+      .update({ time: time || null, title: title.trim(), place_name: place.trim() || null })
+      .eq("id", activity.id)
+      .select().single();
+    setSaving(false);
+    if (!error && data) onUpdated(data);
+  }
+
+  return (
+    <li className="rounded-lg border border-sky-100 dark:border-[#2e2e2e] bg-sky-50/50 dark:bg-transparent p-3 space-y-2">
+      <div className="grid grid-cols-3 gap-2">
+        <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="input text-sm" />
+        <input
+          type="text" value={title} onChange={(e) => setTitle(e.target.value)}
+          className="input col-span-2 text-sm" placeholder="Activity name *" autoFocus
+          onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") onCancel(); }}
+        />
+      </div>
+      <input
+        type="text" value={place} onChange={(e) => setPlace(e.target.value)}
+        className="input w-full text-sm" placeholder="Place name (optional)"
+        onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") onCancel(); }}
+      />
+      <div className="flex gap-2">
+        <button onClick={handleSave} disabled={saving || !title.trim()} className="btn-primary px-3 py-1 text-sm">
+          {saving ? "Saving…" : "Save"}
+        </button>
+        <button onClick={onCancel} className="btn-secondary px-3 py-1 text-sm">Cancel</button>
+      </div>
+    </li>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+
+function ItinerarySection({
   tripId,
   initialDays,
   tripStartDate,
@@ -121,22 +484,100 @@ export default function ItinerarySection({
     setClockFormatState(getClockFormat());
   }, []);
 
+  // Scroll-lock: when any textarea on this page has focus, intercept a large
+  // upward scroll (the bug) and immediately restore the previous position.
+  // "Large upward" = page went from >200 px down to <50 px — i.e. jumped to top.
+  // Normal user scrolling (wheel / scrollbar) updates the reference so it is
+  // always allowed; only the sudden jump-to-top is blocked.
+  useEffect(() => {
+    // Keep a direct reference to the native scrollTo so our restore call
+    // doesn't go through any other interceptor that might log / re-enter.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const nativeScrollTo = (window as any).scrollTo.bind(window) as (x: number, y: number) => void;
+
+    let lockedY: number | null = null; // null = no textarea focused
+
+    const onFocusTa = (e: FocusEvent) => {
+      if ((e.target as HTMLElement).tagName === 'TEXTAREA') {
+        lockedY = window.scrollY;
+      }
+    };
+    const onBlurTa = (e: FocusEvent) => {
+      if ((e.target as HTMLElement).tagName === 'TEXTAREA') {
+        lockedY = null;
+      }
+    };
+    const onScrollLock = () => {
+      if (lockedY === null) return;
+      const y = window.scrollY;
+      if (y < 50 && lockedY > 200) {
+        // Page jumped to near-top while textarea was focused far from top → bug, restore
+        nativeScrollTo(0, lockedY);
+      } else {
+        // Legitimate scroll (user wheeling, small movement) — keep reference current
+        lockedY = y;
+      }
+    };
+
+    document.addEventListener('focus', onFocusTa, true);
+    document.addEventListener('blur',  onBlurTa,  true);
+    window.addEventListener('scroll', onScrollLock, { passive: true });
+
+    // DEBUG: intercept scroll APIs so DevTools shows who is calling them.
+    // Open DevTools → Console, run `npm run dev` locally, type in a textarea,
+    // and look for [FOCUS] / [SCROLL] / [window.scrollTo] / [scrollIntoView].
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const origScrollTo = (window as any).scrollTo.bind(window);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).scrollTo = function (...args: unknown[]) {
+      // eslint-disable-next-line no-console
+      console.trace('[window.scrollTo]', args);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      origScrollTo(...(args as any[]));
+    };
+    const origScrollIntoView = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function (this: Element, ...args: unknown[]) {
+      // eslint-disable-next-line no-console
+      console.trace('[scrollIntoView]', this.tagName, (this as HTMLElement).id || (this as HTMLElement).className?.split(' ')[0]);
+      return origScrollIntoView.apply(this, args as Parameters<typeof origScrollIntoView>);
+    };
+    const onFocusLog = (e: FocusEvent) => {
+      const el = e.target as HTMLElement;
+      // eslint-disable-next-line no-console
+      console.log('[FOCUS]', el.tagName, `"${el.getAttribute('placeholder') || el.id || ''}"`, '| scrollY:', Math.round(window.scrollY));
+    };
+    let lastY = window.scrollY;
+    const onScrollLog = () => {
+      const y = window.scrollY;
+      if (y !== lastY) {
+        // eslint-disable-next-line no-console
+        console.log(`[SCROLL] ${Math.round(lastY)} → ${Math.round(y)}`);
+        lastY = y;
+      }
+    };
+    document.addEventListener('focus', onFocusLog, true);
+    window.addEventListener('scroll', onScrollLog, { passive: true });
+
+    return () => {
+      document.removeEventListener('focus', onFocusTa,  true);
+      document.removeEventListener('blur',  onBlurTa,   true);
+      window.removeEventListener('scroll', onScrollLock);
+      document.removeEventListener('focus', onFocusLog, true);
+      window.removeEventListener('scroll', onScrollLog);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).scrollTo = origScrollTo;
+      Element.prototype.scrollIntoView = origScrollIntoView;
+    };
+  }, []);
+
   useEffect(() => {
     try { localStorage.setItem(`pathway-itinerary-${tripId}`, JSON.stringify(days)); } catch {}
   }, [days, tripId]);
 
-  // Structured mode
+  // Structured mode — which day/activity form is open (not the form values themselves;
+  // those live in AddActivityForm / EditActivityInline to avoid parent re-renders)
   const [addingActivity, setAddingActivity] = useState<string | null>(null);
-  const [actTime, setActTime] = useState("");
-  const [actTitle, setActTitle] = useState("");
-  const [actPlace, setActPlace] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  // Activity editing
   const [editingActivity, setEditingActivity] = useState<string | null>(null);
-  const [editTime, setEditTime] = useState("");
-  const [editTitle, setEditTitle] = useState("");
-  const [editPlace, setEditPlace] = useState("");
 
   // Notes mode
   const [tripNotes, setTripNotes] = useState(initialNotes ?? "");
@@ -145,6 +586,9 @@ export default function ItinerarySection({
     for (const day of initialDays) init[day.id] = (day.section_notes as SectionNotes) ?? {};
     return init;
   });
+  // Incrementing this forces NotesTextarea components to re-sync from parent
+  // (only needed after AI applies new content, not during normal typing)
+  const [notesRefreshKey, setNotesRefreshKey] = useState(0);
 
   // Build date-keyed lookup maps for flights and transport
   const flightsByDate = new Map<string, Flight[]>();
@@ -166,13 +610,13 @@ export default function ItinerarySection({
   const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set());
   const [sectionCollapsed, setSectionCollapsed] = useState(false);
 
-  function toggleDayCollapsed(dayId: string) {
+  const toggleDayCollapsed = useCallback((dayId: string) => {
     setCollapsedDays((prev) => {
       const next = new Set(prev);
       if (next.has(dayId)) next.delete(dayId); else next.add(dayId);
       return next;
     });
-  }
+  }, []);
 
   function collapseAll() {
     setCollapsedDays(new Set(days.map((d) => d.id)));
@@ -198,7 +642,6 @@ export default function ItinerarySection({
 
   function dateForDayNum(dayNum: number) {
     if (!tripStartDate) return null;
-    // Parse as UTC components to avoid timezone-offset shifting the date
     const [y, m, d] = tripStartDate.split("-").map(Number);
     return new Date(Date.UTC(y, m - 1, d + dayNum - 1)).toISOString().split("T")[0];
   }
@@ -217,11 +660,12 @@ export default function ItinerarySection({
     }
   }
 
-  async function handleDeleteDay(dayId: string) {
+  const handleDeleteDay = useCallback(async (dayId: string) => {
     await db.from("itinerary_days").delete().eq("id", dayId);
     setDays((prev) => prev.filter((d) => d.id !== dayId));
     setDayNotes((prev) => { const n = { ...prev }; delete n[dayId]; return n; });
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [db]);
 
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -231,7 +675,6 @@ export default function ItinerarySection({
       const oldIndex = prev.findIndex((d) => d.id === active.id);
       const newIndex = prev.findIndex((d) => d.id === over.id);
       const reordered = arrayMove(prev, oldIndex, newIndex);
-      // Persist new day_number and date based on position
       reordered.forEach((day, idx) => {
         const newDayNum = idx + 1;
         const newDate = dateForDayNum(newDayNum);
@@ -240,7 +683,6 @@ export default function ItinerarySection({
           .eq("id", day.id)
           .then(() => {});
       });
-      // Return reordered days with updated day_number and date in local state too
       return reordered.map((day, idx) => ({
         ...day,
         day_number: idx + 1,
@@ -251,23 +693,6 @@ export default function ItinerarySection({
 
   // ── Activity CRUD ─────────────────────────────────────────────
 
-  async function handleAddActivity(dayId: string) {
-    if (!actTitle.trim()) return;
-    setSaving(true);
-    const orderIndex = days.find((d) => d.id === dayId)?.activities.length ?? 0;
-    const { data, error } = await db
-      .from("activities")
-      .insert({ day_id: dayId, time: actTime || null, title: actTitle.trim(), place_name: actPlace.trim() || null, order_index: orderIndex })
-      .select().single();
-    setSaving(false);
-    if (!error && data) {
-      setDays((prev) => prev.map((d) =>
-        d.id === dayId ? { ...d, activities: sortActivities([...d.activities, data]) } : d
-      ));
-      setAddingActivity(null);
-    }
-  }
-
   async function handleDeleteActivity(activityId: string, dayId: string) {
     await db.from("activities").delete().eq("id", activityId);
     setDays((prev) => prev.map((d) =>
@@ -275,45 +700,10 @@ export default function ItinerarySection({
     ));
   }
 
-  function startEditActivity(act: ActivityRow) {
-    setEditingActivity(act.id);
-    setEditTime(act.time?.slice(0, 5) ?? "");
-    setEditTitle(act.title);
-    setEditPlace(act.place_name ?? "");
-    setAddingActivity(null); // close add form if open
-  }
-
-  async function handleUpdateActivity(activityId: string, dayId: string) {
-    if (!editTitle.trim()) return;
-    setSaving(true);
-    const { data, error } = await db
-      .from("activities")
-      .update({ time: editTime || null, title: editTitle.trim(), place_name: editPlace.trim() || null })
-      .eq("id", activityId)
-      .select().single();
-    setSaving(false);
-    if (!error && data) {
-      setDays((prev) => prev.map((d) =>
-        d.id === dayId
-          ? { ...d, activities: sortActivities(d.activities.map((a) => a.id === activityId ? data : a)) }
-          : d
-      ));
-      setEditingActivity(null);
-    }
-  }
-
   // ── Notes saves ───────────────────────────────────────────────
 
   async function handleTripNotesBlur() {
     await db.from("trips").update({ itinerary_notes: tripNotes || null }).eq("id", tripId);
-  }
-
-  async function handleSectionNotesBlur(dayId: string) {
-    await db.from("itinerary_days").update({ section_notes: dayNotes[dayId] ?? {} }).eq("id", dayId);
-  }
-
-  function updateSectionNote(dayId: string, key: string, value: string) {
-    setDayNotes((prev) => ({ ...prev, [dayId]: { ...prev[dayId], [key]: value } }));
   }
 
   // ── AI generation ─────────────────────────────────────────────
@@ -379,7 +769,6 @@ export default function ItinerarySection({
     setApplying(true);
     setAiError(null);
 
-    // Read max day_number from DB to avoid stale local state after drag reorder
     const { data: existingDays } = await db
       .from("itinerary_days")
       .select("day_number")
@@ -428,6 +817,7 @@ export default function ItinerarySection({
     setNotesSuggestion(null);
     setRejectedActivities([]);
     setShowAI(false);
+    setNotesRefreshKey((k) => k + 1);
   }
 
   async function handleApplyDayNotes() {
@@ -467,6 +857,7 @@ export default function ItinerarySection({
     setRejectedActivities([]);
     setShowAI(false);
     setApplying(false);
+    setNotesRefreshKey((k) => k + 1);
   }
 
   // ── Shared UI pieces ──────────────────────────────────────────
@@ -479,95 +870,6 @@ export default function ItinerarySection({
       + Add day
     </button>
   );
-
-  function flightTimeToHHMM(iso: string | null): string {
-    if (!iso) return "";
-    // ISO timestamptz: extract HH:MM from position 11
-    if (iso.includes("T")) {
-      try {
-        const d = new Date(iso);
-        return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-      } catch {
-        return iso.slice(11, 16);
-      }
-    }
-    return iso.slice(0, 5);
-  }
-
-  function transportModeIcon(mode: string): string {
-    const icons: Record<string, string> = {
-      bus: "🚌", train: "🚆", ferry: "⛴", taxi: "🚕",
-      car: "🚗", motorbike: "🛵", subway: "🚇", other: "🚐",
-    };
-    return icons[mode] ?? "🚐";
-  }
-
-  function DayHeader({ day, displayNum, dragHandleProps }: {
-    day: DayRow;
-    displayNum: number;
-    dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>;
-  }) {
-    const isCollapsed = collapsedDays.has(day.id);
-    return (
-      <div className={`flex items-center justify-between ${isCollapsed ? "" : "mb-3"}`}>
-        <div className="flex items-center gap-2 min-w-0">
-          {dragHandleProps && (
-            <button
-              {...dragHandleProps}
-              className="cursor-grab active:cursor-grabbing touch-none text-gray-300 hover:text-gray-400 transition-colors shrink-0"
-              title="Drag to reorder"
-            >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 8h16M4 16h16" />
-              </svg>
-            </button>
-          )}
-          <button
-            onClick={() => toggleDayCollapsed(day.id)}
-            className="flex items-center gap-2 min-w-0 hover:opacity-70 transition-opacity"
-          >
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white dark:text-[#1e1e1e]">
-              {displayNum}
-            </span>
-            <span className="text-sm font-medium text-gray-700 dark:text-[#efefef] truncate">
-              Day {displayNum}
-              {day.date && <span className="ml-2 text-gray-400 dark:text-[#9fb8b8]">· {formatDayDate(day.date)}</span>}
-            </span>
-            <svg
-              className={`h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform duration-150 ${isCollapsed ? "-rotate-90" : ""}`}
-              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-        </div>
-        <button onClick={() => handleDeleteDay(day.id)} className="ml-2 shrink-0 text-gray-300 hover:text-red-400 transition-colors" title="Delete day">
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-    );
-  }
-
-  function SortableDayCard({ day, idx, children }: { day: DayRow; idx: number; children: React.ReactNode }) {
-    const isCollapsed = collapsedDays.has(day.id);
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: day.id });
-    const style = {
-      transform: CSS.Transform.toString(transform),
-      transition,
-      opacity: isDragging ? 0.5 : 1,
-      zIndex: isDragging ? 10 : undefined,
-    };
-    return (
-      <div ref={setNodeRef} style={style}>
-        <div className="card p-4">
-          <DayHeader day={day} displayNum={idx + 1} dragHandleProps={{ ...attributes, ...listeners } as React.HTMLAttributes<HTMLButtonElement>} />
-          {!isCollapsed && children}
-        </div>
-      </div>
-    );
-  }
 
   // ── AI panel ──────────────────────────────────────────────────
 
@@ -775,104 +1077,6 @@ export default function ItinerarySection({
     </div>
   );
 
-  // ── Shared: read-only activity list for notes-style views ────
-  function ActivityList({ day }: { day: DayRow }) {
-    if (day.activities.length === 0) return null;
-    return (
-      <ul className="mb-3 space-y-1.5 border-b border-gray-100 dark:border-[#2e2e2e] pb-3">
-        {day.activities.map((act) => (
-          <li key={act.id} className="flex items-start gap-3 text-sm">
-            <span className="w-16 shrink-0 whitespace-nowrap font-mono text-xs text-gray-400 dark:text-[#9fb8b8] mt-0.5">
-              {formatActivityTime(act.time, clockFormat)}
-            </span>
-            <div className="min-w-0">
-              <p className="font-medium text-gray-800 dark:text-[#efefef]">{act.title}</p>
-              {act.place_name && <p className="text-xs text-gray-400 dark:text-[#9fb8b8]">{act.place_name}</p>}
-            </div>
-          </li>
-        ))}
-      </ul>
-    );
-  }
-
-  function TravelEventList({ day }: { day: DayRow }) {
-    if (!day.date) return null;
-    const dayFlights = flightsByDate.get(day.date) ?? [];
-    const dayTransport = transportByDate.get(day.date) ?? [];
-    if (dayFlights.length === 0 && dayTransport.length === 0) return null;
-
-    type TravelEvent =
-      | { kind: "flight"; data: Flight; sortKey: string }
-      | { kind: "transport"; data: TransportLeg; sortKey: string };
-
-    const events: TravelEvent[] = [
-      ...dayFlights.map((f) => ({
-        kind: "flight" as const,
-        data: f,
-        sortKey: flightTimeToHHMM(f.departure_time) || "99:99",
-      })),
-      ...dayTransport.map((t) => ({
-        kind: "transport" as const,
-        data: t,
-        sortKey: t.departure_time ? t.departure_time.slice(0, 5) : "99:99",
-      })),
-    ].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-
-    return (
-      <div className="mb-3 space-y-1.5">
-        {events.map((ev, i) => {
-          if (ev.kind === "flight") {
-            const f = ev.data;
-            const depTime = flightTimeToHHMM(f.departure_time);
-            const arrTime = flightTimeToHHMM(f.arrival_time);
-            const depFormatted = depTime ? formatActivityTime(depTime, clockFormat) : null;
-            const arrFormatted = arrTime ? formatActivityTime(arrTime, clockFormat) : null;
-            return (
-              <div key={i} className="flex items-center gap-2 rounded-lg bg-[#f5f5f5] dark:bg-[#252525] px-2.5 py-2 text-xs">
-                <svg className="h-3.5 w-3.5 shrink-0 text-gray-400 dark:text-[#9fb8b8]" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
-                </svg>
-                {depFormatted && (
-                  <span className="w-16 shrink-0 whitespace-nowrap font-mono text-gray-400 dark:text-[#9fb8b8]">{depFormatted}</span>
-                )}
-                <div className="min-w-0 flex-1">
-                  <span className="font-medium text-gray-700 dark:text-[#efefef]">{f.flight_number}</span>
-                  {(f.departure_iata || f.arrival_iata) && (
-                    <span className="ml-1.5 text-gray-400 dark:text-[#9fb8b8]">
-                      {f.departure_iata ?? f.departure_city ?? "—"} → {f.arrival_iata ?? f.arrival_city ?? "—"}
-                    </span>
-                  )}
-                </div>
-                {arrFormatted && (
-                  <span className="shrink-0 text-gray-400 dark:text-[#9fb8b8]">arr. {arrFormatted}</span>
-                )}
-              </div>
-            );
-          } else {
-            const t = ev.data;
-            const depFormatted = t.departure_time ? formatActivityTime(t.departure_time.slice(0, 5), clockFormat) : null;
-            const arrFormatted = t.arrival_time ? formatActivityTime(t.arrival_time.slice(0, 5), clockFormat) : null;
-            return (
-              <div key={i} className="flex items-center gap-2 rounded-lg bg-[#f5f5f5] dark:bg-[#252525] px-2.5 py-2 text-xs">
-                <span className="shrink-0 text-sm leading-none">{transportModeIcon(t.mode)}</span>
-                {depFormatted && (
-                  <span className="w-16 shrink-0 whitespace-nowrap font-mono text-gray-400 dark:text-[#9fb8b8]">{depFormatted}</span>
-                )}
-                <div className="min-w-0 flex-1">
-                  <span className="font-medium text-gray-700 dark:text-[#efefef] capitalize">{t.mode}</span>
-                  <span className="ml-1.5 text-gray-400 dark:text-[#9fb8b8]">{t.from_location} → {t.to_location}</span>
-                </div>
-                {arrFormatted && (
-                  <span className="shrink-0 text-gray-400 dark:text-[#9fb8b8]">arr. {arrFormatted}</span>
-                )}
-              </div>
-            );
-          }
-        })}
-      </div>
-    );
-  }
-
   // ── Blank notes (per day) ─────────────────────────────────────
   if (style === "notes") {
     return (
@@ -886,20 +1090,32 @@ export default function ItinerarySection({
                 No days yet — add your first day below.
               </div>
             )}
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <DndContext id="itinerary-notes-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} autoScroll={false}>
               <SortableContext items={days.map((d) => d.id)} strategy={verticalListSortingStrategy}>
                 <div className="space-y-4 mb-3">
                   {days.map((day, idx) => (
-                    <SortableDayCard key={day.id} day={day} idx={idx}>
-                      <ActivityList day={day} />
-                      <TravelEventList day={day} />
-                      <textarea
-                        value={dayNotes[day.id]?.["notes"] ?? ""}
-                        onChange={(e) => updateSectionNote(day.id, "notes", e.target.value)}
-                        onBlur={() => handleSectionNotesBlur(day.id)}
+                    <SortableDayCard
+                      key={day.id}
+                      day={day}
+                      idx={idx}
+                      isCollapsed={collapsedDays.has(day.id)}
+                      onToggleCollapse={() => toggleDayCollapsed(day.id)}
+                      onDelete={() => handleDeleteDay(day.id)}
+                    >
+                      <ActivityList day={day} clockFormat={clockFormat} />
+                      <TravelEventList day={day} flightsByDate={flightsByDate} transportByDate={transportByDate} clockFormat={clockFormat} />
+                      <NotesTextarea
+                        initialValue={dayNotes[day.id]?.["notes"] ?? ""}
                         rows={4}
                         placeholder="Notes for this day…"
-                        className="input w-full resize-none text-sm"
+                        refreshKey={notesRefreshKey}
+                        onBlur={(value) => {
+                          setDayNotes((prev) => {
+                            const updated = { ...prev, [day.id]: { ...prev[day.id], notes: value } };
+                            db.from("itinerary_days").update({ section_notes: updated[day.id] }).eq("id", day.id).then(() => {});
+                            return updated;
+                          });
+                        }}
                       />
                     </SortableDayCard>
                   ))}
@@ -927,24 +1143,36 @@ export default function ItinerarySection({
                 No days yet — add your first day below.
               </div>
             )}
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <DndContext id="itinerary-day-notes-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} autoScroll={false}>
               <SortableContext items={days.map((d) => d.id)} strategy={verticalListSortingStrategy}>
                 <div className="space-y-4 mb-3">
                   {days.map((day, idx) => (
-                    <SortableDayCard key={day.id} day={day} idx={idx}>
-                      <ActivityList day={day} />
-                      <TravelEventList day={day} />
+                    <SortableDayCard
+                      key={day.id}
+                      day={day}
+                      idx={idx}
+                      isCollapsed={collapsedDays.has(day.id)}
+                      onToggleCollapse={() => toggleDayCollapsed(day.id)}
+                      onDelete={() => handleDeleteDay(day.id)}
+                    >
+                      <ActivityList day={day} clockFormat={clockFormat} />
+                      <TravelEventList day={day} flightsByDate={flightsByDate} transportByDate={transportByDate} clockFormat={clockFormat} />
                       <div className="space-y-3">
                         {sections.map(({ key, label }) => (
                           <div key={key}>
                             <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8]">{label}</p>
-                            <textarea
-                              value={dayNotes[day.id]?.[key] ?? ""}
-                              onChange={(e) => updateSectionNote(day.id, key, e.target.value)}
-                              onBlur={() => handleSectionNotesBlur(day.id)}
+                            <NotesTextarea
+                              initialValue={dayNotes[day.id]?.[key] ?? ""}
                               rows={3}
                               placeholder={`${label} plans…`}
-                              className="input w-full resize-none text-sm"
+                              refreshKey={notesRefreshKey}
+                              onBlur={(value) => {
+                                setDayNotes((prev) => {
+                                  const updated = { ...prev, [day.id]: { ...prev[day.id], [key]: value } };
+                                  db.from("itinerary_days").update({ section_notes: updated[day.id] }).eq("id", day.id).then(() => {});
+                                  return updated;
+                                });
+                              }}
                             />
                           </div>
                         ))}
@@ -973,60 +1201,41 @@ export default function ItinerarySection({
           No days yet — add your first day below.
         </div>
       )}
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext id="itinerary-structured-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} autoScroll={false}>
         <SortableContext items={days.map((d) => d.id)} strategy={verticalListSortingStrategy}>
       <div className="space-y-4 mb-3">
         {days.map((day, idx) => (
-          <SortableDayCard key={day.id} day={day} idx={idx}>
-            <TravelEventList day={day} />
+          <SortableDayCard
+            key={day.id}
+            day={day}
+            idx={idx}
+            isCollapsed={collapsedDays.has(day.id)}
+            onToggleCollapse={() => toggleDayCollapsed(day.id)}
+            onDelete={() => handleDeleteDay(day.id)}
+          >
+            <TravelEventList day={day} flightsByDate={flightsByDate} transportByDate={transportByDate} clockFormat={clockFormat} />
             {day.activities.length > 0 && (
               <ul className="space-y-2 mb-3">
                 {day.activities.map((act) =>
                   editingActivity === act.id ? (
-                    <li key={act.id} className="rounded-lg border border-sky-100 dark:border-[#2e2e2e] bg-sky-50/50 dark:bg-transparent p-3 space-y-2">
-                      <div className="grid grid-cols-3 gap-2">
-                        <input
-                          type="time"
-                          value={editTime}
-                          onChange={(e) => setEditTime(e.target.value)}
-                          className="input text-sm"
-                        />
-                        <input
-                          type="text"
-                          value={editTitle}
-                          onChange={(e) => setEditTitle(e.target.value)}
-                          className="input col-span-2 text-sm"
-                          placeholder="Activity name *"
-                          autoFocus
-                          onKeyDown={(e) => { if (e.key === "Enter") handleUpdateActivity(act.id, day.id); if (e.key === "Escape") setEditingActivity(null); }}
-                        />
-                      </div>
-                      <input
-                        type="text"
-                        value={editPlace}
-                        onChange={(e) => setEditPlace(e.target.value)}
-                        className="input w-full text-sm"
-                        placeholder="Place name (optional)"
-                        onKeyDown={(e) => { if (e.key === "Enter") handleUpdateActivity(act.id, day.id); if (e.key === "Escape") setEditingActivity(null); }}
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleUpdateActivity(act.id, day.id)}
-                          disabled={saving || !editTitle.trim()}
-                          className="btn-primary px-3 py-1 text-sm"
-                        >
-                          {saving ? "Saving…" : "Save"}
-                        </button>
-                        <button onClick={() => setEditingActivity(null)} className="btn-secondary px-3 py-1 text-sm">
-                          Cancel
-                        </button>
-                      </div>
-                    </li>
+                    <EditActivityInline
+                      key={act.id}
+                      activity={act}
+                      onUpdated={(updated) => {
+                        setDays((prev) => prev.map((d) =>
+                          d.id === day.id
+                            ? { ...d, activities: sortActivities(d.activities.map((a) => a.id === act.id ? updated : a)) }
+                            : d
+                        ));
+                        setEditingActivity(null);
+                      }}
+                      onCancel={() => setEditingActivity(null)}
+                    />
                   ) : (
                     <li key={act.id} className="flex items-start gap-3 text-sm">
                       <span className="mt-0.5 w-16 shrink-0 whitespace-nowrap font-mono text-xs text-gray-400 dark:text-[#9fb8b8]">{formatActivityTime(act.time, clockFormat)}</span>
                       <button
-                        onClick={() => startEditActivity(act)}
+                        onClick={() => { setEditingActivity(act.id); setAddingActivity(null); }}
                         className="flex-1 min-w-0 text-left hover:opacity-70 transition-opacity"
                         title="Edit activity"
                       >
@@ -1051,21 +1260,19 @@ export default function ItinerarySection({
               <p className="mb-2 text-xs text-gray-400 dark:text-[#9fb8b8]">No activities yet.</p>
             )}
             {addingActivity === day.id ? (
-              <div className="space-y-2 rounded-lg border border-sky-100 dark:border-[#2e2e2e] bg-sky-50/50 dark:bg-transparent p-3">
-                <div className="grid grid-cols-3 gap-2">
-                  <input type="time" value={actTime} onChange={(e) => setActTime(e.target.value)} className="input text-sm" />
-                  <input type="text" value={actTitle} onChange={(e) => setActTitle(e.target.value)} className="input col-span-2 text-sm" placeholder="Activity name *" autoFocus />
-                </div>
-                <input type="text" value={actPlace} onChange={(e) => setActPlace(e.target.value)} className="input w-full text-sm" placeholder="Place name (optional)" />
-                <div className="flex gap-2">
-                  <button onClick={() => handleAddActivity(day.id)} disabled={saving || !actTitle.trim()} className="btn-primary px-3 py-1 text-sm">
-                    {saving ? "Saving…" : "Add"}
-                  </button>
-                  <button onClick={() => setAddingActivity(null)} className="btn-secondary px-3 py-1 text-sm">Cancel</button>
-                </div>
-              </div>
+              <AddActivityForm
+                dayId={day.id}
+                orderIndex={day.activities.length}
+                onAdded={(newAct) => {
+                  setDays((prev) => prev.map((d) =>
+                    d.id === day.id ? { ...d, activities: sortActivities([...d.activities, newAct]) } : d
+                  ));
+                  setAddingActivity(null);
+                }}
+                onCancel={() => setAddingActivity(null)}
+              />
             ) : (
-              <button onClick={() => { setAddingActivity(day.id); setActTime(""); setActTitle(""); setActPlace(""); }} className="text-xs text-gray-400 dark:text-[#9fb8b8] hover:text-[#9fb8b8] transition-colors">
+              <button onClick={() => { setAddingActivity(day.id); setEditingActivity(null); }} className="text-xs text-gray-400 dark:text-[#9fb8b8] hover:text-[#9fb8b8] transition-colors">
                 + Add activity
               </button>
             )}
@@ -1080,3 +1287,5 @@ export default function ItinerarySection({
     </section>
   );
 }
+
+export default memo(ItinerarySection);
