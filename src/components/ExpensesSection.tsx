@@ -74,7 +74,23 @@ export default function ExpensesSection({ tripId, budget, initialExpenses, start
     return Math.min(Math.max(elapsed, 1), tripDays);
   })();
   const daysRemaining = tripDays && daysElapsed != null ? tripDays - daysElapsed : null;
-  const avgDailySpend = daysElapsed ? totalSpent / daysElapsed : null;
+
+  // Accommodation & transport are lump-sum costs spread across the full trip.
+  // Everything else is averaged over elapsed days for a truer daily burn rate.
+  const FIXED_CATEGORIES = ["accommodation", "transport"];
+  const fixedTotal = expenses
+    .filter((e) => FIXED_CATEGORIES.includes(e.category))
+    .reduce((s, e) => s + e.amount, 0);
+  const variableTotal = expenses
+    .filter((e) => !FIXED_CATEGORIES.includes(e.category))
+    .reduce((s, e) => s + e.amount, 0);
+  const avgDailySpend = (() => {
+    if (!daysElapsed) return null;
+    const fixedPerDay = tripDays ? fixedTotal / tripDays : fixedTotal / daysElapsed;
+    const variablePerDay = variableTotal / daysElapsed;
+    return fixedPerDay + variablePerDay;
+  })();
+
   const dailyBudgetPct = dailyBudget && avgDailySpend ? Math.min((avgDailySpend / dailyBudget) * 100, 100) : 0;
   const dailyBarColor = dailyBudgetPct >= 90 ? "bg-red-500" : dailyBudgetPct >= 75 ? "bg-amber-400" : "bg-green-500";
   const showDailyMode = tripDays != null && totalSpent > 0;
@@ -206,7 +222,7 @@ export default function ExpensesSection({ tripId, budget, initialExpenses, start
               {dailyBudget && avgDailySpend != null && (
                 <div>
                   <div className="mb-1 flex justify-between text-xs text-gray-400">
-                    <span>${fmt(avgDailySpend)} / day avg</span>
+                    <span>${fmt(avgDailySpend)} / day avg <span className="opacity-60">(fixed costs spread over {tripDays}d)</span></span>
                     {daysRemaining != null && remaining != null && daysRemaining > 0 && (
                       <span className="text-gray-400 dark:text-[#9fb8b8]">
                         ${fmt(remaining / daysRemaining)} / day remaining
