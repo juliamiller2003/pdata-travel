@@ -68,6 +68,7 @@ export default function AccommodationSection({ tripId, initialAccommodations, tr
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [name, setName]               = useState("");
@@ -85,6 +86,7 @@ export default function AccommodationSection({ tripId, initialAccommodations, tr
     setCheckIn(tripStartDate ?? "");
     setCheckOut(tripEndDate ?? "");
     setRating(0); setCostPerNight(""); setNotes("");
+    setSaveError(null);
     setShowForm(true);
   }
 
@@ -94,12 +96,14 @@ export default function AccommodationSection({ tripId, initialAccommodations, tr
     setCheckIn(a.check_in ?? ""); setCheckOut(a.check_out ?? "");
     setRating(a.rating ?? 0); setCostPerNight(a.cost_per_night ? String(a.cost_per_night) : "");
     setNotes(a.notes ?? "");
+    setSaveError(null);
     setShowForm(true);
   }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
+    setSaveError(null);
     const payload = {
       trip_id: tripId,
       name: name.trim(),
@@ -114,10 +118,12 @@ export default function AccommodationSection({ tripId, initialAccommodations, tr
 
     if (editingId) {
       const { data, error } = await db.from("accommodations").update(payload).eq("id", editingId).select().single();
-      if (!error && data) setItems((prev) => prev.map((a) => a.id === editingId ? data : a));
+      if (error) { setSaveError(error.message); setSaving(false); return; }
+      if (data) setItems((prev) => prev.map((a) => a.id === editingId ? data : a));
     } else {
       const { data, error } = await db.from("accommodations").insert(payload).select().single();
-      if (!error && data) setItems((prev) => [data, ...prev]);
+      if (error) { setSaveError(error.message); setSaving(false); return; }
+      if (data) setItems((prev) => [data, ...prev]);
     }
     setSaving(false);
     setShowForm(false);
@@ -183,9 +189,10 @@ export default function AccommodationSection({ tripId, initialAccommodations, tr
             </div>
           </div>
 
+          {saveError && <p className="text-sm text-red-600 dark:text-red-400">{saveError}</p>}
           <div className="flex gap-2">
             <button type="submit" disabled={saving} className="btn-primary flex-1">{saving ? "Saving…" : editingId ? "Save changes" : "Add stay"}</button>
-            <button type="button" onClick={() => { setShowForm(false); setEditingId(null); }} className="btn-secondary">Cancel</button>
+            <button type="button" onClick={() => { setShowForm(false); setEditingId(null); setSaveError(null); }} className="btn-secondary">Cancel</button>
           </div>
         </form>
       )}
