@@ -119,21 +119,34 @@ export default function AccommodationSection({ tripId, initialAccommodations, tr
       };
 
       if (editingId) {
-        const { error } = await db.from("accommodations").update(payload).eq("id", editingId);
+        const { data, error } = await db
+          .from("accommodations").update(payload).eq("id", editingId).select().single();
+        console.log("[AccomSave] update →", { data, error });
         if (error) throw new Error(error.message || "Update failed");
+        // Use returned row if available, otherwise patch locally
+        setItems((prev) => prev.map((a) =>
+          a.id === editingId ? (data ?? { ...a, ...payload }) : a
+        ));
       } else {
-        const { error } = await db.from("accommodations").insert(payload);
-        if (error) throw new Error(error.message || "Insert failed");
+        const { data, error } = await db
+          .from("accommodations").insert(payload).select().single();
+        console.log("[AccomSave] insert →", { data, error });
+        if (error) throw new Error(error.message || `Insert failed: ${JSON.stringify(error)}`);
+        // Use returned row if available, otherwise build from form state
+        const newItem: Accommodation = data ?? {
+          id: `temp-${Date.now()}`,
+          name: payload.name,
+          type: payload.type as AccomType,
+          city: payload.city,
+          check_in: payload.check_in,
+          check_out: payload.check_out,
+          rating: payload.rating,
+          cost_per_night: payload.cost_per_night,
+          notes: payload.notes,
+        };
+        console.log("[AccomSave] adding item to list:", newItem);
+        setItems((prev) => [...prev, newItem]);
       }
-
-      // Re-fetch the full list so the UI reflects the saved state
-      const { data: refreshed, error: fetchError } = await db
-        .from("accommodations")
-        .select("*")
-        .eq("trip_id", tripId)
-        .order("check_in", { ascending: true });
-      if (fetchError) throw new Error(fetchError.message || "Reload failed");
-      setItems(refreshed ?? []);
 
       setShowForm(false);
       setEditingId(null);
