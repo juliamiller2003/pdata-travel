@@ -117,14 +117,22 @@ export default function AccommodationSection({ tripId, initialAccommodations, tr
     };
 
     if (editingId) {
-      const { data, error } = await db.from("accommodations").update(payload).eq("id", editingId).select().single();
+      const { error } = await db.from("accommodations").update(payload).eq("id", editingId);
       if (error) { setSaveError(error.message); setSaving(false); return; }
-      if (data) setItems((prev) => prev.map((a) => a.id === editingId ? data : a));
     } else {
-      const { data, error } = await db.from("accommodations").insert(payload).select().single();
+      const { error } = await db.from("accommodations").insert(payload);
       if (error) { setSaveError(error.message); setSaving(false); return; }
-      if (data) setItems((prev) => [data, ...prev]);
     }
+
+    // Re-fetch the full list so the UI reflects the saved state
+    const { data: refreshed, error: fetchError } = await db
+      .from("accommodations")
+      .select("*")
+      .eq("trip_id", tripId)
+      .order("check_in", { ascending: true });
+    if (fetchError) { setSaveError(fetchError.message); setSaving(false); return; }
+    if (refreshed) setItems(refreshed);
+
     setSaving(false);
     setShowForm(false);
     setEditingId(null);
