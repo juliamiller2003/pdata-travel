@@ -81,6 +81,7 @@ export default function AccommodationSection({ tripId, initialAccommodations, tr
   const [notes, setNotes]             = useState("");
 
   function openNew() {
+    console.log("[AccomForm] tripStartDate:", tripStartDate, "tripEndDate:", tripEndDate);
     setEditingId(null);
     setName(""); setType("hostel"); setCity("");
     setCheckIn(tripStartDate ?? "");
