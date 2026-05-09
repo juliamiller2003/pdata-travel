@@ -131,18 +131,14 @@ function LegCard({ leg, onDelete }: { leg: TransportLeg; onDelete: () => void })
       </div>
 
       {/* Route */}
-      <div className="flex items-center gap-2 mb-2">
-        <div className="flex-1">
-          <p className="font-medium text-gray-900 dark:text-[#efefef] text-sm truncate">{leg.from_location}</p>
-          {leg.departure_time && <p className="text-xs text-gray-400 dark:text-[#9fb8b8]">{fmt(leg.departure_time)}</p>}
-        </div>
-        <svg className="h-4 w-4 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <div className="flex items-center gap-1.5 mb-2 min-w-0">
+        <p className="font-medium text-gray-900 dark:text-[#efefef] text-sm truncate">{leg.from_location}</p>
+        {leg.departure_time && <span className="text-xs text-gray-400 dark:text-[#9fb8b8] shrink-0">· {fmt(leg.departure_time)}</span>}
+        <svg className="h-3.5 w-3.5 text-gray-300 shrink-0 mx-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 12h12m0 0l-4-4m4 4l-4 4" />
         </svg>
-        <div className="flex-1 text-right">
-          <p className="font-medium text-gray-900 dark:text-[#efefef] text-sm truncate">{leg.to_location}</p>
-          {leg.arrival_time && <p className="text-xs text-gray-400 dark:text-[#9fb8b8]">{fmt(leg.arrival_time)}</p>}
-        </div>
+        <p className="font-medium text-gray-900 dark:text-[#efefef] text-sm truncate">{leg.to_location}</p>
+        {leg.arrival_time && <span className="text-xs text-gray-400 dark:text-[#9fb8b8] shrink-0">· {fmt(leg.arrival_time)}</span>}
       </div>
 
       {/* Meta row */}
