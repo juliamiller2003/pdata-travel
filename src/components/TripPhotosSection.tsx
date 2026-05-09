@@ -120,7 +120,7 @@ export default function TripPhotosSection({ tripId, initialPhotos, initialCaptio
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
           {photos.map((url) => (
             <div key={url} className="space-y-1">
-              <div className="relative group aspect-square overflow-hidden rounded-lg">
+              <div className="relative group aspect-square overflow-hidden rounded-lg bg-black isolate">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={url} alt={captions[url] ?? ""} className="h-full w-full object-cover" />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
