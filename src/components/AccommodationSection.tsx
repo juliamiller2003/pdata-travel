@@ -104,38 +104,44 @@ export default function AccommodationSection({ tripId, initialAccommodations, tr
     e.preventDefault();
     setSaving(true);
     setSaveError(null);
-    const payload = {
-      trip_id: tripId,
-      name: name.trim(),
-      type,
-      city: city.trim() || null,
-      check_in: checkIn || null,
-      check_out: checkOut || null,
-      rating: rating || null,
-      cost_per_night: costPerNight ? parseFloat(costPerNight) : null,
-      notes: notes.trim() || null,
-    };
 
-    if (editingId) {
-      const { error } = await db.from("accommodations").update(payload).eq("id", editingId);
-      if (error) { setSaveError(error.message); setSaving(false); return; }
-    } else {
-      const { error } = await db.from("accommodations").insert(payload);
-      if (error) { setSaveError(error.message); setSaving(false); return; }
+    try {
+      const payload = {
+        trip_id: tripId,
+        name: name.trim(),
+        type,
+        city: city.trim() || null,
+        check_in: checkIn || null,
+        check_out: checkOut || null,
+        rating: rating || null,
+        cost_per_night: costPerNight ? parseFloat(costPerNight) : null,
+        notes: notes.trim() || null,
+      };
+
+      if (editingId) {
+        const { error } = await db.from("accommodations").update(payload).eq("id", editingId);
+        if (error) throw new Error(error.message || "Update failed");
+      } else {
+        const { error } = await db.from("accommodations").insert(payload);
+        if (error) throw new Error(error.message || "Insert failed");
+      }
+
+      // Re-fetch the full list so the UI reflects the saved state
+      const { data: refreshed, error: fetchError } = await db
+        .from("accommodations")
+        .select("*")
+        .eq("trip_id", tripId)
+        .order("check_in", { ascending: true });
+      if (fetchError) throw new Error(fetchError.message || "Reload failed");
+      setItems(refreshed ?? []);
+
+      setShowForm(false);
+      setEditingId(null);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Something went wrong — please try again.");
+    } finally {
+      setSaving(false);
     }
-
-    // Re-fetch the full list so the UI reflects the saved state
-    const { data: refreshed, error: fetchError } = await db
-      .from("accommodations")
-      .select("*")
-      .eq("trip_id", tripId)
-      .order("check_in", { ascending: true });
-    if (fetchError) { setSaveError(fetchError.message); setSaving(false); return; }
-    if (refreshed) setItems(refreshed);
-
-    setSaving(false);
-    setShowForm(false);
-    setEditingId(null);
   }
 
   async function handleDelete(id: string) {
