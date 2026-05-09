@@ -21,7 +21,7 @@ export default function PackingTemplatesPage() {
   const [loading, setLoading] = useState(true);
   const [templates, setTemplates] = useState<CustomTemplate[]>([]);
 
-  // Editor state
+  // Template editor state
   const [editing, setEditing] = useState<CustomTemplate | null>(null); // null = create new
   const [showEditor, setShowEditor] = useState(false);
   const [tplName, setTplName] = useState("");
@@ -30,6 +30,11 @@ export default function PackingTemplatesPage() {
   const [newItemCat, setNewItemCat] = useState("Other");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Inline item editing state
+  const [editingItemIdx, setEditingItemIdx] = useState<number | null>(null);
+  const [editingItemName, setEditingItemName] = useState("");
+  const [editingItemCat, setEditingItemCat] = useState("Other");
 
   useEffect(() => {
     async function load() {
@@ -61,6 +66,7 @@ export default function PackingTemplatesPage() {
     setTplItems([]);
     setNewItemName("");
     setNewItemCat("Other");
+    setEditingItemIdx(null);
     setSaveError(null);
     setShowEditor(true);
   }
@@ -71,6 +77,7 @@ export default function PackingTemplatesPage() {
     setTplItems([...tpl.items]);
     setNewItemName("");
     setNewItemCat("Other");
+    setEditingItemIdx(null);
     setSaveError(null);
     setShowEditor(true);
   }
@@ -78,6 +85,7 @@ export default function PackingTemplatesPage() {
   function cancelEditor() {
     setShowEditor(false);
     setEditing(null);
+    setEditingItemIdx(null);
     setSaveError(null);
   }
 
@@ -90,6 +98,23 @@ export default function PackingTemplatesPage() {
 
   function removeItem(idx: number) {
     setTplItems((prev) => prev.filter((_, i) => i !== idx));
+    if (editingItemIdx === idx) setEditingItemIdx(null);
+  }
+
+  function startEditItem(idx: number) {
+    setEditingItemIdx(idx);
+    setEditingItemName(tplItems[idx].name);
+    setEditingItemCat(tplItems[idx].category);
+  }
+
+  function commitEditItem(idx: number) {
+    if (!editingItemName.trim()) return;
+    setTplItems((prev) =>
+      prev.map((item, i) =>
+        i === idx ? { name: editingItemName.trim(), category: editingItemCat } : item
+      )
+    );
+    setEditingItemIdx(null);
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -201,21 +226,56 @@ export default function PackingTemplatesPage() {
           {/* Item list */}
           {tplItems.length > 0 && (
             <div className="space-y-1">
-              {tplItems.map((item, idx) => (
-                <div key={idx} className="flex items-center gap-2 rounded-lg border border-gray-100 dark:border-[#2e2e2e] bg-white dark:bg-[#1e1e1e] px-3 py-2">
-                  <span className="flex-1 text-sm text-gray-800 dark:text-[#efefef] truncate">{item.name}</span>
-                  <span className="text-xs text-gray-400 dark:text-[#9fb8b8] shrink-0">{item.category}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeItem(idx)}
-                    className="text-gray-300 dark:text-[#3a3a3a] hover:text-red-400 transition-colors shrink-0"
-                  >
-                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              ))}
+              {tplItems.map((item, idx) =>
+                editingItemIdx === idx ? (
+                  // Inline edit row
+                  <div key={idx} className="flex items-center gap-2 rounded-lg border border-sky-200 dark:border-[#9fb8b8] bg-white dark:bg-[#1e1e1e] px-3 py-2">
+                    <input
+                      type="text"
+                      value={editingItemName}
+                      onChange={(e) => setEditingItemName(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitEditItem(idx); } if (e.key === "Escape") setEditingItemIdx(null); }}
+                      className="flex-1 text-sm bg-transparent border-none outline-none text-gray-800 dark:text-[#efefef]"
+                      autoFocus
+                    />
+                    <select
+                      value={editingItemCat}
+                      onChange={(e) => setEditingItemCat(e.target.value)}
+                      className="text-xs bg-transparent border border-gray-200 dark:border-[#2e2e2e] rounded px-1.5 py-0.5 text-gray-500 dark:text-[#9fb8b8] shrink-0"
+                    >
+                      {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    <button type="button" onClick={() => commitEditItem(idx)} className="text-xs font-medium text-[#9fb8b8] hover:text-sky-600 shrink-0">Save</button>
+                    <button type="button" onClick={() => setEditingItemIdx(null)} className="text-xs text-gray-400 hover:text-gray-600 shrink-0">✕</button>
+                  </div>
+                ) : (
+                  // Display row
+                  <div key={idx} className="flex items-center gap-1.5 rounded-lg border border-gray-100 dark:border-[#2e2e2e] bg-white dark:bg-[#1e1e1e] px-3 py-2">
+                    <span className="text-sm text-gray-800 dark:text-[#efefef] truncate mr-1">{item.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => startEditItem(idx)}
+                      className="text-gray-300 dark:text-[#3a3a3a] hover:text-sky-500 transition-colors shrink-0"
+                      title="Edit item"
+                    >
+                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeItem(idx)}
+                      className="text-gray-300 dark:text-[#3a3a3a] hover:text-red-400 transition-colors shrink-0"
+                      title="Remove item"
+                    >
+                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                    <span className="ml-auto text-xs text-gray-400 dark:text-[#9fb8b8] shrink-0">{item.category}</span>
+                  </div>
+                )
+              )}
             </div>
           )}
 
