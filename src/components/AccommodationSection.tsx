@@ -29,6 +29,8 @@ type Accommodation = {
 interface Props {
   tripId: string;
   initialAccommodations: Accommodation[];
+  tripStartDate?: string | null;
+  tripEndDate?: string | null;
 }
 
 function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
@@ -59,7 +61,7 @@ function nights(checkIn: string | null, checkOut: string | null): number | null 
   return Math.max(0, Math.round(diff));
 }
 
-export default function AccommodationSection({ tripId, initialAccommodations }: Props) {
+export default function AccommodationSection({ tripId, initialAccommodations, tripStartDate, tripEndDate }: Props) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = createClient() as any;
   const [items, setItems] = useState<Accommodation[]>(initialAccommodations);
@@ -79,7 +81,9 @@ export default function AccommodationSection({ tripId, initialAccommodations }: 
 
   function openNew() {
     setEditingId(null);
-    setName(""); setType("hostel"); setCity(""); setCheckIn(""); setCheckOut("");
+    setName(""); setType("hostel"); setCity("");
+    setCheckIn(tripStartDate ?? "");
+    setCheckOut(tripEndDate ?? "");
     setRating(0); setCostPerNight(""); setNotes("");
     setShowForm(true);
   }

@@ -280,7 +280,7 @@ export default async function TripDetailPage({ params }: TripPageProps) {
         />
       )}
 
-      <AccommodationSection tripId={id} initialAccommodations={accommodationsData ?? []} />
+      <AccommodationSection tripId={id} initialAccommodations={accommodationsData ?? []} tripStartDate={trip.start_date ?? null} tripEndDate={trip.end_date ?? null} />
 
       <SectionGuard section="expenses">
         <ExpensesSection
