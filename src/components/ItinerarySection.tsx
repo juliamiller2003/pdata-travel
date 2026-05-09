@@ -598,9 +598,22 @@ function ItinerarySection({
     transportByDate.set(t.travel_date, arr);
   }
 
-  // Collapse state
-  const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set());
+  // Collapse state — persisted to localStorage so refreshing keeps days collapsed
+  const collapseKey = `pathway-collapsed-days-${tripId}`;
+  const [collapsedDays, setCollapsedDays] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem(collapseKey);
+      if (stored) return new Set<string>(JSON.parse(stored));
+    } catch {}
+    return new Set<string>();
+  });
   const [sectionCollapsed, setSectionCollapsed] = useState(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(collapseKey, JSON.stringify([...collapsedDays]));
+    } catch {}
+  }, [collapsedDays, collapseKey]);
 
   const toggleDayCollapsed = useCallback((dayId: string) => {
     setCollapsedDays((prev) => {
