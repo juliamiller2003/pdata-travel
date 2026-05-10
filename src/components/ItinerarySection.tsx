@@ -108,6 +108,68 @@ function flightTimeToHHMM(iso: string | null): string {
   return iso.slice(0, 5);
 }
 
+/**
+ * Builds a plain-text summary of flights and transport legs grouped by day number,
+ * relative to the trip start date. Passed to the AI prompt so it can schedule
+ * activities around fixed travel times.
+ */
+function buildTravelEventsContext(
+  flights: Flight[],
+  transportLegs: TransportLeg[],
+  tripStartDate: string | null
+): string {
+  if (!tripStartDate || (flights.length === 0 && transportLegs.length === 0)) return "";
+
+  const [sy, sm, sd] = tripStartDate.split("-").map(Number);
+  const startMs = Date.UTC(sy, sm - 1, sd);
+
+  function dateToDay(dateStr: string): number {
+    const [dy, dm, dd] = dateStr.split("-").map(Number);
+    return Math.round((Date.UTC(dy, dm - 1, dd) - startMs) / 86_400_000) + 1;
+  }
+
+  type Ev = { day: number; sortKey: string; text: string };
+  const events: Ev[] = [];
+
+  for (const f of flights) {
+    const day = dateToDay(f.flight_date);
+    const from = f.departure_iata ?? f.departure_city ?? "?";
+    const to   = f.arrival_iata   ?? f.arrival_city   ?? "?";
+    const dep  = flightTimeToHHMM(f.departure_time);
+    const arr  = flightTimeToHHMM(f.arrival_time);
+    let text = `Flight ${f.flight_number} ${from}→${to}`;
+    if (dep) text += `, departs ${dep}`;
+    if (arr) text += `, arrives ${arr}`;
+    events.push({ day, sortKey: dep || "99:99", text });
+  }
+
+  for (const t of transportLegs) {
+    const day = dateToDay(t.travel_date);
+    const dep = t.departure_time?.slice(0, 5) ?? null;
+    const arr = t.arrival_time?.slice(0, 5) ?? null;
+    const mode = t.mode.charAt(0).toUpperCase() + t.mode.slice(1);
+    let text = `${mode}: ${t.from_location}→${t.to_location}`;
+    if (dep) text += `, departs ${dep}`;
+    if (arr) text += `, arrives ${arr}`;
+    events.push({ day, sortKey: dep || "99:99", text });
+  }
+
+  if (events.length === 0) return "";
+
+  // Group by day, sorted chronologically within each day
+  const byDay = new Map<number, string[]>();
+  for (const ev of events.sort((a, b) => a.day - b.day || a.sortKey.localeCompare(b.sortKey))) {
+    const arr = byDay.get(ev.day) ?? [];
+    arr.push(ev.text);
+    byDay.set(ev.day, arr);
+  }
+
+  return [...byDay.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([day, texts]) => `Day ${day}: ${texts.join("; ")}`)
+    .join("\n");
+}
+
 
 // ── Module-level sub-components ───────────────────────────────────────────────
 // These MUST live outside ItinerarySection so React sees a stable component
@@ -742,6 +804,7 @@ function ItinerarySection({
           existing_notes: days
             .flatMap((d) => Object.values(dayNotes[d.id] ?? {}).filter(Boolean))
             .join("\n\n"),
+          travel_events: buildTravelEventsContext(flights, transportLegs, tripStartDate),
         }),
       });
 
