@@ -840,10 +840,15 @@ function ItinerarySection({
     setNotesSuggestion(null);
     setDayNotesSuggestion(null);
 
-    // Load travel prefs from localStorage and prepend to preferences
+    // Load travel prefs from localStorage — pace/style go as structured fields;
+    // interests/dietary are appended to preferences text.
     let effectivePrefs = preferences ?? "";
+    let user_pace = "";
+    let user_style = "";
     try {
       const storedPrefs = getTravelPrefs();
+      user_pace = storedPrefs.pace ?? "";
+      user_style = storedPrefs.style ?? "";
       const prefsText = formatTravelPrefsForPrompt(storedPrefs);
       if (prefsText) effectivePrefs = prefsText + (effectivePrefs ? ". " + effectivePrefs : "");
     } catch {}
@@ -862,6 +867,8 @@ function ItinerarySection({
           num_days,
           style,
           preferences: effectivePrefs,
+          user_pace,
+          user_style,
           existing_day_count: days.length,
           existing_activities: [
             ...days.flatMap((d) =>

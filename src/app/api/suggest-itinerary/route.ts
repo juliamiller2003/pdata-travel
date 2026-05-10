@@ -10,9 +10,51 @@ interface SuggestRequest {
   existing_day_count: number;
   existing_notes?: string;
   travel_events?: string;
+  user_pace?: string;
+  user_style?: string;
 }
 
-function buildPrompt(destination: string, num_days: number, style: ItineraryStyle, preferences: string, existing_activities: string[], existing_day_count: number, existing_notes?: string, travel_events?: string) {
+// ── Pace & style rules ────────────────────────────────────────────────────────
+
+function paceRule(pace: string | undefined, format: "structured" | "notes"): string {
+  if (format === "structured") {
+    if (pace === "slow")     return "SLOW PACE — include exactly 2–3 activities per day. Gaps are intentional. Do not fill the day — leave room for wandering, sitting at a café, or spontaneous detours. Fewer, better things.";
+    if (pace === "fast")     return "FAST PACE — include 6–7 activities per day. Pack the schedule tightly. The traveller wants to see as much as possible.";
+    if (pace === "moderate") return "MODERATE PACE — include 4–5 activities per day. Balanced days with enough space to breathe.";
+    return "Include 4–6 activities per day";
+  } else {
+    // notes formats
+    if (pace === "slow")     return "SLOW PACE: keep each day to 2–3 things. Short notes, lots of breathing room.";
+    if (pace === "fast")     return "FAST PACE: pack the day with 6–7 things. Tight schedule, no slack.";
+    if (pace === "moderate") return "MODERATE PACE: 4–5 things per day.";
+    return "Aim for 4–5 things per day";
+  }
+}
+
+function styleRule(style: string | undefined): string {
+  if (style === "budget") {
+    return `BUDGET TRAVEL — apply these rules strictly:
+  · Every activity must be free or have an entry fee under $5. If a paid sight is genuinely unmissable, note its cost — otherwise find the free version.
+  · For food: name only street food stalls, hawker centres, wet markets, or tiny local spots. Never suggest a sit-down restaurant unless it is explicitly known as cheap and local (e.g. a $2 noodle stall). No cafés marketed to tourists, no brunch spots, no "renowned" restaurants.
+  · Transport: always suggest the cheapest option — public bus, metro, shared songthaew, walking. Never suggest Grab/Uber/taxi when public transit exists.
+  · Skip paid tours entirely. Self-guided is always preferred.`;
+  }
+  if (style === "mid") {
+    return `MID-RANGE TRAVEL — apply these rules:
+  · Mix of free sights and affordable local restaurants. No luxury experiences, no tourist-priced venues.
+  · Food should be places locals actually eat — not tourist-strip restaurants. Keep dining choices under roughly $15/meal.
+  · Taxis/ride-share are fine occasionally, but lean toward public transit.`;
+  }
+  if (style === "comfort") {
+    return `COMFORT TRAVEL — apply these rules:
+  · Private experiences, guided tours, and sit-down restaurants are all fine.
+  · Still avoid generic tourist traps, overpriced hotel restaurants, and anything that exists purely for tourists. Quality over price.
+  · Ride-share and taxis are expected.`;
+  }
+  return "";
+}
+
+function buildPrompt(destination: string, num_days: number, style: ItineraryStyle, preferences: string, existing_activities: string[], existing_day_count: number, existing_notes?: string, travel_events?: string, user_pace?: string, user_style?: string) {
   const pref = preferences.trim() ? `\nUser preferences: ${preferences.trim()}` : "";
   const existing = existing_activities.length > 0
     ? `\nBanned — do NOT suggest any of these or anything at the same venue, even under a different name or framing: ${existing_activities.join(", ")}`
@@ -28,7 +70,10 @@ function buildPrompt(destination: string, num_days: number, style: ItineraryStyl
     ? `This trip already has ${existing_day_count} day${existing_day_count === 1 ? "" : "s"} planned. Generate ${num_days} additional day${num_days === 1 ? "" : "s"} starting from Day ${startDay}.`
     : `Generate a ${num_days}-day itinerary.`;
 
+  const styleLine = styleRule(user_style);
+
   if (style === "structured") {
+    const paceLine = paceRule(user_pace, "structured");
     return `You are a travel expert planning a trip to ${destination}. ${tripContext}${pref}${existing}${existingNotesContext}${travelEventsContext}
 
 Return ONLY a JSON object with this exact structure (no markdown, no commentary):
@@ -44,7 +89,7 @@ Return ONLY a JSON object with this exact structure (no markdown, no commentary)
 }
 
 Rules:
-- Include 4–6 activities per day
+- ${paceLine}${styleLine ? `\n- ${styleLine}` : ""}
 - SPECIFICITY IS MANDATORY: Every single activity must be a real, named place or experience that exists. Use the actual name — not a category or description of it. Bad examples that will be rejected: "Taipei culture and food workshop", "local cooking class", "beverage tasting", "learn traditional cuisine", "local market visit", "temple tour", "scenic viewpoint". Good examples: "Longshan Temple", "Addiction Aquatic Development seafood market", "Raw restaurant", "Beitou Hot Spring Museum", "Wistaria Tea House", "Raohe Street Night Market"
 - If you suggest a cooking class, name the specific school or operator (e.g. "Taipei Homecooking"). If you suggest a food experience, name the exact dish and stall or restaurant
 - Meals: only include if it is a specific named restaurant or stall. No generic "lunch", "dinner", "food tour", or "tasting". Only suggest a venue for a meal they actually serve
@@ -57,6 +102,9 @@ Rules:
 - place_name must be the exact venue or landmark name, never null for sightseeing activities`;
   }
 
+  const paceLine = paceRule(user_pace, "notes");
+  const styleFragment = styleLine ? `\n- ${styleLine}` : "";
+
   if (style === "notes") {
     return `You are a travel planner writing quick personal notes for a trip to ${destination}. ${tripContext}${pref}${existing}${existingNotesContext}${travelEventsContext}
 
@@ -68,6 +116,7 @@ Style rules:
 - No adjectives like "vibrant", "bustling", "enchanting", "stunning", "picturesque", "delightful", or "charming"
 - No filler phrases like "immerse yourself", "soak up the atmosphere", "don't miss", or "be sure to"
 - Just facts: place names, rough times, what to do, what to eat, practical tips
+- ${paceLine}${styleFragment}
 - SPECIFICITY IS MANDATORY: every place must be a real named venue — no "local cooking class", "beverage tasting", "food workshop", "temple tour", or any other category label. Use the actual name of the place
 - GEOGRAPHIC COHERENCE: each day must be anchored to one zone or neighbourhood of ${destination}. All places that day must be reachable from each other without major backtracking. If the destination covers a large area, move through it systematically — one section per day, never bouncing between distant areas
 - TRAVEL EVENTS: if a day has a flight or transport in the fixed schedule above, mention it in the notes and only suggest activities that fit around it. Arrival day: activities from arrival time onward. Departure day: activities only before departure, with time to reach the airport/station
@@ -95,6 +144,7 @@ Style rules:
 - Short, direct notes — not prose, not a travel article
 - No adjectives like "vibrant", "bustling", "enchanting", "stunning", or "charming"
 - No filler phrases like "immerse yourself", "soak up", "don't miss"
+- ${paceLine}${styleFragment}
 - SPECIFICITY IS MANDATORY: every place must be a real named venue — not "cooking class", "beverage tasting", "food workshop", or any category label. Use the actual name
 - GEOGRAPHIC COHERENCE: each day must be anchored to one zone or neighbourhood of ${destination}. All places that day must be reachable from each other without major backtracking. If the destination covers a large area, move through it systematically — one section per day, never bouncing between distant areas
 - TRAVEL EVENTS: if a day has a flight or transport in the fixed schedule above, note it and only fill sections with activities that fit around it. Arrival day: day/night activities from arrival time onward. Departure day: day activities only before departure
@@ -122,6 +172,7 @@ Style rules:
 - Short, direct notes — not prose, not a travel article
 - No adjectives like "vibrant", "bustling", "enchanting", "stunning", or "charming"
 - No filler phrases like "immerse yourself", "soak up", "don't miss"
+- ${paceLine}${styleFragment}
 - SPECIFICITY IS MANDATORY: every place must be a real named venue — not "cooking class", "beverage tasting", "food workshop", or any category label. Use the actual name
 - GEOGRAPHIC COHERENCE: each day must be anchored to one zone or neighbourhood of ${destination}. All places that day must be reachable from each other without major backtracking. If the destination covers a large area, move through it systematically — one section per day, never bouncing between distant areas
 - TRAVEL EVENTS: if a day has a flight or transport in the fixed schedule above, note it and only fill sections with activities that fit around it. Arrival day: populate only afternoon/night (or whichever sections fall after arrival). Departure day: populate only day/morning sections before departure
@@ -132,7 +183,7 @@ export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "Not configured" }, { status: 500 });
 
-  const { destination, num_days, style, preferences, existing_activities = [], existing_day_count = 0, existing_notes = "", travel_events = "" }: SuggestRequest = await req.json();
+  const { destination, num_days, style, preferences, existing_activities = [], existing_day_count = 0, existing_notes = "", travel_events = "", user_pace = "", user_style = "" }: SuggestRequest = await req.json();
 
   const VALID_STYLES: ItineraryStyle[] = ["structured", "notes", "notes_day_night", "notes_day_afternoon_night"];
 
@@ -144,7 +195,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid itinerary style" }, { status: 400 });
   }
 
-  const prompt = buildPrompt(destination, num_days, style, preferences ?? "", existing_activities, existing_day_count, existing_notes, travel_events);
+  const prompt = buildPrompt(destination, num_days, style, preferences ?? "", existing_activities, existing_day_count, existing_notes, travel_events, user_pace, user_style);
 
   let anthropicRes: Response;
   try {
