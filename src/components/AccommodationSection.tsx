@@ -81,7 +81,6 @@ export default function AccommodationSection({ tripId, initialAccommodations, tr
   const [notes, setNotes]             = useState("");
 
   function openNew() {
-    console.log("[AccomForm] tripStartDate:", tripStartDate, "tripEndDate:", tripEndDate);
     setEditingId(null);
     setName(""); setType("hostel"); setCity("");
     setCheckIn(tripStartDate ?? "");
@@ -122,7 +121,6 @@ export default function AccommodationSection({ tripId, initialAccommodations, tr
       if (editingId) {
         const { data, error } = await db
           .from("accommodations").update(payload).eq("id", editingId).select().single();
-        console.log("[AccomSave] update →", { data, error });
         if (error) throw new Error(error.message || "Update failed");
         // Use returned row if available, otherwise patch locally
         setItems((prev) => prev.map((a) =>
@@ -131,7 +129,6 @@ export default function AccommodationSection({ tripId, initialAccommodations, tr
       } else {
         const { data, error } = await db
           .from("accommodations").insert(payload).select().single();
-        console.log("[AccomSave] insert →", { data, error });
         if (error) throw new Error(error.message || `Insert failed: ${JSON.stringify(error)}`);
         // Use returned row if available, otherwise build from form state
         const newItem: Accommodation = data ?? {
@@ -145,7 +142,6 @@ export default function AccommodationSection({ tripId, initialAccommodations, tr
           cost_per_night: payload.cost_per_night,
           notes: payload.notes,
         };
-        console.log("[AccomSave] adding item to list:", newItem);
         setItems((prev) => [...prev, newItem]);
       }
 
