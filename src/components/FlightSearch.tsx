@@ -339,7 +339,10 @@ export function FlightCard({ flight, onDelete }: { flight: Flight; onDelete: () 
       <div className="flex items-start justify-between mb-3">
         <div>
           <p className="font-bold text-gray-900 dark:text-[#efefef]">{flight.flight_number}</p>
-          {flight.airline && <p className="text-xs text-gray-400 dark:text-[#9fb8b8]">{flight.airline}</p>}
+          <p className="text-xs text-gray-400 dark:text-[#9fb8b8]">
+            {new Date(flight.flight_date + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+            {flight.airline && <span> · {flight.airline}</span>}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           {flight.status && (
@@ -375,15 +378,7 @@ export function FlightCard({ flight, onDelete }: { flight: Flight; onDelete: () 
             <p className="text-sm font-medium text-gray-700 dark:text-[#efefef] mt-1">{formatTime(flight.arrival_time)}</p>
           </div>
         </div>
-      ) : (
-        <p className="text-xs text-gray-400">
-          {new Date(flight.flight_date + "T00:00:00").toLocaleDateString("en-US", {
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-          })}
-        </p>
-      )}
+      ) : null}
 
       {flight.distance_miles != null && (
         <p className="mt-2 text-xs text-gray-400 dark:text-[#9fb8b8] text-right">
