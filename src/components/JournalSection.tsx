@@ -217,7 +217,7 @@ export default function JournalSection({ tripId, initialEntries, initialDays = [
                 <div className="mt-3 flex flex-wrap gap-2">
                   {entry.photos.map((url, i) => (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img key={i} src={url} alt={`Photo ${i + 1}`} className="h-20 w-20 rounded-lg object-cover" />
+                    <img key={i} src={url} alt={`Photo ${i + 1}`} className="h-20 w-20 rounded-lg object-cover" style={{ filter: "brightness(0.6) contrast(1.15) saturate(1.05)" }} />
                   ))}
                 </div>
               )}
