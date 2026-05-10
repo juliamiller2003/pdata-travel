@@ -121,7 +121,7 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
     ],
   },
   beach: {
-    label: "Beach / Tropical", sub: "Sun & sea · 22 items",
+    label: "Beach", sub: "Sun & sea · 22 items",
     items: [
       { name: "Passport + copies",                          category: "Documents"     },
       { name: "Travel insurance details",                   category: "Documents"     },
@@ -148,7 +148,7 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
     ],
   },
   winter: {
-    label: "Winter / Cold", sub: "Sub-zero ready · 20 items",
+    label: "Winter", sub: "Sub-zero ready · 20 items",
     items: [
       { name: "Passport + copies",                               category: "Documents"  },
       { name: "Travel insurance details",                        category: "Documents"  },
@@ -173,7 +173,7 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
     ],
   },
   city: {
-    label: "City / Urban", sub: "Light & smart · 18 items",
+    label: "City", sub: "Light & smart · 18 items",
     items: [
       { name: "Passport / ID",                                     category: "Documents"     },
       { name: "Travel insurance details",                          category: "Documents"     },
@@ -196,7 +196,7 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
     ],
   },
   diving: {
-    label: "Diving / Snorkelling", sub: "Underwater · 18 items",
+    label: "Diving", sub: "Underwater · 18 items",
     items: [
       { name: "Passport + copies",                              category: "Documents"  },
       { name: "Dive certification card (PADI / SSI / etc.)",   category: "Documents"  },
