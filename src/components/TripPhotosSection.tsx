@@ -122,7 +122,7 @@ export default function TripPhotosSection({ tripId, initialPhotos, initialCaptio
             <div key={url} className="space-y-1">
               <div className="relative group aspect-square overflow-hidden rounded-lg bg-black isolate">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt={captions[url] ?? ""} className="h-full w-full object-cover" />
+                <img src={url} alt={captions[url] ?? ""} className="h-full w-full object-cover brightness-90 contrast-105 saturate-105" />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     type="button"
