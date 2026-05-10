@@ -370,7 +370,7 @@ export default function TransportationSection({ tripId, tripStartDate, initialFl
           {flights.map((f) => (
             <FlightCard key={f.id} flight={f} onDelete={() => deleteFlight(f.id)} />
           ))}
-          <FlightSearch tripId={tripId} onFlightAdded={(f) => setFlights((prev) => [...prev, f])} />
+          <FlightSearch tripId={tripId} onFlightAdded={(f) => setFlights((prev) => [...prev, f])} defaultDate={tripStartDate} />
         </div>
       )}
 

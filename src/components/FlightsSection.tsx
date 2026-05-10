@@ -7,9 +7,10 @@ import FlightSearch, { FlightCard } from "./FlightSearch";
 interface FlightsSectionProps {
   tripId: string;
   initialFlights: Flight[];
+  tripStartDate?: string | null;
 }
 
-export default function FlightsSection({ tripId, initialFlights }: FlightsSectionProps) {
+export default function FlightsSection({ tripId, initialFlights, tripStartDate }: FlightsSectionProps) {
   const [flights, setFlights] = useState<Flight[]>(initialFlights);
 
   async function handleDelete(flightId: string) {
@@ -36,6 +37,7 @@ export default function FlightsSection({ tripId, initialFlights }: FlightsSectio
         <FlightSearch
           tripId={tripId}
           onFlightAdded={(flight) => setFlights((prev) => [...prev, flight])}
+          defaultDate={tripStartDate}
         />
       </div>
     </section>

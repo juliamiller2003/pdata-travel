@@ -364,7 +364,7 @@ export default function EditTripPage() {
 
       {/* Flights — managed separately from the form */}
       <div className="mt-6">
-        <FlightsSection tripId={id} initialFlights={initialFlights} />
+        <FlightsSection tripId={id} initialFlights={initialFlights} tripStartDate={startDate || null} />
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import type { FlightResult } from "@/app/api/flights/route";
 interface FlightSearchProps {
   tripId: string;
   onFlightAdded: (flight: Flight) => void;
+  defaultDate?: string | null;
 }
 
 function formatTime(iso: string | null) {
@@ -19,13 +20,13 @@ function formatTime(iso: string | null) {
   });
 }
 
-export default function FlightSearch({ tripId, onFlightAdded }: FlightSearchProps) {
+export default function FlightSearch({ tripId, onFlightAdded, defaultDate }: FlightSearchProps) {
   const supabase = createClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
   const [showForm, setShowForm] = useState(false);
   const [flightNumber, setFlightNumber] = useState("");
-  const [flightDate, setFlightDate] = useState("");
+  const [flightDate, setFlightDate] = useState(defaultDate ?? "");
   const [distanceMiles, setDistanceMiles] = useState("");
   const [lookupResult, setLookupResult] = useState<FlightResult | null>(null);
   const [editDepartureIata, setEditDepartureIata] = useState("");
@@ -38,7 +39,7 @@ export default function FlightSearch({ tripId, onFlightAdded }: FlightSearchProp
 
   function resetForm() {
     setFlightNumber("");
-    setFlightDate("");
+    setFlightDate(defaultDate ?? "");
     setDistanceMiles("");
     setLookupResult(null);
     setLookupError(null);
