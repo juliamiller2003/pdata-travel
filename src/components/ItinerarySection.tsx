@@ -397,14 +397,17 @@ function AddActivityForm({ dayId, orderIndex, onAdded, onCancel }: AddActivityFo
 
 interface EditActivityInlineProps {
   activity: ActivityRow;
+  currentDayId: string;
+  availableDays: { id: string; day_number: number; date: string | null }[];
   onUpdated: (activity: ActivityRow) => void;
   onCancel: () => void;
 }
 
-function EditActivityInline({ activity, onUpdated, onCancel }: EditActivityInlineProps) {
+function EditActivityInline({ activity, currentDayId, availableDays, onUpdated, onCancel }: EditActivityInlineProps) {
   const [time, setTime] = useState(activity.time?.slice(0, 5) ?? "");
   const [title, setTitle] = useState(activity.title);
   const [place, setPlace] = useState(activity.place_name ?? "");
+  const [selectedDayId, setSelectedDayId] = useState(currentDayId);
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
@@ -412,13 +415,19 @@ function EditActivityInline({ activity, onUpdated, onCancel }: EditActivityInlin
     setSaving(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = createClient() as any;
+    const updates: Record<string, unknown> = {
+      time: time || null,
+      title: title.trim(),
+      place_name: place.trim() || null,
+    };
+    if (selectedDayId !== currentDayId) updates.day_id = selectedDayId;
     const { data, error } = await db
       .from("activities")
-      .update({ time: time || null, title: title.trim(), place_name: place.trim() || null })
+      .update(updates)
       .eq("id", activity.id)
       .select().single();
     setSaving(false);
-    if (!error && data) onUpdated(data);
+    if (!error && data) onUpdated({ ...data, day_id: selectedDayId });
   }
 
   return (
@@ -436,6 +445,19 @@ function EditActivityInline({ activity, onUpdated, onCancel }: EditActivityInlin
         className="input w-full text-sm" placeholder="Place name (optional)"
         onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") onCancel(); }}
       />
+      {availableDays.length > 1 && (
+        <select
+          value={selectedDayId}
+          onChange={(e) => setSelectedDayId(e.target.value)}
+          className="input text-sm"
+        >
+          {availableDays.map((d) => (
+            <option key={d.id} value={d.id}>
+              Day {d.day_number}{d.date ? ` · ${formatDayDate(d.date)}` : ""}
+            </option>
+          ))}
+        </select>
+      )}
       <div className="flex gap-2">
         <button onClick={handleSave} disabled={saving || !title.trim()} className="btn-primary px-3 py-1 text-sm">
           {saving ? "Saving…" : "Save"}
@@ -1204,12 +1226,24 @@ function ItinerarySection({
                     <EditActivityInline
                       key={act.id}
                       activity={act}
+                      currentDayId={day.id}
+                      availableDays={days.map((d) => ({ id: d.id, day_number: d.day_number, date: d.date }))}
                       onUpdated={(updated) => {
-                        setDays((prev) => prev.map((d) =>
-                          d.id === day.id
-                            ? { ...d, activities: sortActivities(d.activities.map((a) => a.id === act.id ? updated : a)) }
-                            : d
-                        ));
+                        if (updated.day_id === day.id) {
+                          // Same day — update in place
+                          setDays((prev) => prev.map((d) =>
+                            d.id === day.id
+                              ? { ...d, activities: sortActivities(d.activities.map((a) => a.id === act.id ? updated : a)) }
+                              : d
+                          ));
+                        } else {
+                          // Moved to a different day — remove from source, add to target
+                          setDays((prev) => prev.map((d) => {
+                            if (d.id === day.id) return { ...d, activities: d.activities.filter((a) => a.id !== act.id) };
+                            if (d.id === updated.day_id) return { ...d, activities: sortActivities([...d.activities, updated]) };
+                            return d;
+                          }));
+                        }
                         setEditingActivity(null);
                       }}
                       onCancel={() => setEditingActivity(null)}
