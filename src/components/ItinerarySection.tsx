@@ -744,6 +744,16 @@ function ItinerarySection({
   // AI suggestions
   const [showAI, setShowAI] = useState(false);
   const [preferences, setPreferences] = useState("");
+  const [hasPrefs, setHasPrefs] = useState(true); // assume true until checked client-side
+
+  useEffect(() => {
+    try {
+      const p = getTravelPrefs();
+      setHasPrefs(!!(p.pace || p.style || p.interests.length > 0 || p.dietary.length > 0));
+    } catch {
+      setHasPrefs(true);
+    }
+  }, []);
   const [generationScope, setGenerationScope] = useState<"1" | "3" | "full">("full");
   const knownDays = computeDuration(tripStartDate, tripEndDate);
   const [numDaysInput, setNumDaysInput] = useState(String(knownDays ?? 3));
@@ -1059,6 +1069,14 @@ function ItinerarySection({
           placeholder="e.g. focus on food, avoid tourist traps, relaxed pace"
           className="input w-full"
         />
+        {!hasPrefs && (
+          <p className="mt-1.5 text-xs text-gray-400 dark:text-[#9fb8b8]">
+            <a href="/settings" className="underline hover:text-[#9fb8b8] transition-colors">
+              Set up travel preferences
+            </a>
+            {" "}to automatically personalise every suggestion.
+          </p>
+        )}
       </div>
 
       {aiError && <p className="text-sm text-red-600">{aiError}</p>}

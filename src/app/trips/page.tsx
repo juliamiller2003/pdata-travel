@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import TripCard from "@/components/TripCard";
 import TripCountdown from "@/components/TripCountdown";
 import TripPlannerWidget from "@/components/TripPlannerWidget";
+import TravelPrefsBanner from "@/components/TravelPrefsBanner";
 
 const TravelMap = dynamic(() => import("@/components/TravelMap"), { ssr: false });
 
@@ -88,6 +89,9 @@ export default async function TripsPage() {
 
       {/* AI Trip Planner */}
       <TripPlannerWidget />
+
+      {/* Travel prefs onboarding prompt */}
+      <TravelPrefsBanner />
 
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
