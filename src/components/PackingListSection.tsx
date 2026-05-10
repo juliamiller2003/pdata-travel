@@ -313,30 +313,28 @@ export default function PackingListSection({ tripId, initialItems }: Props) {
     <section className="mb-8">
 
       {/* ── Header ── */}
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <div className="flex items-center gap-2 min-w-0">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-[#efefef] shrink-0">Packing List</h2>
           {items.length > 0 && (
-            <span className="text-xs text-gray-400 dark:text-[#9fb8b8]">{packed}/{items.length} packed</span>
+            <span className="text-xs text-gray-400 dark:text-[#9fb8b8] shrink-0">{packed}/{items.length} packed</span>
           )}
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
           {items.length > 0 && view === "list" && (
-            <button onClick={clearAll} disabled={clearing} className="text-xs text-gray-400 dark:text-[#9fb8b8] hover:text-red-400 transition-colors">
-              Clear all
+            <button onClick={clearAll} disabled={clearing} className="text-xs text-gray-400 dark:text-[#9fb8b8] hover:text-red-400 transition-colors shrink-0">
+              · Clear all
             </button>
           )}
-          {view === "list" && (
-            <>
-              <button onClick={openSelect} className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-[#2e2e2e] bg-white dark:bg-transparent px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-[#9fb8b8] hover:border-[#9fb8b8] hover:text-[#9fb8b8] transition-colors">
-                Templates
-              </button>
-              <button onClick={() => setShowAdd((v) => !v)} className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-[#2e2e2e] bg-white dark:bg-transparent px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-[#9fb8b8] hover:border-[#9fb8b8] hover:text-[#9fb8b8] transition-colors">
-                + Add item
-              </button>
-            </>
-          )}
         </div>
+        {view === "list" && (
+          <div className="flex items-center gap-2 shrink-0">
+            <button onClick={openSelect} className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-[#2e2e2e] bg-white dark:bg-transparent px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-[#9fb8b8] hover:border-[#9fb8b8] hover:text-[#9fb8b8] transition-colors">
+              Templates
+            </button>
+            <button onClick={() => setShowAdd((v) => !v)} className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-[#2e2e2e] bg-white dark:bg-transparent px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-[#9fb8b8] hover:border-[#9fb8b8] hover:text-[#9fb8b8] transition-colors">
+              + Add item
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── LIST VIEW ── */}
@@ -380,10 +378,10 @@ export default function PackingListSection({ tripId, initialItems }: Props) {
                       <div key={item.id} className="flex items-center gap-3 group">
                         <button
                           onClick={() => togglePacked(item)}
-                          className={`h-4 w-4 shrink-0 rounded border flex items-center justify-center transition-colors ${item.packed ? "border-[#9fb8b8] bg-[#9fb8b8]" : "border-gray-300 dark:border-[#3a3a3a] bg-white dark:bg-transparent"}`}
+                          className={`h-6 w-6 sm:h-4 sm:w-4 shrink-0 rounded border flex items-center justify-center transition-colors ${item.packed ? "border-[#9fb8b8] bg-[#9fb8b8]" : "border-gray-300 dark:border-[#3a3a3a] bg-white dark:bg-transparent"}`}
                         >
                           {item.packed && (
-                            <svg className="h-2.5 w-2.5 text-white dark:text-[#1e1e1e]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <svg className="h-3.5 w-3.5 sm:h-2.5 sm:w-2.5 text-white dark:text-[#1e1e1e]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                             </svg>
                           )}

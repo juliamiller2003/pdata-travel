@@ -124,6 +124,7 @@ export default function EditTripPage() {
       return;
     }
 
+    router.refresh(); // invalidate Router Cache so the trip page re-fetches from DB
     router.push(`/trips/${id}`);
   }
 

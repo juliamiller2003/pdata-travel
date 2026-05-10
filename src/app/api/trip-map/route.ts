@@ -58,7 +58,12 @@ export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return NextResponse.json({ markers: [], routes: [] });
 
-  const { flights, activities, accommodations = [] }: { flights: FlightInput[]; activities: ActivityInput[]; accommodations: AccommodationInput[] } = await req.json();
+  let flights: FlightInput[], activities: ActivityInput[], accommodations: AccommodationInput[];
+  try {
+    ({ flights, activities, accommodations = [] } = await req.json());
+  } catch {
+    return NextResponse.json({ markers: [], routes: [], error: "Invalid request body" }, { status: 400 });
+  }
 
   // Collect unique IATAs from flights
   const iatas = [...new Set<string>(

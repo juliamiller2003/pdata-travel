@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, memo } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { ItineraryStyle, Flight, TransportLeg } from "@/types/database";
 import { getClockFormat, formatActivityTime, type ClockFormat } from "@/lib/timeFormat";
@@ -461,6 +462,7 @@ function ItinerarySection({
   const supabase = createClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
+  const router = useRouter();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -515,50 +517,10 @@ function ItinerarySection({
     document.addEventListener('blur',  onBlurTa,  true);
     window.addEventListener('scroll', onScrollLock, { passive: true });
 
-    // DEBUG: intercept scroll APIs so DevTools shows who is calling them.
-    // Open DevTools → Console, run `npm run dev` locally, type in a textarea,
-    // and look for [FOCUS] / [SCROLL] / [window.scrollTo] / [scrollIntoView].
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const origScrollTo = (window as any).scrollTo.bind(window);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).scrollTo = function (...args: unknown[]) {
-      // eslint-disable-next-line no-console
-      console.trace('[window.scrollTo]', args);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      origScrollTo(...(args as any[]));
-    };
-    const origScrollIntoView = Element.prototype.scrollIntoView;
-    Element.prototype.scrollIntoView = function (this: Element, ...args: unknown[]) {
-      // eslint-disable-next-line no-console
-      console.trace('[scrollIntoView]', this.tagName, (this as HTMLElement).id || (this as HTMLElement).className?.split(' ')[0]);
-      return origScrollIntoView.apply(this, args as Parameters<typeof origScrollIntoView>);
-    };
-    const onFocusLog = (e: FocusEvent) => {
-      const el = e.target as HTMLElement;
-      // eslint-disable-next-line no-console
-      console.log('[FOCUS]', el.tagName, `"${el.getAttribute('placeholder') || el.id || ''}"`, '| scrollY:', Math.round(window.scrollY));
-    };
-    let lastY = window.scrollY;
-    const onScrollLog = () => {
-      const y = window.scrollY;
-      if (y !== lastY) {
-        // eslint-disable-next-line no-console
-        console.log(`[SCROLL] ${Math.round(lastY)} → ${Math.round(y)}`);
-        lastY = y;
-      }
-    };
-    document.addEventListener('focus', onFocusLog, true);
-    window.addEventListener('scroll', onScrollLog, { passive: true });
-
     return () => {
-      document.removeEventListener('focus', onFocusTa,  true);
-      document.removeEventListener('blur',  onBlurTa,   true);
+      document.removeEventListener('focus', onFocusTa, true);
+      document.removeEventListener('blur',  onBlurTa,  true);
       window.removeEventListener('scroll', onScrollLock);
-      document.removeEventListener('focus', onFocusLog, true);
-      window.removeEventListener('scroll', onScrollLog);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (window as any).scrollTo = origScrollTo;
-      Element.prototype.scrollIntoView = origScrollIntoView;
     };
   }, []);
 
@@ -826,6 +788,7 @@ function ItinerarySection({
     setRejectedActivities([]);
     setShowAI(false);
     setApplying(false);
+    router.refresh(); // invalidate Router Cache so navigate-away-and-back sees fresh DB data
   }
 
   async function handleApplyNotes() {
@@ -836,6 +799,7 @@ function ItinerarySection({
     setRejectedActivities([]);
     setShowAI(false);
     setNotesRefreshKey((k) => k + 1);
+    router.refresh(); // invalidate Router Cache so navigate-away-and-back sees fresh DB data
   }
 
   async function handleApplyDayNotes() {
@@ -876,6 +840,7 @@ function ItinerarySection({
     setShowAI(false);
     setApplying(false);
     setNotesRefreshKey((k) => k + 1);
+    router.refresh(); // invalidate Router Cache so navigate-away-and-back sees fresh DB data
   }
 
   // ── Shared UI pieces ──────────────────────────────────────────

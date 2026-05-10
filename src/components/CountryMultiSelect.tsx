@@ -52,13 +52,13 @@ export default function CountryMultiSelect({ value, onChange }: CountryMultiSele
         {selectedCountries.map((c) => (
           <span
             key={c.alpha2}
-            className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-medium text-sky-700"
+            className="inline-flex items-center gap-1 rounded-full bg-sky-100 dark:bg-[#2a3f3f] px-2.5 py-0.5 text-xs font-medium text-sky-700 dark:text-[#cadede]"
           >
             {c.name}
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); remove(c.alpha2); }}
-              className="ml-0.5 text-sky-400 hover:text-sky-700 leading-none"
+              className="ml-0.5 text-sky-400 dark:text-[#9fb8b8] hover:text-sky-700 dark:hover:text-[#cadede] leading-none"
             >
               ×
             </button>
@@ -75,13 +75,13 @@ export default function CountryMultiSelect({ value, onChange }: CountryMultiSele
       </div>
 
       {open && filtered.length > 0 && (
-        <ul className="absolute z-20 mt-1 w-full overflow-y-auto rounded-xl border border-gray-100 bg-white shadow-lg max-h-56">
+        <ul className="absolute z-20 mt-1 w-full overflow-y-auto rounded-xl border border-gray-100 dark:border-[#2e2e2e] bg-white dark:bg-[#1e1e1e] shadow-lg max-h-56">
           {filtered.map((c) => (
             <li key={c.alpha2}>
               <button
                 type="button"
                 onMouseDown={(e) => { e.preventDefault(); add(c.alpha2); }}
-                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-sky-50 hover:text-sky-700"
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-[#efefef] hover:bg-sky-50 dark:hover:bg-[#2a3f3f] hover:text-sky-700 dark:hover:text-[#cadede]"
               >
                 {c.name}
               </button>
