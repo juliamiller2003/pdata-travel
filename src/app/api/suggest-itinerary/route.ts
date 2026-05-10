@@ -46,7 +46,7 @@ Rules:
 - Meals: only include if it is a specific named restaurant or stall. No generic "lunch", "dinner", "food tour", or "tasting". Only suggest a venue for a meal they actually serve
 - No duplicates: do not suggest any place or experience already in the itinerary, even under a different title
 - Vary restaurants and food stops every time — do not default to famous tourist staples. If Din Tai Fung, Shilin Night Market, or any chain has already been suggested, pick something genuinely different. Favour neighbourhood spots and less-covered options
-- Geographic logic: group activities in the same day by area. If the day includes somewhere 45+ minutes from the city centre (e.g. Yangmingshan, Maokong, Jiufen, Yehliu), do not add other distant locations to the same day
+- GEOGRAPHIC COHERENCE IS MANDATORY: Before assigning activities to days, mentally map ${destination} and divide it into distinct zones or neighbourhoods. Assign each day one primary zone — every activity that day must be within easy reach of that zone (walkable, or a single short transit/taxi ride). Never mix activities from opposite ends of a city or region in the same day. A day's activities should read as a logical route, not a scatter across a map. If the destination is a large area (island, coastal strip, multiple districts), dedicate each day to one geographic section and move systematically — never bounce back to an area already covered
 - Realistic hours: morning markets early, night markets 18:00+, sunrise spots before 07:00, tea houses afternoon/evening, bars and clubs 21:00+. Never schedule a night market or bar before 17:00
 - Use 24-hour time strings (e.g. "09:00", "14:30")
 - place_name must be the exact venue or landmark name, never null for sightseeing activities`;
@@ -64,6 +64,7 @@ Style rules:
 - No filler phrases like "immerse yourself", "soak up the atmosphere", "don't miss", or "be sure to"
 - Just facts: place names, rough times, what to do, what to eat, practical tips
 - SPECIFICITY IS MANDATORY: every place must be a real named venue — no "local cooking class", "beverage tasting", "food workshop", "temple tour", or any other category label. Use the actual name of the place
+- GEOGRAPHIC COHERENCE: each day must be anchored to one zone or neighbourhood of ${destination}. All places that day must be reachable from each other without major backtracking. If the destination covers a large area, move through it systematically — one section per day, never bouncing between distant areas
 - Realistic timing (night markets from 6pm+, sunrise spots before 7am)
 - Use \\n for line breaks`;
   }
@@ -89,6 +90,7 @@ Style rules:
 - No adjectives like "vibrant", "bustling", "enchanting", "stunning", or "charming"
 - No filler phrases like "immerse yourself", "soak up", "don't miss"
 - SPECIFICITY IS MANDATORY: every place must be a real named venue — not "cooking class", "beverage tasting", "food workshop", or any category label. Use the actual name
+- GEOGRAPHIC COHERENCE: each day must be anchored to one zone or neighbourhood of ${destination}. All places that day must be reachable from each other without major backtracking. If the destination covers a large area, move through it systematically — one section per day, never bouncing between distant areas
 - Include rough times where useful`;
   }
 
@@ -114,6 +116,7 @@ Style rules:
 - No adjectives like "vibrant", "bustling", "enchanting", "stunning", or "charming"
 - No filler phrases like "immerse yourself", "soak up", "don't miss"
 - SPECIFICITY IS MANDATORY: every place must be a real named venue — not "cooking class", "beverage tasting", "food workshop", or any category label. Use the actual name
+- GEOGRAPHIC COHERENCE: each day must be anchored to one zone or neighbourhood of ${destination}. All places that day must be reachable from each other without major backtracking. If the destination covers a large area, move through it systematically — one section per day, never bouncing between distant areas
 - Include rough times where useful`;
 }
 
