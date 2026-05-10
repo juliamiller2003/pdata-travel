@@ -208,10 +208,11 @@ export default function TripMapView({ flights, activities, days, accommodations 
         </div>
       </div>
 
-      {/* Map */}
+      {/* Map — isolate creates a new stacking context so Leaflet's internal
+           z-indices don't escape and overlap the sticky nav/dropdown */}
       <div
-        className="overflow-hidden rounded-2xl border border-gray-100 dark:border-[#2e2e2e] shadow-sm"
-        style={{ height: 380 }}
+        className="overflow-hidden rounded-2xl border border-gray-100 dark:border-[#2e2e2e] shadow-sm isolate"
+        style={{ height: 380, zIndex: 0 }}
       >
         {loading && (
           <div className="flex h-full items-center justify-center gap-2 bg-gray-50 dark:bg-[#1a1a1a] text-sm text-gray-400">
