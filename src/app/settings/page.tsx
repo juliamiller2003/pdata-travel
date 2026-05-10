@@ -9,6 +9,7 @@ import { TRIP_SECTIONS, getSectionVisibility, setSectionVisibility, type Section
 import { getClockFormat, setClockFormat, type ClockFormat } from "@/lib/timeFormat";
 import { getDefaultItineraryStyle, setDefaultItineraryStyle, ITINERARY_STYLE_OPTIONS } from "@/lib/itineraryStyle";
 import type { MapView, UserSettings, ItineraryStyle } from "@/types/database";
+import { getTravelPrefs, setTravelPrefs, formatTravelPrefsForPrompt, PACE_OPTIONS, STYLE_OPTIONS, INTERESTS, DIETARY_OPTIONS, type TravelPrefs } from "@/lib/travelPrefs";
 
 export default function SettingsPage() {
   const [isDark, setIsDark] = useState(false);
@@ -22,6 +23,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [travelPrefs, setTravelPrefsState] = useState<TravelPrefs>({ pace: "", style: "", interests: [], dietary: [] });
   const [sectionVisibility, setSectionVisibilityState] = useState<Record<SectionKey, boolean>>({
     itinerary: true, map: true, flights: true, expenses: true, journal: true,
   });
@@ -33,6 +35,7 @@ export default function SettingsPage() {
     setSectionVisibilityState(getSectionVisibility());
     setClockFormatState(getClockFormat());
     setDefaultStyleState(getDefaultItineraryStyle());
+    setTravelPrefsState(getTravelPrefs());
   }, []);
 
   useEffect(() => {
@@ -93,6 +96,14 @@ export default function SettingsPage() {
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
+  }
+
+  function updateTravelPrefs(partial: Partial<TravelPrefs>) {
+    setTravelPrefsState((prev) => {
+      const next = { ...prev, ...partial };
+      setTravelPrefs(next);
+      return next;
+    });
   }
 
   if (loading) {
@@ -292,6 +303,118 @@ export default function SettingsPage() {
               />
             </button>
           </div>
+        </div>
+
+        {/* Travel preferences */}
+        <div className="mt-6 border-t border-gray-100 pt-6 dark:border-gray-700">
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">AI travel preferences</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Used to personalise AI itinerary suggestions across all your trips.</p>
+
+          {/* Pace */}
+          <div className="mb-4">
+            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Travel pace</p>
+            <div className="flex gap-2 flex-wrap">
+              {PACE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => updateTravelPrefs({ pace: opt.value })}
+                  className={`rounded-lg border px-3 py-2 text-left transition-colors ${
+                    travelPrefs.pace === opt.value
+                      ? "border-[#1e1e1e] dark:border-[#cadede] bg-[#1e1e1e] dark:bg-[#cadede] text-white dark:text-[#1e1e1e]"
+                      : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300"
+                  }`}
+                >
+                  <p className="text-xs font-semibold">{opt.label}</p>
+                  <p className={`text-[10px] mt-0.5 ${travelPrefs.pace === opt.value ? "text-white/70 dark:text-[#1e1e1e]/70" : "text-gray-400"}`}>{opt.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Style */}
+          <div className="mb-4">
+            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Travel style</p>
+            <div className="flex gap-2 flex-wrap">
+              {STYLE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => updateTravelPrefs({ style: opt.value })}
+                  className={`rounded-lg border px-3 py-2 text-left transition-colors ${
+                    travelPrefs.style === opt.value
+                      ? "border-[#1e1e1e] dark:border-[#cadede] bg-[#1e1e1e] dark:bg-[#cadede] text-white dark:text-[#1e1e1e]"
+                      : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300"
+                  }`}
+                >
+                  <p className="text-xs font-semibold">{opt.label}</p>
+                  <p className={`text-[10px] mt-0.5 ${travelPrefs.style === opt.value ? "text-white/70 dark:text-[#1e1e1e]/70" : "text-gray-400"}`}>{opt.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Interests */}
+          <div className="mb-4">
+            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Interests</p>
+            <div className="flex flex-wrap gap-2">
+              {INTERESTS.map((interest) => {
+                const active = travelPrefs.interests.includes(interest);
+                return (
+                  <button
+                    key={interest}
+                    type="button"
+                    onClick={() => updateTravelPrefs({
+                      interests: active
+                        ? travelPrefs.interests.filter((i) => i !== interest)
+                        : [...travelPrefs.interests, interest],
+                    })}
+                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                      active
+                        ? "border-[#9fb8b8] bg-[#9fb8b8]/20 text-[#1e1e1e] dark:text-[#cadede]"
+                        : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-[#9fb8b8]"
+                    }`}
+                  >
+                    {interest}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Dietary */}
+          <div>
+            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Dietary needs</p>
+            <div className="flex flex-wrap gap-2">
+              {DIETARY_OPTIONS.map((diet) => {
+                const active = travelPrefs.dietary.includes(diet);
+                return (
+                  <button
+                    key={diet}
+                    type="button"
+                    onClick={() => updateTravelPrefs({
+                      dietary: active
+                        ? travelPrefs.dietary.filter((d) => d !== diet)
+                        : [...travelPrefs.dietary, diet],
+                    })}
+                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                      active
+                        ? "border-[#9fb8b8] bg-[#9fb8b8]/20 text-[#1e1e1e] dark:text-[#cadede]"
+                        : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-[#9fb8b8]"
+                    }`}
+                  >
+                    {diet}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {(travelPrefs.pace || travelPrefs.style || travelPrefs.interests.length > 0 || travelPrefs.dietary.length > 0) && (
+            <p className="mt-3 text-[10px] text-gray-400 dark:text-[#9fb8b8]">
+              AI prompt: &ldquo;{formatTravelPrefsForPrompt(travelPrefs)}&rdquo;
+            </p>
+          )}
         </div>
       </div>
     </div>

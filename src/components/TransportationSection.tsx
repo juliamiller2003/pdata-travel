@@ -318,7 +318,7 @@ interface TransportationSectionProps {
 }
 
 export default function TransportationSection({ tripId, tripStartDate, initialFlights, initialLegs }: TransportationSectionProps) {
-  const [tab, setTab] = useState<"flights" | "ground">("flights");
+  const [tab, setTab] = useState<"flights" | "ground" | "route">("flights");
   const [flights, setFlights] = useState<Flight[]>(initialFlights);
   const [legs, setLegs] = useState<TransportLeg[]>(initialLegs);
 
@@ -362,6 +362,16 @@ export default function TransportationSection({ tripId, tripStartDate, initialFl
         >
           Ground &amp; Sea {legs.length > 0 && `(${legs.length})`}
         </button>
+        <button
+          onClick={() => setTab("route")}
+          className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-colors ${
+            tab === "route"
+              ? "bg-white dark:bg-[#1e1e1e] text-gray-900 dark:text-[#efefef] shadow-sm"
+              : "text-gray-500 dark:text-[#9fb8b8] hover:text-gray-700 dark:hover:text-[#efefef]"
+          }`}
+        >
+          Route
+        </button>
       </div>
 
       {/* Flights tab */}
@@ -391,6 +401,110 @@ export default function TransportationSection({ tripId, tripStartDate, initialFl
           <AddLegForm tripId={tripId} tripStartDate={tripStartDate} onAdded={(leg) => setLegs((prev) => [...prev, leg])} />
         </div>
       )}
+
+      {/* Route overview tab */}
+      {tab === "route" && (() => {
+        const startMs = tripStartDate
+          ? (() => { const [y, m, d] = tripStartDate.split("-").map(Number); return Date.UTC(y, m - 1, d); })()
+          : null;
+
+        function dateToDay(dateStr: string): number | null {
+          if (!startMs) return null;
+          const [y, m, d] = dateStr.split("-").map(Number);
+          return Math.round((Date.UTC(y, m - 1, d) - startMs) / 86_400_000) + 1;
+        }
+
+        type RouteEvent = {
+          date: string;
+          dayNum: number | null;
+          sortKey: string;
+          kind: "flight" | "ground";
+          from: string;
+          to: string;
+          mode: string;
+          depTime: string | null;
+          arrTime: string | null;
+          label: string;
+        };
+
+        const events: RouteEvent[] = [
+          ...flights.map((f) => ({
+            date: f.flight_date,
+            dayNum: dateToDay(f.flight_date),
+            sortKey: f.flight_date + (f.departure_time ?? ""),
+            kind: "flight" as const,
+            from: f.departure_iata ?? f.departure_city ?? "?",
+            to: f.arrival_iata ?? f.arrival_city ?? "?",
+            mode: "flight",
+            depTime: f.departure_time
+              ? (() => { const t = f.departure_time!.includes("T") ? (() => { const d = new Date(f.departure_time!); return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; })() : f.departure_time!.slice(0,5); return t; })()
+              : null,
+            arrTime: f.arrival_time
+              ? (() => { const t = f.arrival_time!.includes("T") ? (() => { const d = new Date(f.arrival_time!); return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; })() : f.arrival_time!.slice(0,5); return t; })()
+              : null,
+            label: f.flight_number,
+          })),
+          ...legs.map((l) => ({
+            date: l.travel_date,
+            dayNum: dateToDay(l.travel_date),
+            sortKey: l.travel_date + (l.departure_time ?? ""),
+            kind: "ground" as const,
+            from: l.from_location,
+            to: l.to_location,
+            mode: l.mode,
+            depTime: l.departure_time?.slice(0, 5) ?? null,
+            arrTime: l.arrival_time?.slice(0, 5) ?? null,
+            label: MODE_LABELS[l.mode as TransportMode] ?? l.mode,
+          })),
+        ].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+
+        if (events.length === 0) {
+          return (
+            <div className="rounded-xl border-2 border-dashed border-gray-200 dark:border-[#2e2e2e] py-10 text-center text-sm text-gray-400 dark:text-[#9fb8b8]">
+              Add flights and transport legs to see your route.
+            </div>
+          );
+        }
+
+        return (
+          <div className="space-y-1">
+            {events.map((ev, i) => (
+              <div key={i} className="flex items-start gap-3">
+                {/* Timeline spine */}
+                <div className="flex flex-col items-center shrink-0 pt-1">
+                  <div className={`h-2.5 w-2.5 rounded-full border-2 ${ev.kind === "flight" ? "border-[#9fb8b8] bg-[#9fb8b8]" : "border-[#cadede] bg-[#cadede]"}`} />
+                  {i < events.length - 1 && <div className="w-px flex-1 bg-gray-200 dark:bg-[#2e2e2e] mt-0.5 min-h-[2rem]" />}
+                </div>
+
+                {/* Content */}
+                <div className="pb-4 min-w-0 flex-1">
+                  <div className="flex items-baseline gap-2 mb-0.5">
+                    <span className="text-[10px] font-semibold text-gray-400 dark:text-[#9fb8b8] shrink-0">
+                      {ev.dayNum != null ? `Day ${ev.dayNum} ·` : ""}{" "}
+                      {new Date(ev.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </span>
+                    <span className="text-[10px] text-gray-400 dark:text-[#9fb8b8] shrink-0 capitalize">{ev.label}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-sm font-medium text-gray-800 dark:text-[#efefef]">
+                    <span className="truncate">{ev.from}</span>
+                    <svg className="h-3.5 w-3.5 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 12h12m0 0l-4-4m4 4l-4 4" />
+                    </svg>
+                    <span className="truncate">{ev.to}</span>
+                  </div>
+                  {(ev.depTime || ev.arrTime) && (
+                    <p className="text-[10px] text-gray-400 dark:text-[#9fb8b8] mt-0.5">
+                      {ev.depTime && `departs ${ev.depTime}`}
+                      {ev.depTime && ev.arrTime && " · "}
+                      {ev.arrTime && `arrives ${ev.arrTime}`}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
     </section>
   );
 }

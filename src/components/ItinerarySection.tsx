@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { ItineraryStyle, Flight, TransportLeg } from "@/types/database";
 import { getClockFormat, formatActivityTime, type ClockFormat } from "@/lib/timeFormat";
+import { getTravelPrefs, formatTravelPrefsForPrompt } from "@/lib/travelPrefs";
 import {
   DndContext,
   closestCenter,
@@ -171,6 +172,48 @@ function buildTravelEventsContext(
 }
 
 
+/**
+ * Returns a short text badge if a day has notable travel events,
+ * so users know at a glance that the day is dominated by transit.
+ */
+function getTravelBadge(
+  day: DayRow,
+  flightsByDate: Map<string, Flight[]>,
+  transportByDate: Map<string, TransportLeg[]>
+): string | null {
+  if (!day.date) return null;
+  const dayFlights = flightsByDate.get(day.date) ?? [];
+  const dayLegs   = transportByDate.get(day.date) ?? [];
+  if (dayFlights.length === 0 && dayLegs.length === 0) return null;
+
+  // Collect departure and arrival times
+  const deps = [
+    ...dayFlights.map((f) => flightTimeToHHMM(f.departure_time)).filter(Boolean),
+    ...dayLegs.map((l) => l.departure_time?.slice(0, 5) ?? "").filter(Boolean),
+  ];
+  const arrs = [
+    ...dayFlights.map((f) => flightTimeToHHMM(f.arrival_time)).filter(Boolean),
+    ...dayLegs.map((l) => l.arrival_time?.slice(0, 5) ?? "").filter(Boolean),
+  ];
+
+  const earlyDep = deps.some((t) => t < "06:00");
+  const lateArr  = arrs.some((t) => t >= "21:00");
+  const total    = dayFlights.length + dayLegs.length;
+  const hasFlight = dayFlights.length > 0;
+  const mode = dayLegs[0]?.mode ?? null;
+
+  if (earlyDep && hasFlight) return "Early flight";
+  if (earlyDep)              return "Early departure";
+  if (lateArr && hasFlight)  return "Late arrival";
+  if (lateArr)               return "Late arrival";
+  if (total >= 2)            return "Multi-hop day";
+  if (hasFlight)             return "Flight day";
+  if (mode === "train")      return "Train day";
+  if (mode === "ferry")      return "Ferry day";
+  if (mode === "bus")        return "Bus day";
+  return "Transit day";
+}
+
 // ── Module-level sub-components ───────────────────────────────────────────────
 // These MUST live outside ItinerarySection so React sees a stable component
 // type on every render. Defining them inside would cause unmount/remount on
@@ -183,9 +226,10 @@ interface DayHeaderProps {
   onToggleCollapse: () => void;
   onDelete: () => void;
   dragHandleProps?: Record<string, unknown>;
+  travelBadge?: string | null;
 }
 
-function DayHeader({ day, displayNum, isCollapsed, onToggleCollapse, onDelete, dragHandleProps }: DayHeaderProps) {
+function DayHeader({ day, displayNum, isCollapsed, onToggleCollapse, onDelete, dragHandleProps, travelBadge }: DayHeaderProps) {
   return (
     <div className={`flex items-center justify-between ${isCollapsed ? "" : "mb-3"}`}>
       <div className="flex items-center gap-2 min-w-0">
@@ -212,6 +256,11 @@ function DayHeader({ day, displayNum, isCollapsed, onToggleCollapse, onDelete, d
             Day {displayNum}
             {day.date && <span className="ml-2 text-gray-400 dark:text-[#9fb8b8]">· {formatDayDate(day.date)}</span>}
           </span>
+          {travelBadge && (
+            <span className="shrink-0 rounded-full bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+              {travelBadge}
+            </span>
+          )}
           <svg
             className={`h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform duration-150 ${isCollapsed ? "-rotate-90" : ""}`}
             fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
@@ -236,9 +285,10 @@ interface SortableDayCardProps {
   onToggleCollapse: () => void;
   onDelete: () => void;
   children: React.ReactNode;
+  travelBadge?: string | null;
 }
 
-function SortableDayCard({ day, idx, isCollapsed, onToggleCollapse, onDelete, children }: SortableDayCardProps) {
+function SortableDayCard({ day, idx, isCollapsed, onToggleCollapse, onDelete, children, travelBadge }: SortableDayCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: day.id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -256,6 +306,7 @@ function SortableDayCard({ day, idx, isCollapsed, onToggleCollapse, onDelete, ch
           onToggleCollapse={onToggleCollapse}
           onDelete={onDelete}
           dragHandleProps={{ ...attributes, ...listeners } as Record<string, unknown>}
+          travelBadge={travelBadge}
         />
         {!isCollapsed && children}
       </div>
@@ -779,6 +830,14 @@ function ItinerarySection({
     setNotesSuggestion(null);
     setDayNotesSuggestion(null);
 
+    // Load travel prefs from localStorage and prepend to preferences
+    let effectivePrefs = preferences ?? "";
+    try {
+      const storedPrefs = getTravelPrefs();
+      const prefsText = formatTravelPrefsForPrompt(storedPrefs);
+      if (prefsText) effectivePrefs = prefsText + (effectivePrefs ? ". " + effectivePrefs : "");
+    } catch {}
+
     const num_days =
       generationScope === "1" ? 1 :
       generationScope === "3" ? 3 :
@@ -792,7 +851,7 @@ function ItinerarySection({
           destination,
           num_days,
           style,
-          preferences: preferences ?? "",
+          preferences: effectivePrefs,
           existing_day_count: days.length,
           existing_activities: [
             ...days.flatMap((d) =>
@@ -1169,6 +1228,7 @@ function ItinerarySection({
                       isCollapsed={collapsedDays.has(day.id)}
                       onToggleCollapse={() => toggleDayCollapsed(day.id)}
                       onDelete={() => handleDeleteDay(day.id)}
+                      travelBadge={getTravelBadge(day, flightsByDate, transportByDate)}
                     >
                       <ActivityList day={day} clockFormat={clockFormat} />
                       <TravelEventList day={day} flightsByDate={flightsByDate} transportByDate={transportByDate} clockFormat={clockFormat} />
@@ -1222,6 +1282,7 @@ function ItinerarySection({
                       isCollapsed={collapsedDays.has(day.id)}
                       onToggleCollapse={() => toggleDayCollapsed(day.id)}
                       onDelete={() => handleDeleteDay(day.id)}
+                      travelBadge={getTravelBadge(day, flightsByDate, transportByDate)}
                     >
                       <ActivityList day={day} clockFormat={clockFormat} />
                       <TravelEventList day={day} flightsByDate={flightsByDate} transportByDate={transportByDate} clockFormat={clockFormat} />
@@ -1280,6 +1341,7 @@ function ItinerarySection({
             isCollapsed={collapsedDays.has(day.id)}
             onToggleCollapse={() => toggleDayCollapsed(day.id)}
             onDelete={() => handleDeleteDay(day.id)}
+            travelBadge={getTravelBadge(day, flightsByDate, transportByDate)}
           >
             <TravelEventList day={day} flightsByDate={flightsByDate} transportByDate={transportByDate} clockFormat={clockFormat} />
             {day.activities.length > 0 && (
