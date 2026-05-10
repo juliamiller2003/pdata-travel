@@ -28,8 +28,6 @@ interface TripSuggestion {
   tagline: string;
   why: string;
   highlights: string[];
-  estimated_cost: number;
-  estimated_flights: number;
   best_time: string;
 }
 
@@ -56,7 +54,6 @@ export default function TakeAChancePage() {
 
   async function handleGenerate(e: React.FormEvent) {
     e.preventDefault();
-    if (vibes.length === 0) { setError("Pick at least one vibe."); return; }
     setLoading(true);
     setError(null);
     setSuggestions(null);
@@ -215,7 +212,7 @@ export default function TakeAChancePage() {
 
           {/* Vibe */}
           <div>
-            <label className="label">Vibe *</label>
+            <label className="label">Vibe (optional)</label>
             <div className="flex flex-wrap gap-2 mt-1">
               {VIBES.map((v) => (
                 <button
@@ -254,28 +251,9 @@ export default function TakeAChancePage() {
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Your options</h2>
           {suggestions.map((trip) => (
             <div key={trip.destination} className="card p-5 space-y-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">{trip.title}</h3>
-                  <p className="text-sm text-sky-600 dark:text-sky-400">{trip.destination}</p>
-                </div>
-                {trip.estimated_cost > 0 && (
-                  <div className="shrink-0 text-right space-y-0.5">
-                    <span className="block rounded-full bg-[#cadede] dark:bg-[#2e2e2e] px-2.5 py-1 text-xs font-semibold text-[#1e1e1e] dark:text-[#cadede]">
-                      ~${trip.estimated_cost.toLocaleString()} total
-                    </span>
-                    {parseInt(duration) > 0 && (
-                      <span className="block text-center text-[10px] font-medium text-[#9fb8b8]">
-                        ~${Math.round((trip.estimated_cost - (trip.estimated_flights ?? 0)) / parseInt(duration)).toLocaleString()}/day
-                      </span>
-                    )}
-                    {trip.estimated_flights > 0 && (
-                      <span className="block text-center text-[10px] text-gray-400 dark:text-[#9fb8b8]">
-                        incl. ~${trip.estimated_flights.toLocaleString()} flights
-                      </span>
-                    )}
-                  </div>
-                )}
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">{trip.title}</h3>
+                <p className="text-sm text-sky-600 dark:text-sky-400">{trip.destination}</p>
               </div>
 
               <p className="text-sm italic text-gray-500 dark:text-gray-400">{trip.tagline}</p>

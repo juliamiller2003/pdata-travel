@@ -13,30 +13,23 @@ export async function POST(req: NextRequest) {
     ? `\n- Travel month: ${new Date(travelDate + "-01").toLocaleString("en-US", { month: "long", year: "numeric" })}`
     : "";
 
-  const budgetNote = budget
-    ? `IMPORTANT: The user's total budget is $${budget} USD. Use realistic flight prices from ${location}:
-- Short-haul domestic/regional (under 2 hrs): $100–350 round-trip
-- Medium-haul (2–5 hrs): $200–600 round-trip
-- Long-haul international (5–10 hrs): $500–1200 round-trip
-- Ultra long-haul (10+ hrs): $800–2000 round-trip
-If realistic round-trip flights to an international destination would exceed 40% of the total budget, suggest domestic or nearby destinations instead where flights cost under $300. Never suggest a destination where flights alone exceed the total budget.`
-    : `Use realistic market-rate flight prices from ${location}:
-- Short-haul domestic/regional (under 2 hrs): $100–350 round-trip
-- Medium-haul (2–5 hrs): $200–600 round-trip
-- Long-haul international (5–10 hrs): $500–1200 round-trip`;
+  const vibeText = vibes?.length > 0 ? `\n- Vibe: ${vibes.join(", ")}` : "";
+
+  const budgetGuidance = budget
+    ? `IMPORTANT: The user's total budget is $${budget} USD. Only suggest destinations where flights + accommodation for ${duration} days fit within this budget.`
+    : "";
 
   const prompt = `You are a travel expert. Suggest exactly 3 trip destinations based on these constraints:
 - Starting from: ${location}
 - Willing to travel: ${distance}
-- Trip length: ${duration} days
-- Vibe: ${vibes.join(", ")}${dateText}${budgetText}${requestsText}
+- Trip length: ${duration} days${vibeText}${dateText}${budgetText}${requestsText}
 
-${budgetNote}
+${budgetGuidance}
 
 Respond with ONLY valid JSON — no markdown, no code blocks, no explanation. Use this exact structure:
-{"trips":[{"title":"Short trip name","destination":"City, Country","country_code":"XX","tagline":"One punchy sentence that sells the trip","why":"2-3 sentences explaining why this destination matches the constraints and vibe","highlights":["specific highlight 1","specific highlight 2","specific highlight 3"],"estimated_cost":1500,"estimated_flights":400,"best_time":"Month–Month"}]}
+{"trips":[{"title":"Short trip name","destination":"City, Country","country_code":"XX","tagline":"One punchy sentence that sells the trip","why":"2-3 sentences explaining why this destination matches the constraints","highlights":["specific highlight 1","specific highlight 2","specific highlight 3"],"best_time":"Month–Month"}]}
 
-country_code must be a valid ISO 3166-1 alpha-2 code. estimated_cost is the TOTAL trip cost in USD as an integer, including flights, accommodation (~$80–200/night), food, and activities for ${duration} days. estimated_flights is the realistic round-trip flight cost from ${location} in USD as an integer.${travelDate ? ` Prioritize destinations with good weather, low crowds, or notable events during the specified travel month.` : ""}`;
+country_code must be a valid ISO 3166-1 alpha-2 code.${travelDate ? ` Prioritize destinations with good weather, low crowds, or notable events during the specified travel month.` : ""}`;
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
