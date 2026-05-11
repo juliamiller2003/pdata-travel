@@ -278,10 +278,39 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/**
+ * Normalise a packing item name for fuzzy-dedup.
+ * - Strips parenthetical qualifiers: "Socks (4–5)" → "socks"
+ * - Strips slash variants: "After-sun lotion / aloe vera" → "after-sun lotion"
+ * - Strips SPF numbers: "Sunscreen SPF 50+" → "sunscreen"
+ * - Strips size qualifiers: "Deodorant (travel size)" → "deodorant"
+ * - Strips leading clothing/type modifiers: "Hiking socks" → "socks",
+ *   "Heavyweight socks" → "socks", "Rain jacket" → "jacket"
+ * - Strips leading numeric quantities: "1 versatile outfit" → "versatile outfit"
+ */
+function normaliseItemName(name: string): string {
+  let s = name.toLowerCase();
+  s = s.replace(/\s*\(.*?\)/g, "");          // strip (parenthetical)
+  s = s.replace(/\s*\/.*$/, "");             // strip / slash variants
+  s = s.replace(/\s+spf\s*[\d+]+\+?/g, ""); // strip SPF numbers
+  s = s.replace(/\s+(travel size|travel-size|mini)$/g, ""); // size qualifiers
+  // Strip leading clothing/material modifiers so "hiking socks" = "socks",
+  // "down jacket" = "jacket", "moisture-wicking shirts" = "shirts" etc.
+  s = s.replace(
+    /^(hiking|heavyweight|lightweight|quick-dry|moisture-wicking|thermal|waterproof|down|rain|light|smart|linen|casual|formal|evening|going-out|reef-safe)\s+/,
+    ""
+  );
+  s = s.replace(/^\d+\s+/, ""); // strip leading quantity "2 " / "3 "
+  return s.trim();
+}
+
+/** Items whose names indicate they are footwear (used to fix miscategorised DB rows). */
+const SHOE_RE = /\b(shoes?|boots?|sandals?|flip.?flops?|wellies|booties?|sneakers?|trainers?|heels?|loafers?)\b/i;
+
 function dedup(items: TemplateItem[]): TemplateItem[] {
   const seen = new Set<string>();
   return items.filter(({ name }) => {
-    const key = name.trim().toLowerCase();
+    const key = normaliseItemName(name);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -289,36 +318,39 @@ function dedup(items: TemplateItem[]): TemplateItem[] {
 }
 
 /**
- * Normalise a packing item name for fuzzy-dedup.
- * Strips parenthetical suffixes, slash variants, and size qualifiers so that
- * e.g. "Sunscreen (reef-safe SPF 50+)", "Sunscreen SPF 50+", and "Sunscreen"
- * all collapse to the same key, as do "After-sun lotion / aloe vera" → "after-sun lotion".
+ * Dedup saved packing items by normalised name.
+ * Also fixes footwear items that were saved under "Clothing" before the
+ * Shoes category existed.
+ * Returns:
+ *   unique    – deduplicated items with corrected categories
+ *   toDelete  – IDs of duplicate rows to remove from DB
+ *   toUpdate  – { id, category } for rows whose category needs updating in DB
  */
-function normaliseItemName(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/\s*\(.*?\)/g, "")   // strip (parenthetical)
-    .replace(/\s*\/.*$/, "")      // strip / anything after slash
-    .replace(/\s+spf\s*\d+\+?/g, "") // strip SPF 50+ etc.
-    .replace(/\s+(travel size|travel-size|mini)$/g, "") // strip size qualifiers
-    .trim();
-}
-
-/** Dedup saved packing items by name, returning unique items + IDs to delete. */
-function dedupPackingItems(items: PackingItem[]): { unique: PackingItem[]; toDelete: string[] } {
+function dedupPackingItems(items: PackingItem[]): {
+  unique: PackingItem[];
+  toDelete: string[];
+  toUpdate: { id: string; category: string }[];
+} {
   const seen = new Set<string>();
   const unique: PackingItem[] = [];
   const toDelete: string[] = [];
+  const toUpdate: { id: string; category: string }[] = [];
   for (const item of items) {
     const key = normaliseItemName(item.name);
     if (seen.has(key)) {
       toDelete.push(item.id);
     } else {
       seen.add(key);
-      unique.push(item);
+      // Remap shoe items that were saved under "Clothing" before the split
+      if (item.category === "Clothing" && SHOE_RE.test(item.name)) {
+        toUpdate.push({ id: item.id, category: "Shoes" });
+        unique.push({ ...item, category: "Shoes" });
+      } else {
+        unique.push(item);
+      }
     }
   }
-  return { unique, toDelete };
+  return { unique, toDelete, toUpdate };
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -329,8 +361,8 @@ export default function PackingListSection({ tripId, initialItems }: Props) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = createClient() as any;
 
-  // Deduplicate on load and clean up any stale DB duplicates
-  const { unique: dedupedInitial, toDelete: initialDupes } = dedupPackingItems(initialItems);
+  // Deduplicate on load, fix shoe categories, clean up stale DB rows
+  const { unique: dedupedInitial, toDelete: initialDupes, toUpdate: initialCategoryFixes } = dedupPackingItems(initialItems);
 
   // ── Packing list state ──────────────────────────────────────────────────────
   const [items, setItems]         = useState<PackingItem[]>(dedupedInitial);
@@ -342,11 +374,14 @@ export default function PackingListSection({ tripId, initialItems }: Props) {
   // ── View state ──────────────────────────────────────────────────────────────
   const [view, setView] = useState<View>(dedupedInitial.length === 0 ? "select" : "list");
 
-  // ── Clean up DB duplicates on mount ─────────────────────────────────────────
+  // ── Clean up DB duplicates + fix shoe categories on mount ───────────────────
   useEffect(() => {
     if (initialDupes.length > 0) {
       db.from("packing_items").delete().in("id", initialDupes);
     }
+    initialCategoryFixes.forEach(({ id, category }) => {
+      db.from("packing_items").update({ category }).eq("id", id);
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -435,9 +470,9 @@ export default function PackingListSection({ tripId, initialItems }: Props) {
 
     const unique = dedup(combined);
 
-    // Exclude items already in the list
-    const existingNames = new Set(items.map((i) => i.name.trim().toLowerCase()));
-    const toAdd = unique.filter(({ name }) => !existingNames.has(name.trim().toLowerCase()));
+    // Exclude items already in the list (using normalised names to catch variants)
+    const existingNames = new Set(items.map((i) => normaliseItemName(i.name)));
+    const toAdd = unique.filter(({ name }) => !existingNames.has(normaliseItemName(name)));
 
     if (toAdd.length > 0) {
       const { data, error } = await db.from("packing_items")
