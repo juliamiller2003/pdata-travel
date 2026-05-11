@@ -108,15 +108,9 @@ function computeDuration(start: string | null, end: string | null): number | nul
 
 function flightTimeToHHMM(iso: string | null): string {
   if (!iso) return "";
-  if (iso.includes("T")) {
-    try {
-      const d = new Date(iso);
-      return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-    } catch {
-      return iso.slice(11, 16);
-    }
-  }
-  return iso.slice(0, 5);
+  // Extract HH:MM directly from the string — no Date() construction so there is
+  // no timezone conversion that would differ between server (UTC) and browser.
+  return iso.slice(11, 16) || iso.slice(0, 5);
 }
 
 /**
@@ -249,6 +243,7 @@ function DayHeader({ day, displayNum, isCollapsed, onToggleCollapse, onDelete, d
             tabIndex={-1}
             className="cursor-grab active:cursor-grabbing touch-none text-gray-300 hover:text-gray-400 transition-colors shrink-0"
             title="Drag to reorder"
+            suppressHydrationWarning
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 8h16M4 16h16" />
