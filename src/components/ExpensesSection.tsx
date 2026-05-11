@@ -43,6 +43,14 @@ export default function ExpensesSection({ tripId, budget, initialExpenses, start
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // "today" is deferred to the client — the server doesn't know the user's local date,
+  // so computing new Date() at render time causes hydration mismatch #418/#425.
+  const [todayMs, setTodayMs] = useState<number | null>(null);
+  useEffect(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    setTodayMs(d.getTime());
+  }, []);
 
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
@@ -65,12 +73,10 @@ export default function ExpensesSection({ tripId, budget, initialExpenses, start
   })();
   const dailyBudget = budget && tripDays ? budget / tripDays : null;
   const daysElapsed = (() => {
-    if (!startDate || !tripDays) return null;
+    if (!startDate || !tripDays || todayMs === null) return null;
     const start = new Date(startDate);
     start.setHours(0, 0, 0, 0);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const elapsed = Math.round((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const elapsed = Math.round((todayMs - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     return Math.min(Math.max(elapsed, 1), tripDays);
   })();
   const daysRemaining = tripDays && daysElapsed != null ? tripDays - daysElapsed : null;

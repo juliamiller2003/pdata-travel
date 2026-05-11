@@ -144,7 +144,7 @@ function LegCard({ leg, onDelete }: { leg: TransportLeg; onDelete: () => void })
       {/* Meta row */}
       <div className="flex flex-wrap gap-3 text-xs text-gray-400 dark:text-[#9fb8b8]">
         {leg.duration && <span>{leg.duration}</span>}
-        {leg.cost != null && <span>{leg.cost.toLocaleString()}</span>}
+        {leg.cost != null && <span>{leg.cost.toLocaleString("en-US")}</span>}
         {leg.booking_ref && <span>{leg.booking_ref}</span>}
       </div>
 

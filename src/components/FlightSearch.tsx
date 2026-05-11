@@ -13,11 +13,18 @@ interface FlightSearchProps {
 
 function formatTime(iso: string | null) {
   if (!iso) return "—";
-  return new Date(iso).toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
+  // Extract HH:MM directly from the string so we always show the local departure/arrival
+  // time as stored — no Date() construction means no timezone conversion that would
+  // cause server/client hydration mismatches.
+  const timePart = iso.includes("T") ? iso.slice(11, 16) : iso.slice(0, 5);
+  if (!timePart.includes(":")) return iso;
+  const [hStr, mStr] = timePart.split(":");
+  const h = parseInt(hStr, 10);
+  const m = parseInt(mStr, 10);
+  if (isNaN(h) || isNaN(m)) return iso;
+  const period = h >= 12 ? "PM" : "AM";
+  const hour12 = h % 12 || 12;
+  return `${hour12}:${String(m).padStart(2, "0")} ${period}`;
 }
 
 export default function FlightSearch({ tripId, onFlightAdded, defaultDate }: FlightSearchProps) {
@@ -331,7 +338,15 @@ export default function FlightSearch({ tripId, onFlightAdded, defaultDate }: Fli
 export function FlightCard({ flight, onDelete }: { flight: Flight; onDelete: () => void }) {
   function formatTime(iso: string | null) {
     if (!iso) return "—";
-    return new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+    const timePart = iso.includes("T") ? iso.slice(11, 16) : iso.slice(0, 5);
+    if (!timePart.includes(":")) return iso;
+    const [hStr, mStr] = timePart.split(":");
+    const h = parseInt(hStr, 10);
+    const m = parseInt(mStr, 10);
+    if (isNaN(h) || isNaN(m)) return iso;
+    const period = h >= 12 ? "PM" : "AM";
+    const hour12 = h % 12 || 12;
+    return `${hour12}:${String(m).padStart(2, "0")} ${period}`;
   }
 
   return (
@@ -382,7 +397,7 @@ export function FlightCard({ flight, onDelete }: { flight: Flight; onDelete: () 
 
       {flight.distance_miles != null && (
         <p className="mt-2 text-xs text-gray-400 dark:text-[#9fb8b8] text-right">
-          {flight.distance_miles.toLocaleString()} mi
+          {flight.distance_miles.toLocaleString("en-US")} mi
         </p>
       )}
     </div>
