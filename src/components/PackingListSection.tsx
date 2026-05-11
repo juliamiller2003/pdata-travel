@@ -327,6 +327,8 @@ const RENAME_ALIASES: Record<string, string> = {
   "toothbrush & toiletries": "toothbrush & toothpaste",
   // "Wellies / waterproof boots" → slash-drop → "wellies"; map to same key as "Waterproof boots" → "boots"
   "wellies": "boots",
+  // "Comfortable shoes for long days" → strip "comfortable" → "shoes for long days"
+  "shoes for long days": "walking shoes",
 };
 
 function dedup(items: TemplateItem[]): TemplateItem[] {
