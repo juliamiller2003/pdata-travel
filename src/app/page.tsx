@@ -95,33 +95,46 @@ export default function MarketingPage() {
   return (
     <div className="bg-[#efefef] dark:bg-[#1e1e1e]">
 
-      {/* Hero */}
-      <section className="mx-auto max-w-3xl px-4 sm:px-6 pt-20 pb-16">
-        <div className="inline-flex items-center gap-2 rounded-full bg-[#cadede] dark:bg-[#2e2e2e] px-3 py-1 text-xs font-medium text-[#1e1e1e] dark:text-[#cadede] mb-6">
-          Free during beta
-        </div>
-        <h1 className="text-4xl sm:text-5xl font-bold text-[#1e1e1e] dark:text-[#efefef] leading-tight tracking-tight max-w-2xl">
-          Built for people who travel with a backpack, not a suitcase.
-        </h1>
-        <p className="mt-5 text-lg text-gray-500 dark:text-[#9fb8b8] max-w-xl leading-relaxed">
-          Pathway keeps your routes, budget, and notes in one place — so you can spend less time planning and more time finding the places that aren&apos;t on the map.
-        </p>
-        <div className="mt-8 flex flex-col sm:flex-row items-start gap-3">
-          <Link
-            href="/login"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#1e1e1e] dark:bg-[#9fb8b8] px-6 py-3 text-sm font-semibold text-white dark:text-[#1e1e1e] hover:opacity-90 transition-opacity"
-          >
-            Start planning free
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-            </svg>
-          </Link>
-          <Link
-            href="/login"
-            className="w-full sm:w-auto inline-flex items-center justify-center rounded-xl border border-[#e0e0e0] dark:border-[#2e2e2e] bg-white dark:bg-transparent px-6 py-3 text-sm font-medium text-[#1e1e1e] dark:text-[#efefef] hover:border-[#9fb8b8] transition-colors"
-          >
-            Sign in
-          </Link>
+      {/* Hero — full-width photo with overlay */}
+      <section className="relative w-full overflow-hidden" style={{ minHeight: "520px" }}>
+        {/* Background photo */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/og.jpg"
+          alt="Volcano sunrise"
+          className="absolute inset-0 h-full w-full object-cover object-center"
+        />
+        {/* Gradient overlay — dark at bottom for text legibility */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
+
+        {/* Content */}
+        <div className="relative mx-auto max-w-3xl px-6 sm:px-8 py-24 sm:py-32 flex flex-col items-start justify-end h-full" style={{ minHeight: "520px" }}>
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 px-3 py-1 text-xs font-medium text-white/90 mb-5">
+            Free during beta
+          </div>
+          <h1 className="text-4xl sm:text-5xl font-bold text-white leading-tight tracking-tight max-w-2xl drop-shadow-sm">
+            Built for people who travel with a backpack, not a suitcase.
+          </h1>
+          <p className="mt-4 text-base sm:text-lg text-white/80 max-w-xl leading-relaxed">
+            Pathway keeps your routes, budget, and notes in one place — so you can spend less time planning and more time finding the places that aren&apos;t on the map.
+          </p>
+          <div className="mt-8 flex flex-col sm:flex-row items-start gap-3">
+            <Link
+              href="/login"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#cadede] px-6 py-3 text-sm font-semibold text-[#1e1e1e] hover:opacity-90 transition-opacity"
+            >
+              Start planning free
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+              </svg>
+            </Link>
+            <Link
+              href="/login"
+              className="w-full sm:w-auto inline-flex items-center justify-center rounded-xl border border-white/30 bg-white/10 backdrop-blur-sm px-6 py-3 text-sm font-medium text-white hover:bg-white/20 transition-colors"
+            >
+              Sign in
+            </Link>
+          </div>
         </div>
       </section>
 
