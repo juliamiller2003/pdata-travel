@@ -110,25 +110,31 @@ export default async function TripsPage() {
 
       {/* Trip grid */}
       {allTrips.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 py-24 text-center">
-          <svg
-            className="mb-4 h-12 w-12 text-gray-300"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
-            <path d="M2 12h20" />
-          </svg>
-          <p className="text-lg font-medium text-gray-500">No trips yet</p>
-          <p className="mt-1 text-sm text-gray-400">Plan your first adventure.</p>
-          <Link href="/trips/new" className="btn-primary mt-6">
-            + New Trip
-          </Link>
+        <div className="rounded-2xl border border-gray-200 dark:border-[#2e2e2e] overflow-hidden">
+          {/* Welcome header */}
+          <div className="bg-[#cadede]/40 dark:bg-[#2e2e2e]/60 px-6 py-8 text-center">
+            <p className="text-2xl font-bold text-gray-900 dark:text-[#efefef]">Welcome to Pathway 👋</p>
+            <p className="mt-2 text-sm text-gray-500 dark:text-[#9fb8b8] max-w-sm mx-auto">
+              Your trip planner for backpackers. Create your first trip to get started.
+            </p>
+            <Link href="/trips/new" className="btn-primary mt-5 inline-block">
+              + Create your first trip
+            </Link>
+          </div>
+          {/* Feature highlights */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-gray-100 dark:divide-[#2e2e2e]">
+            {[
+              { emoji: "🗺️", title: "Itinerary", desc: "Plan day-by-day or let AI build a draft for you" },
+              { emoji: "💸", title: "Budget tracker", desc: "Log expenses by category and track your spend" },
+              { emoji: "🎒", title: "Packing lists", desc: "Build from templates and check items off as you go" },
+            ].map(({ emoji, title, desc }) => (
+              <div key={title} className="px-6 py-5 text-center">
+                <p className="text-2xl">{emoji}</p>
+                <p className="mt-2 text-sm font-semibold text-gray-700 dark:text-[#efefef]">{title}</p>
+                <p className="mt-1 text-xs text-gray-400 dark:text-[#9fb8b8]">{desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       ) : (
         <div className="divide-y divide-gray-100 dark:divide-transparent">

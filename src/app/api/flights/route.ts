@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
   // ── AviationStack (real-time only, free plan = live flights) ─
   if (aviationKey) {
     try {
-      const url = `http://api.aviationstack.com/v1/flights?access_key=${aviationKey}&flight_iata=${flightNumber}&flight_date=${date}`;
+      const url = `https://api.aviationstack.com/v1/flights?access_key=${aviationKey}&flight_iata=${flightNumber}&flight_date=${date}`;
       const res = await fetch(url, { next: { revalidate: 3600 } });
       const json = await res.json();
 
