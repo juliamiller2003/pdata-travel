@@ -207,6 +207,7 @@ Return ONLY a JSON object with this exact structure (no markdown, no commentary)
 
 Rules:
 - ${paceLine}${styleLine ? `\n- ${styleLine}` : ""}
+- GEOGRAPHIC ACCURACY IS MANDATORY: Never describe a district, area, or landmark as being inside a different district or area. Districts, neighbourhoods, and streets are distinct — do not list them as sub-areas of each other. If you are not certain of the exact location of something, omit it rather than guess. Bad example: "Da'an district (Ximending and Xinyi streets)" — Ximending is in Wanhua District and Xinyi is a separate district; neither is in Da'an. The place_name and title must reflect where the activity actually is. Never invent street names, sub-areas, or parenthetical locations that are not part of the named place.
 - SPECIFICITY IS MANDATORY: Every single activity must be a real, named place or experience that exists. Use the actual name — not a category or description of it. Bad examples that will be rejected: "Taipei culture and food workshop", "local cooking class", "beverage tasting", "learn traditional cuisine", "local market visit", "temple tour", "scenic viewpoint". Good examples: "Longshan Temple", "Addiction Aquatic Development seafood market", "Raw restaurant", "Beitou Hot Spring Museum", "Wistaria Tea House", "Raohe Street Night Market"
 - If you suggest a cooking class, name the specific school or operator (e.g. "Taipei Homecooking"). If you suggest a food experience, name the exact dish and stall or restaurant
 - Meals: only include if it is a specific named restaurant or stall. No generic "lunch", "dinner", "food tour", or "tasting". Only suggest a venue for a meal they actually serve
@@ -236,6 +237,7 @@ Style rules:
 - Just facts: place names, rough times, what to do, what to eat, practical tips
 - ${paceLine}${styleFragment}
 - SPECIFICITY IS MANDATORY: every place must be a real named venue — no "local cooking class", "beverage tasting", "food workshop", "temple tour", or any other category label. Use the actual name of the place
+- GEOGRAPHIC ACCURACY IS MANDATORY: never describe a district or area as containing places that belong to a different district. Districts, neighbourhoods, and streets are distinct — do not conflate them or invent parenthetical sub-locations. If uncertain of the exact location of something, omit it rather than guess.
 - GEOGRAPHIC COHERENCE: each day must be anchored to one zone or neighbourhood of ${destination}. All places that day must be reachable from each other without major backtracking. If the destination covers a large area, move through it systematically — one section per day, never bouncing between distant areas
 - TRAVEL EVENTS: if a day has a flight or transport in the fixed schedule above, mention it in the notes and only suggest activities that fit around it. Arrival day: activities from arrival time onward. Departure day: activities only before departure, with time to reach the airport/station
 - Realistic timing (night markets from 6pm+, sunrise spots before 7am)
