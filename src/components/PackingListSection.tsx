@@ -85,7 +85,7 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
   weekend: {
     label: "Weekend", sub: "Short trip · 10 items",
     items: [
-      { name: "Passport / ID",        category: "Documents"  },
+      { name: "Passport + copies",        category: "Documents"  },
       { name: "T-shirts (2)",         category: "Clothing"   },
       { name: "Underwear (2)",        category: "Clothing"   },
       { name: "Socks (2)",            category: "Clothing"   },
@@ -175,7 +175,7 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
   city: {
     label: "City", sub: "Light & smart · 18 items",
     items: [
-      { name: "Passport / ID",                                     category: "Documents"     },
+      { name: "Passport + copies",                                     category: "Documents"     },
       { name: "Travel insurance details",                          category: "Documents"     },
       { name: "T-shirts (3)",                                      category: "Clothing"      },
       { name: "One smart / evening outfit",                        category: "Clothing"      },
@@ -222,7 +222,7 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
     label: "Festival", sub: "Outdoor events · 20 items",
     items: [
       { name: "Ticket / wristband confirmation",              category: "Documents"     },
-      { name: "Passport / ID",                                category: "Documents"     },
+      { name: "Passport + copies",                                category: "Documents"     },
       { name: "Festival outfit (1–2)",                        category: "Clothing"      },
       { name: "Comfortable shoes for long days",              category: "Clothing"      },
       { name: "Wellies / waterproof boots",                   category: "Clothing"      },
