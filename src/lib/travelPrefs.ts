@@ -6,6 +6,10 @@ export interface TravelPrefs {
   style: TravelStyle | "";
   interests: string[];
   dietary: string[];
+  daily_budget?: number | null;      // NEW
+  currency?: string;                  // NEW e.g. "USD", "THB"
+  fitness?: string;                   // NEW e.g. "happy to hike 20km", "prefer light days"
+  avoid?: string;                     // NEW e.g. "crowded tourist spots, early mornings"
 }
 
 const KEY = "pathway-travel-prefs";
@@ -70,5 +74,8 @@ export function formatTravelPrefsForPrompt(prefs: TravelPrefs): string {
   if (prefs.style === "comfort") parts.push("Comfort travel — prefer sit-down restaurants, private experiences");
   if (prefs.interests.length > 0) parts.push(`Interests: ${prefs.interests.join(", ")}`);
   if (prefs.dietary.length > 0)   parts.push(`Dietary needs: ${prefs.dietary.join(", ")} — suggest restaurants and food that cater to this`);
+  if (prefs.daily_budget)         parts.push(`Daily budget: ${prefs.daily_budget} ${prefs.currency || "USD"} per day (all-in)`);
+  if (prefs.fitness?.trim())      parts.push(`Physical fitness/mobility: ${prefs.fitness.trim()}`);
+  if (prefs.avoid?.trim())        parts.push(`Things to avoid: ${prefs.avoid.trim()}`);
   return parts.join(". ");
 }

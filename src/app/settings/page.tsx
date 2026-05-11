@@ -23,7 +23,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [travelPrefs, setTravelPrefsState] = useState<TravelPrefs>({ pace: "", style: "", interests: [], dietary: [] });
+  const [travelPrefs, setTravelPrefsState] = useState<TravelPrefs>({ pace: "", style: "", interests: [], dietary: [], daily_budget: null, currency: "USD", fitness: "", avoid: "" });
   const [sectionVisibility, setSectionVisibilityState] = useState<Record<SectionKey, boolean>>({
     itinerary: true, map: true, flights: true, expenses: true, journal: true,
   });
@@ -408,6 +408,65 @@ export default function SettingsPage() {
                 );
               })}
             </div>
+          </div>
+
+          {/* Daily budget */}
+          <div>
+            <label className="label">Daily budget</label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={travelPrefs.daily_budget ?? ""}
+                  onChange={(e) => updateTravelPrefs({ daily_budget: e.target.value ? parseInt(e.target.value) : null })}
+                  placeholder="e.g. 50"
+                  className="input pl-6"
+                />
+              </div>
+              <select
+                value={travelPrefs.currency ?? "USD"}
+                onChange={(e) => updateTravelPrefs({ currency: e.target.value })}
+                className="input w-28"
+              >
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+                <option value="AUD">AUD</option>
+                <option value="THB">THB</option>
+                <option value="JPY">JPY</option>
+                <option value="SGD">SGD</option>
+                <option value="MYR">MYR</option>
+                <option value="IDR">IDR</option>
+                <option value="VND">VND</option>
+              </select>
+            </div>
+            <p className="mt-1 text-xs text-gray-400">Per day, all-in — helps the AI avoid over-budget suggestions</p>
+          </div>
+
+          {/* Fitness / mobility */}
+          <div>
+            <label className="label">Physical fitness / mobility</label>
+            <input
+              type="text"
+              value={travelPrefs.fitness ?? ""}
+              onChange={(e) => updateTravelPrefs({ fitness: e.target.value })}
+              placeholder="e.g. happy to hike 15km, prefer flat walks, wheelchair user"
+              className="input"
+            />
+          </div>
+
+          {/* Things to avoid */}
+          <div>
+            <label className="label">Things to avoid</label>
+            <input
+              type="text"
+              value={travelPrefs.avoid ?? ""}
+              onChange={(e) => updateTravelPrefs({ avoid: e.target.value })}
+              placeholder="e.g. early mornings, very crowded places, spicy food"
+              className="input"
+            />
           </div>
 
           {(travelPrefs.pace || travelPrefs.style || travelPrefs.interests.length > 0 || travelPrefs.dietary.length > 0) && (

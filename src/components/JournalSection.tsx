@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SupabaseClient = any;
 
 type Entry = {
   id: string;
@@ -22,6 +24,8 @@ interface JournalSectionProps {
   tripId: string;
   initialEntries: Entry[];
   initialDays?: DayOption[];
+  onProfileUpdated?: (profile: string) => void;
+  userId?: string;
 }
 
 function formatDayDate(date: string | null) {
@@ -29,10 +33,9 @@ function formatDayDate(date: string | null) {
   return new Date(date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export default function JournalSection({ tripId, initialEntries, initialDays = [] }: JournalSectionProps) {
+export default function JournalSection({ tripId, initialEntries, initialDays = [], onProfileUpdated, userId }: JournalSectionProps) {
   const supabase = createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = supabase as any;
+  const db = supabase as SupabaseClient;
 
   const [entries, setEntries] = useState<Entry[]>(initialEntries);
 
@@ -67,6 +70,30 @@ export default function JournalSection({ tripId, initialEntries, initialDays = [
     setEditingId(null);
   }
 
+  // Run journal insight extraction in background after save
+  async function extractInsights(allEntries: Entry[]) {
+    try {
+      const res = await fetch("/api/extract-journal-insights", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entries: allEntries.slice(0, 10) }),
+      });
+      const data = await res.json();
+      if (data.profile) {
+        if (onProfileUpdated) {
+          onProfileUpdated(data.profile);
+        }
+        if (userId) {
+          const dbClient = createClient() as SupabaseClient;
+          await dbClient.from("user_settings").upsert({
+            user_id: userId,
+            journal_profile: data.profile,
+          });
+        }
+      }
+    } catch {}
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!content.trim()) return;
@@ -88,7 +115,10 @@ export default function JournalSection({ tripId, initialEntries, initialDays = [
         .single();
 
       if (!error && data) {
-        setEntries((prev) => prev.map((e) => e.id === editingId ? { ...e, ...data } : e));
+        const updatedEntries = entries.map((e) => e.id === editingId ? { ...e, ...data } : e);
+        setEntries(updatedEntries);
+        // Fire-and-forget insight extraction
+        extractInsights(updatedEntries);
       }
     } else {
       const { data, error } = await db
@@ -98,7 +128,10 @@ export default function JournalSection({ tripId, initialEntries, initialDays = [
         .single();
 
       if (!error && data) {
-        setEntries((prev) => [data, ...prev]);
+        const newEntries = [data, ...entries];
+        setEntries(newEntries);
+        // Fire-and-forget insight extraction
+        extractInsights(newEntries);
       }
     }
 

@@ -1,6 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { ItineraryStyle } from "@/types/database";
 
+const SYSTEM_PROMPT = `You are a seasoned backpacker and travel planner who has traveled solo through 50+ countries on a budget. You give recommendations the way a well-traveled friend would — specific, honest, and practical.
+
+Your recommendations always:
+- Prioritise authentic local experiences over tourist traps
+- Suggest budget options first (hostels, street food, local transport)
+- Include realistic time and cost estimates in local currency
+- Flag common scams or mistakes first-time visitors make
+- Recommend the best free or cheap activities alongside paid ones
+- Suggest the best time of day to visit crowded spots
+
+Avoid:
+- Generic advice found on any travel blog
+- Recommending anything primarily aimed at resort or luxury tourists
+- Vague suggestions like "explore the old town" without specifics
+- Over-scheduling — backpackers need flex time and spontaneity
+
+Never suggest:
+- Any restaurant or attraction that primarily caters to tourists (Hard Rock Cafe, rooftop bars in tourist districts, "international cuisine")
+- Grab/Uber/taxi when public transit or a tuk-tuk exists
+- Guided tours or "experiences" that require advance booking, unless there is genuinely no alternative or it is a true highlight
+- Anything described as "luxury", "premium", or "five-star"
+- Generic hotel-area restaurants
+
+Always prefer:
+- Street food stalls and local markets over sit-down restaurants
+- Neighbourhoods where travellers and locals mix (not expat or tourist enclaves)
+- Free or under-$5 activities where possible
+- Public transit with the actual route (bus number, line name, fare)
+- Spots with a social atmosphere where you might meet other travellers`;
+
 interface SuggestRequest {
   destination: string;
   num_days: number;
@@ -15,6 +45,11 @@ interface SuggestRequest {
   trip_start_date?: string;
   trip_end_date?: string;
   trip_countries?: string[];
+  daily_budget?: number | null;
+  currency?: string;
+  fitness?: string;
+  avoid?: string;
+  journal_profile?: string;
 }
 
 // ── Pace & style rules ────────────────────────────────────────────────────────
@@ -92,9 +127,39 @@ function buildDestinationContext(
   return lines.length > 0 ? "\n" + lines.join("\n") : "";
 }
 
-function buildPrompt(destination: string, num_days: number, style: ItineraryStyle, preferences: string, existing_activities: string[], existing_day_count: number, existing_notes?: string, travel_events?: string, user_pace?: string, user_style?: string, trip_start_date?: string, trip_countries?: string[]) {
+function buildPrompt(
+  destination: string,
+  num_days: number,
+  style: ItineraryStyle,
+  preferences: string,
+  existing_activities: string[],
+  existing_day_count: number,
+  existing_notes?: string,
+  travel_events?: string,
+  user_pace?: string,
+  user_style?: string,
+  trip_start_date?: string,
+  trip_countries?: string[],
+  daily_budget?: number | null,
+  currency?: string,
+  fitness?: string,
+  avoid?: string,
+  journal_profile?: string,
+) {
   const destContext = buildDestinationContext(destination, num_days, existing_day_count, trip_start_date, trip_countries);
   const pref = preferences.trim() ? `\nUser preferences: ${preferences.trim()}` : "";
+  const budgetLine = daily_budget
+    ? `\nDaily budget: ${daily_budget} ${currency || "USD"} per day (all-in)`
+    : "";
+  const fitnessLine = fitness?.trim()
+    ? `\nPhysical fitness/mobility: ${fitness.trim()}`
+    : "";
+  const avoidLine = avoid?.trim()
+    ? `\nThings to avoid: ${avoid.trim()}`
+    : "";
+  const journalLine = journal_profile?.trim()
+    ? `\nPersonalisation from past trips: ${journal_profile.trim()}`
+    : "";
   const existing = existing_activities.length > 0
     ? `\nBanned — do NOT suggest any of these or anything at the same venue, even under a different name or framing: ${existing_activities.join(", ")}`
     : "";
@@ -113,15 +178,26 @@ function buildPrompt(destination: string, num_days: number, style: ItineraryStyl
 
   if (style === "structured") {
     const paceLine = paceRule(user_pace, "structured");
-    return `You are a travel expert planning a trip to ${destination}. ${tripContext}${destContext}${pref}${existing}${existingNotesContext}${travelEventsContext}
+    return `You are a travel expert planning a trip to ${destination}. ${tripContext}${destContext}${pref}${budgetLine}${fitnessLine}${avoidLine}${journalLine}${existing}${existingNotesContext}${travelEventsContext}
+
+Before generating the itinerary, write the traveler_note field first — briefly note what kind of traveler this destination suits and the biggest mistake first-timers make. This shapes the entire itinerary.
 
 Return ONLY a JSON object with this exact structure (no markdown, no commentary):
 {
+  "traveler_note": "One sentence on what kind of traveler this destination suits and the single biggest mistake first-timers make here",
   "days": [
     {
       "day_number": ${startDay},
       "activities": [
-        { "time": "09:00", "title": "Activity name", "place_name": "Specific place or null" }
+        {
+          "time": "09:00",
+          "title": "Activity name",
+          "place_name": "Specific venue or landmark name",
+          "cost": "Free / 40 THB entry",
+          "transport": "Specific transit: bus #8 from X, 8 THB, 20 min — or 'Walk 10 min south from Y'",
+          "local_tip": "One thing only regulars know — best time, hidden entrance, secret order, etc.",
+          "watch_out": "One specific scam, tourist trap, or common mistake — or null if none"
+        }
       ]
     }
   ]
@@ -145,7 +221,7 @@ Rules:
   const styleFragment = styleLine ? `\n- ${styleLine}` : "";
 
   if (style === "notes") {
-    return `You are a travel planner writing quick personal notes for a trip to ${destination}. ${tripContext}${destContext}${pref}${existing}${existingNotesContext}${travelEventsContext}
+    return `You are a travel planner writing quick personal notes for a trip to ${destination}. ${tripContext}${destContext}${pref}${budgetLine}${fitnessLine}${avoidLine}${journalLine}${existing}${existingNotesContext}${travelEventsContext}
 
 Return ONLY a JSON object:
 { "content": "Day ${startDay}\\n\\n9am - ...\\n\\nAfternoon - ..." }
@@ -164,7 +240,7 @@ Style rules:
   }
 
   if (style === "notes_day_night") {
-    return `You are a travel planner writing quick personal notes for a trip to ${destination}. ${tripContext}${destContext}${pref}${existing}${existingNotesContext}${travelEventsContext}
+    return `You are a travel planner writing quick personal notes for a trip to ${destination}. ${tripContext}${destContext}${pref}${budgetLine}${fitnessLine}${avoidLine}${journalLine}${existing}${existingNotesContext}${travelEventsContext}
 
 Return ONLY a JSON object:
 {
@@ -191,7 +267,7 @@ Style rules:
   }
 
   // notes_day_afternoon_night
-  return `You are a travel planner writing quick personal notes for a trip to ${destination}. ${tripContext}${destContext}${pref}${existing}${existingNotesContext}${travelEventsContext}
+  return `You are a travel planner writing quick personal notes for a trip to ${destination}. ${tripContext}${destContext}${pref}${budgetLine}${fitnessLine}${avoidLine}${journalLine}${existing}${existingNotesContext}${travelEventsContext}
 
 Return ONLY a JSON object:
 {
@@ -218,11 +294,45 @@ Style rules:
 - Include rough times where useful`;
 }
 
+function buildReviewPrompt(itineraryJson: string, daily_budget?: number | null, currency?: string): string {
+  const budgetCheck = daily_budget
+    ? `3. Any day where total activity costs exceed ${daily_budget} ${currency || "USD"}`
+    : "";
+  return `Review this backpacker itinerary and silently fix any issues found:
+1. Replace any generic tourist advice or vague suggestions with specific, named local alternatives
+2. Remove anything that sounds like a Lonely Planet headline or resort-tourism recommendation${budgetCheck ? `\n${budgetCheck}` : ""}
+4. Flag any day that is over-scheduled (more activities than the pace warrants)
+
+Return the corrected itinerary in the EXACT same JSON format — same structure, same fields. If nothing needs fixing, return it unchanged. Return ONLY the JSON, no commentary.
+
+Itinerary to review:
+${itineraryJson}`;
+}
+
 export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "Not configured" }, { status: 500 });
 
-  const { destination, num_days, style, preferences, existing_activities = [], existing_day_count = 0, existing_notes = "", travel_events = "", user_pace = "", user_style = "", trip_start_date, trip_end_date: _trip_end_date, trip_countries }: SuggestRequest = await req.json();
+  const {
+    destination,
+    num_days,
+    style,
+    preferences,
+    existing_activities = [],
+    existing_day_count = 0,
+    existing_notes = "",
+    travel_events = "",
+    user_pace = "",
+    user_style = "",
+    trip_start_date,
+    trip_end_date: _trip_end_date,
+    trip_countries,
+    daily_budget,
+    currency,
+    fitness,
+    avoid,
+    journal_profile,
+  }: SuggestRequest = await req.json();
 
   const VALID_STYLES: ItineraryStyle[] = ["structured", "notes", "notes_day_night", "notes_day_afternoon_night"];
 
@@ -234,7 +344,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid itinerary style" }, { status: 400 });
   }
 
-  const prompt = buildPrompt(destination, num_days, style, preferences ?? "", existing_activities, existing_day_count, existing_notes, travel_events, user_pace, user_style, trip_start_date, trip_countries);
+  const prompt = buildPrompt(
+    destination,
+    num_days,
+    style,
+    preferences ?? "",
+    existing_activities,
+    existing_day_count,
+    existing_notes,
+    travel_events,
+    user_pace,
+    user_style,
+    trip_start_date,
+    trip_countries,
+    daily_budget,
+    currency,
+    fitness,
+    avoid,
+    journal_profile,
+  );
 
   let anthropicRes: Response;
   try {
@@ -248,6 +376,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model: "claude-haiku-4-5",
         max_tokens: 8192,
+        system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: prompt }],
       }),
     });
@@ -278,6 +407,39 @@ export async function POST(req: NextRequest) {
 
   if (!text) {
     return NextResponse.json({ error: `Empty response from AI (stop_reason: ${stopReason})` }, { status: 500 });
+  }
+
+  // Review pass for structured itineraries
+  if (style === "structured") {
+    try {
+      const reviewPrompt = buildReviewPrompt(text, daily_budget, currency);
+      const reviewRes = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5",
+          max_tokens: 8192,
+          system: SYSTEM_PROMPT,
+          messages: [{ role: "user", content: reviewPrompt }],
+        }),
+      });
+      if (reviewRes.ok) {
+        const reviewData = await reviewRes.json();
+        const reviewText = ((reviewData.content ?? [])
+          .filter((b: { type: string }) => b.type === "text")
+          .map((b: { text: string }) => b.text)
+          .join("") as string)
+          .trim()
+          .replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
+        if (reviewText) text = reviewText;
+      }
+    } catch {
+      // Review pass failed — use original
+    }
   }
 
   try {

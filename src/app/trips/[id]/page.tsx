@@ -84,7 +84,7 @@ export default async function TripDetailPage({ params }: TripPageProps) {
       .order("date", { ascending: false }),
     db
       .from("user_settings")
-      .select("home_country_code")
+      .select("home_country_code, journal_profile")
       .eq("user_id", user.id)
       .single(),
     db
@@ -110,6 +110,7 @@ export default async function TripDetailPage({ params }: TripPageProps) {
   const tripStatus = effectiveStatus(trip);
   const homeCountryCode = userSettings?.home_country_code ?? null;
   const homeCountryName = homeCountryCode ? (byAlpha2[homeCountryCode]?.name ?? null) : null;
+  const journalProfile = (userSettings as any)?.journal_profile ?? null; // eslint-disable-line @typescript-eslint/no-explicit-any
 
   // Flatten all activities across itinerary days for the map, preserving day_number for filtering
   const allActivities = itinerary.flatMap((day: any) => // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -268,6 +269,7 @@ export default async function TripDetailPage({ params }: TripPageProps) {
           flights={flights}
           transportLegs={transportLegsData ?? []}
           tripCountries={(trip.country_codes as string[] | null) ?? []}
+          journalProfile={journalProfile}
         />
       </SectionGuard>
 
@@ -321,6 +323,7 @@ export default async function TripDetailPage({ params }: TripPageProps) {
             tripId={id}
             initialEntries={entries ?? []}
             initialDays={itinerary.map((d: any) => ({ id: d.id, day_number: d.day_number, date: d.date }))} // eslint-disable-line @typescript-eslint/no-explicit-any
+            userId={user.id}
           />
         </section>
       </SectionGuard>

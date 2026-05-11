@@ -44,7 +44,15 @@ type DayRow = {
   activities: ActivityRow[];
 };
 
-type SuggestedActivity = { time: string | null; title: string; place_name: string | null };
+type SuggestedActivity = {
+  time: string | null;
+  title: string;
+  place_name: string | null;
+  cost?: string | null;
+  transport?: string | null;
+  local_tip?: string | null;
+  watch_out?: string | null;
+};
 type SuggestedDay = { day_number: number; activities: SuggestedActivity[] };
 type SuggestedDayNotes = { day_number: number; sections: Record<string, string> };
 
@@ -59,6 +67,7 @@ interface ItinerarySectionProps {
   flights?: Flight[];
   transportLegs?: TransportLeg[];
   tripCountries?: string[];
+  journalProfile?: string | null;
 }
 
 function sortActivities(activities: ActivityRow[]): ActivityRow[] {
@@ -595,6 +604,7 @@ function ItinerarySection({
   flights = [],
   transportLegs = [],
   tripCountries = [],
+  journalProfile,
 }: ItinerarySectionProps) {
   const supabase = createClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -765,6 +775,7 @@ function ItinerarySection({
   const [structuredSuggestion, setStructuredSuggestion] = useState<SuggestedDay[] | null>(null);
   const [notesSuggestion, setNotesSuggestion] = useState<string | null>(null);
   const [dayNotesSuggestion, setDayNotesSuggestion] = useState<SuggestedDayNotes[] | null>(null);
+  const [travelerNote, setTravelerNote] = useState<string | null>(null);
   const [rejectedActivities, setRejectedActivities] = useState<string[]>([]);
 
   function dateForDayNum(dayNum: number) {
@@ -841,17 +852,20 @@ function ItinerarySection({
     setStructuredSuggestion(null);
     setNotesSuggestion(null);
     setDayNotesSuggestion(null);
+    setTravelerNote(null);
 
     // Load travel prefs from localStorage — pace/style go as structured fields;
     // interests/dietary are appended to preferences text.
     let effectivePrefs = preferences ?? "";
     let user_pace = "";
     let user_style = "";
+    let storedPrefs = { pace: "", style: "", interests: [] as string[], dietary: [] as string[], daily_budget: null as number | null, currency: undefined as string | undefined, fitness: undefined as string | undefined, avoid: undefined as string | undefined };
     try {
-      const storedPrefs = getTravelPrefs();
-      user_pace = storedPrefs.pace ?? "";
-      user_style = storedPrefs.style ?? "";
-      const prefsText = formatTravelPrefsForPrompt(storedPrefs);
+      const p = getTravelPrefs();
+      storedPrefs = { ...storedPrefs, ...p };
+      user_pace = p.pace ?? "";
+      user_style = p.style ?? "";
+      const prefsText = formatTravelPrefsForPrompt(p);
       if (prefsText) effectivePrefs = prefsText + (effectivePrefs ? ". " + effectivePrefs : "");
     } catch {}
 
@@ -886,6 +900,11 @@ function ItinerarySection({
           trip_start_date: tripStartDate ?? undefined,
           trip_end_date: tripEndDate ?? undefined,
           trip_countries: tripCountries.length > 0 ? tripCountries : undefined,
+          daily_budget: storedPrefs.daily_budget ?? undefined,
+          currency: storedPrefs.currency ?? undefined,
+          fitness: storedPrefs.fitness ?? undefined,
+          avoid: storedPrefs.avoid ?? undefined,
+          journal_profile: journalProfile ?? undefined,
         }),
       });
 
@@ -898,6 +917,7 @@ function ItinerarySection({
 
       if (style === "structured") {
         setStructuredSuggestion(data.days ?? []);
+        if (data.traveler_note) setTravelerNote(data.traveler_note);
       } else if (style === "notes") {
         setNotesSuggestion(data.content ?? "");
       } else {
@@ -940,9 +960,15 @@ function ItinerarySection({
       const activities: ActivityRow[] = [];
       for (let i = 0; i < sugDay.activities.length; i++) {
         const act = sugDay.activities[i];
+        const actNotes = [
+          act.cost      && `Cost: ${act.cost}`,
+          act.transport && `Getting there: ${act.transport}`,
+          act.local_tip && `Tip: ${act.local_tip}`,
+          act.watch_out && `⚠️ ${act.watch_out}`,
+        ].filter(Boolean).join('\n') || null;
         const { data: actData } = await db
           .from("activities")
-          .insert({ day_id: dayData.id, time: act.time || null, title: act.title, place_name: act.place_name || null, order_index: i })
+          .insert({ day_id: dayData.id, time: act.time || null, title: act.title, place_name: act.place_name || null, notes: actNotes, order_index: i })
           .select().single();
         if (actData) activities.push(actData);
       }
@@ -951,6 +977,7 @@ function ItinerarySection({
 
     setDays((prev) => [...prev, ...newDays]);
     setStructuredSuggestion(null);
+    setTravelerNote(null);
     setRejectedActivities([]);
     setShowAI(false);
     setApplying(false);
@@ -1026,7 +1053,7 @@ function ItinerarySection({
     <div className="mb-4 rounded-xl border border-sky-100 dark:border-[#2e2e2e] bg-sky-50/60 dark:bg-transparent p-4 space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold text-gray-700 dark:text-[#efefef]">AI itinerary suggestions</p>
-        <button onClick={() => { setShowAI(false); setStructuredSuggestion(null); setNotesSuggestion(null); setDayNotesSuggestion(null); setAiError(null); setRejectedActivities([]); }} className="text-gray-400 hover:text-gray-600">
+        <button onClick={() => { setShowAI(false); setStructuredSuggestion(null); setNotesSuggestion(null); setDayNotesSuggestion(null); setTravelerNote(null); setAiError(null); setRejectedActivities([]); }} className="text-gray-400 hover:text-gray-600">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -1107,17 +1134,28 @@ function ItinerarySection({
       {/* Structured suggestions preview */}
       {structuredSuggestion && (
         <div className="space-y-3">
+          {travelerNote && (
+            <p className="text-xs italic text-gray-400 dark:text-[#9fb8b8] border-l-2 border-gray-200 dark:border-[#3e3e3e] pl-2">{travelerNote}</p>
+          )}
           <p className="text-xs text-gray-500 dark:text-[#9fb8b8]">{structuredSuggestion.length} days generated — review below, then add to your itinerary.</p>
           <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
             {structuredSuggestion.map((day) => (
               <div key={day.day_number} className="rounded-lg bg-white dark:bg-transparent border border-gray-100 dark:border-[#2e2e2e] p-3">
                 <p className="text-xs font-semibold text-gray-600 dark:text-[#9fb8b8] mb-1.5">Day {day.day_number}</p>
-                <ul className="space-y-1">
+                <ul className="space-y-2">
                   {day.activities.map((act, i) => (
-                    <li key={i} className="flex gap-2 text-xs text-gray-600 dark:text-[#9fb8b8]">
-                      <span className="shrink-0 w-16 whitespace-nowrap font-mono text-gray-400 dark:text-[#9fb8b8]">{formatActivityTime(act.time, clockFormat)}</span>
-                      <span className="font-medium">{act.title}</span>
-                      {act.place_name && <span className="text-gray-400">· {act.place_name}</span>}
+                    <li key={i} className="text-xs text-gray-600 dark:text-[#9fb8b8]">
+                      <div className="flex gap-2">
+                        <span className="shrink-0 w-16 whitespace-nowrap font-mono text-gray-400 dark:text-[#9fb8b8]">{formatActivityTime(act.time, clockFormat)}</span>
+                        <div className="min-w-0">
+                          <span className="font-medium">{act.title}</span>
+                          {act.place_name && <span className="ml-1 text-gray-400">· {act.place_name}</span>}
+                          {act.cost && <p className="mt-0.5 text-[10px] text-gray-400 dark:text-[#9fb8b8]">{act.cost}</p>}
+                          {act.transport && <p className="mt-0.5 text-[10px] text-gray-400 dark:text-[#9fb8b8]">{act.transport}</p>}
+                          {act.local_tip && <p className="mt-0.5 text-[10px] text-gray-400 dark:text-[#9fb8b8] italic">Tip: {act.local_tip}</p>}
+                          {act.watch_out && <p className="mt-0.5 text-[10px] text-amber-500 dark:text-amber-400">⚠️ {act.watch_out}</p>}
+                        </div>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -1223,7 +1261,7 @@ function ItinerarySection({
         )}
       </div>
       <button
-        onClick={() => { setShowAI((v) => !v); setStructuredSuggestion(null); setNotesSuggestion(null); setDayNotesSuggestion(null); setAiError(null); setRejectedActivities([]); }}
+        onClick={() => { setShowAI((v) => !v); setStructuredSuggestion(null); setNotesSuggestion(null); setDayNotesSuggestion(null); setTravelerNote(null); setAiError(null); setRejectedActivities([]); }}
         className="flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-[#3a3a3a] bg-white dark:bg-[#2e2e2e] px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-[#9fb8b8] hover:border-[#9fb8b8] hover:text-[#9fb8b8] transition-colors"
       >
         <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
