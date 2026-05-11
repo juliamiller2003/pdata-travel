@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { ItineraryStyle } from "@/types/database";
 
+export const maxDuration = 60;
+
 const SYSTEM_PROMPT = `You are a seasoned backpacker and travel planner who has traveled solo through 50+ countries on a budget. You give recommendations the way a well-traveled friend would — specific, honest, and practical.
 
 Your recommendations always:
@@ -294,21 +296,6 @@ Style rules:
 - Include rough times where useful`;
 }
 
-function buildReviewPrompt(itineraryJson: string, daily_budget?: number | null, currency?: string): string {
-  const budgetCheck = daily_budget
-    ? `3. Any day where total activity costs exceed ${daily_budget} ${currency || "USD"}`
-    : "";
-  return `Review this backpacker itinerary and silently fix any issues found:
-1. Replace any generic tourist advice or vague suggestions with specific, named local alternatives
-2. Remove anything that sounds like a Lonely Planet headline or resort-tourism recommendation${budgetCheck ? `\n${budgetCheck}` : ""}
-4. Flag any day that is over-scheduled (more activities than the pace warrants)
-
-Return the corrected itinerary in the EXACT same JSON format — same structure, same fields. If nothing needs fixing, return it unchanged. Return ONLY the JSON, no commentary.
-
-Itinerary to review:
-${itineraryJson}`;
-}
-
 export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "Not configured" }, { status: 500 });
@@ -407,39 +394,6 @@ export async function POST(req: NextRequest) {
 
   if (!text) {
     return NextResponse.json({ error: `Empty response from AI (stop_reason: ${stopReason})` }, { status: 500 });
-  }
-
-  // Review pass for structured itineraries
-  if (style === "structured") {
-    try {
-      const reviewPrompt = buildReviewPrompt(text, daily_budget, currency);
-      const reviewRes = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "claude-haiku-4-5",
-          max_tokens: 8192,
-          system: SYSTEM_PROMPT,
-          messages: [{ role: "user", content: reviewPrompt }],
-        }),
-      });
-      if (reviewRes.ok) {
-        const reviewData = await reviewRes.json();
-        const reviewText = ((reviewData.content ?? [])
-          .filter((b: { type: string }) => b.type === "text")
-          .map((b: { text: string }) => b.text)
-          .join("") as string)
-          .trim()
-          .replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
-        if (reviewText) text = reviewText;
-      }
-    } catch {
-      // Review pass failed — use original
-    }
   }
 
   try {
