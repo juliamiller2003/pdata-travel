@@ -18,9 +18,9 @@ const QUICK_AMOUNTS = [1, 5, 10, 50, 100, 500, 1000];
 
 function formatAmount(n: number): string {
   if (n === 0) return "0";
-  if (n >= 1000) return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
-  if (n >= 10)   return n.toLocaleString(undefined, { maximumFractionDigits: 1 });
-  return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  if (n >= 1000) return n.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  if (n >= 10)   return n.toLocaleString("en-US", { maximumFractionDigits: 1 });
+  return n.toLocaleString("en-US", { maximumFractionDigits: 2 });
 }
 
 export default function CurrencySection({ countryCodes, homeCountryCode }: Props) {
@@ -200,7 +200,7 @@ export default function CurrencySection({ countryCodes, homeCountryCode }: Props
                       : "bg-white dark:bg-[#1e1e1e] border border-[#e0e0e0] dark:border-[#3e3e3e] text-gray-500 dark:text-[#9fb8b8] hover:border-[#9fb8b8]"
                   }`}
                 >
-                  {q.toLocaleString()}
+                  {q.toLocaleString("en-US")}
                 </button>
               ))}
             </div>

@@ -221,7 +221,7 @@ export default function JournalSection({ tripId, initialEntries, initialDays = [
               <div className="mb-3 flex items-start justify-between gap-2">
                 <span className="text-xs text-gray-400 dark:text-[#9fb8b8]">
                   {entry.day_number ? `Day ${entry.day_number} · ` : ""}
-                  {new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  <span suppressHydrationWarning>{new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
                 </span>
                 <div className="flex items-center gap-2 shrink-0">
                   <button

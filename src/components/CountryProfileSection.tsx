@@ -13,8 +13,9 @@ interface Props {
 export default function CountryProfileSection({ countryCodes, startDate, homeCountryName }: Props) {
   const [open, setOpen] = useState(true);
 
+  // Use noon time so timezone offsets never cross midnight and change the month.
   const month = startDate
-    ? new Date(startDate).toLocaleString("en-US", { month: "long" })
+    ? new Date(startDate + "T12:00:00").toLocaleString("en-US", { month: "long" })
     : null;
 
   return (
