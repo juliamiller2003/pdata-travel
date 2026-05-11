@@ -13,7 +13,7 @@ type View = "list" | "select" | "edit";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
-  "Documents", "Clothing", "Shoes", "Accessories", "Toiletries", "Electronics",
+  "Documents", "Clothing", "Outerwear", "Shoes", "Accessories", "Toiletries", "Electronics",
   "Health", "Sleep & Hostel", "Money", "Other",
 ];
 
@@ -30,8 +30,8 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
       { name: "Socks (4–5)",                  category: "Clothing"      },
       { name: "Trousers (1)",                  category: "Clothing"      },
       { name: "Shorts (2)",                   category: "Clothing"      },
-      { name: "Light jacket",                 category: "Clothing"      },
-      { name: "Rain jacket",                  category: "Clothing"      },
+      { name: "Light jacket",                 category: "Outerwear"     },
+      { name: "Rain jacket",                  category: "Outerwear"     },
       { name: "Swimwear",                     category: "Clothing"      },
       { name: "Flip flops",                   category: "Shoes"         },
       { name: "Walking shoes",                category: "Shoes"         },
@@ -69,7 +69,7 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
       { name: "Underwear (3)",                            category: "Clothing"      },
       { name: "Socks (3)",                                category: "Clothing"      },
       { name: "1 versatile outfit",                       category: "Clothing"      },
-      { name: "Light jacket",                             category: "Clothing"      },
+      { name: "Light jacket",                             category: "Outerwear"     },
       { name: "Toothbrush & toothpaste",                   category: "Toiletries"    },
       { name: "Deodorant",                                category: "Toiletries"    },
       { name: "Sunscreen",                                category: "Toiletries"    },
@@ -105,9 +105,9 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
       { name: "Hiking boots",                          category: "Shoes"      },
       { name: "Moisture-wicking shirts",              category: "Clothing"   },
       { name: "Hiking socks",                         category: "Clothing"   },
-      { name: "Rain jacket",                          category: "Clothing"   },
+      { name: "Rain jacket",                          category: "Outerwear"  },
       { name: "Sun hat",                              category: "Accessories"},
-      { name: "Fleece",                               category: "Clothing"   },
+      { name: "Fleece",                               category: "Outerwear"  },
       { name: "Sunscreen",                            category: "Toiletries" },
       { name: "Insect repellent",                     category: "Toiletries" },
       { name: "Headlamp + spare batteries",           category: "Electronics"},
@@ -156,9 +156,9 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
       { name: "Thermal base layers (top & bottom)",              category: "Clothing"   },
       { name: "Heavyweight socks (3–4 pairs)",                   category: "Clothing"   },
       { name: "Ski pants",                                       category: "Clothing"   },
-      { name: "Down jacket",                                     category: "Clothing"   },
-      { name: "Waterproof outer shell",                          category: "Clothing"   },
-      { name: "Fleece",                                          category: "Clothing"   },
+      { name: "Down jacket",                                     category: "Outerwear"  },
+      { name: "Waterproof outer shell",                          category: "Outerwear"  },
+      { name: "Fleece",                                          category: "Outerwear"  },
       { name: "Beanie",                                          category: "Accessories"},
       { name: "Gloves",                                          category: "Accessories"},
       { name: "Neck gaiter",                                     category: "Accessories"},
@@ -182,7 +182,7 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
       { name: "Evening outfit",                                     category: "Clothing"      },
       { name: "Trousers (1–2)",                                    category: "Clothing"      },
       { name: "Walking shoes",                                      category: "Shoes"         },
-      { name: "Light jacket",                                       category: "Clothing"      },
+      { name: "Light jacket",                                       category: "Outerwear"     },
       { name: "Toothbrush & toothpaste",                           category: "Toiletries"    },
       { name: "Sunscreen",                                         category: "Toiletries"    },
       { name: "Phone + charger",                                   category: "Electronics"   },
@@ -228,8 +228,8 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
       { name: "Festival outfit (1–2)",                        category: "Clothing"      },
       { name: "Walking shoes",                                 category: "Shoes"         },
       { name: "Wellies / waterproof boots",                   category: "Shoes"         },
-      { name: "Rain jacket",                                   category: "Clothing"      },
-      { name: "Fleece",                                       category: "Clothing"      },
+      { name: "Rain jacket",                                   category: "Outerwear"     },
+      { name: "Fleece",                                       category: "Outerwear"     },
       { name: "Sunscreen",                                    category: "Toiletries"    },
       { name: "Dry shampoo",                                  category: "Toiletries"    },
       { name: "Wet wipes",                                    category: "Toiletries"    },
@@ -262,7 +262,7 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
       { name: "T-shirts (3)",                                   category: "Clothing"      },
       { name: "One smart top (for video calls)",                category: "Clothing"      },
       { name: "Comfortable trousers (2)",                       category: "Clothing"      },
-      { name: "Light jacket",                                   category: "Clothing"      },
+      { name: "Light jacket",                                   category: "Outerwear"     },
       { name: "Toothbrush & toothpaste",                         category: "Toiletries"    },
       { name: "Deodorant",                                       category: "Toiletries"    },
       { name: "Shampoo",                                         category: "Toiletries"    },
@@ -310,6 +310,9 @@ const SHOE_RE = /\b(shoes?|boots?|sandals?|flip.?flops?|wellies|booties?|sneaker
 
 /** Items whose names indicate they are accessories (used to fix miscategorised DB rows). */
 const ACCESSORY_RE = /\b(sunglasses|hat|beanie|gloves?|gaiter|sarong|scarf|belt|cap|headband|bandana|watch|jewellery|jewelry)\b/i;
+
+/** Items whose names indicate they are outerwear (used to fix miscategorised DB rows). */
+const OUTERWEAR_RE = /\b(jacket|fleece|coat|parka|windbreaker|shell|hoodie|jumper|sweater|cardigan|anorak)\b/i;
 
 /**
  * Generic/deprecated item names (normalised) that should always be deleted —
@@ -386,6 +389,9 @@ function dedupPackingItems(items: PackingItem[]): {
       } else if (item.category === "Clothing" && ACCESSORY_RE.test(item.name)) {
         toUpdate.push({ id: item.id, category: "Accessories" });
         unique.push({ ...item, category: "Accessories" });
+      } else if (item.category === "Clothing" && OUTERWEAR_RE.test(item.name)) {
+        toUpdate.push({ id: item.id, category: "Outerwear" });
+        unique.push({ ...item, category: "Outerwear" });
       } else {
         unique.push(item);
       }
