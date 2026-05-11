@@ -13,7 +13,7 @@ type View = "list" | "select" | "edit";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
-  "Documents", "Clothing", "Outerwear", "Shoes", "Accessories", "Toiletries", "Electronics",
+  "Documents", "Clothing", "Outerwear", "Activewear", "Shoes", "Accessories", "Toiletries", "Electronics",
   "Health", "Sleep & Hostel", "Money", "Other",
 ];
 
@@ -32,7 +32,7 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
       { name: "Shorts (2)",                   category: "Clothing"      },
       { name: "Light jacket",                 category: "Outerwear"     },
       { name: "Rain jacket",                  category: "Outerwear"     },
-      { name: "Swimwear",                     category: "Clothing"      },
+      { name: "Swimwear",                     category: "Activewear"    },
       { name: "Flip flops",                   category: "Shoes"         },
       { name: "Walking shoes",                category: "Shoes"         },
       { name: "Toothbrush & toothpaste",      category: "Toiletries"    },
@@ -103,8 +103,8 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
     items: [
       { name: "Trail map (offline)",                  category: "Documents"  },
       { name: "Hiking boots",                          category: "Shoes"      },
-      { name: "Moisture-wicking shirts",              category: "Clothing"   },
-      { name: "Hiking socks",                         category: "Clothing"   },
+      { name: "Moisture-wicking shirts",              category: "Activewear" },
+      { name: "Hiking socks",                         category: "Activewear" },
       { name: "Rain jacket",                          category: "Outerwear"  },
       { name: "Sun hat",                              category: "Accessories"},
       { name: "Fleece",                               category: "Outerwear"  },
@@ -126,8 +126,8 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
     items: [
       { name: "Passport + copies",                          category: "Documents"     },
       { name: "Travel insurance details",                   category: "Documents"     },
-      { name: "Swimwear (2)",                               category: "Clothing"      },
-      { name: "Rash guard",                                 category: "Clothing"      },
+      { name: "Swimwear (2)",                               category: "Activewear"    },
+      { name: "Rash guard",                                 category: "Activewear"    },
       { name: "Sarong / beach towel",                       category: "Accessories"   },
       { name: "Light shorts (2)",                           category: "Clothing"      },
       { name: "Flip flops",                                 category: "Shoes"         },
@@ -153,9 +153,9 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
     items: [
       { name: "Passport + copies",                               category: "Documents"  },
       { name: "Travel insurance details",                        category: "Documents"  },
-      { name: "Thermal base layers (top & bottom)",              category: "Clothing"   },
+      { name: "Thermal base layers (top & bottom)",              category: "Activewear" },
       { name: "Heavyweight socks (3–4 pairs)",                   category: "Clothing"   },
-      { name: "Ski pants",                                       category: "Clothing"   },
+      { name: "Ski pants",                                       category: "Activewear" },
       { name: "Down jacket",                                     category: "Outerwear"  },
       { name: "Waterproof outer shell",                          category: "Outerwear"  },
       { name: "Fleece",                                          category: "Outerwear"  },
@@ -202,9 +202,9 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
       { name: "Passport + copies",                              category: "Documents"  },
       { name: "Dive certification card (PADI / SSI / etc.)",   category: "Documents"  },
       { name: "Travel insurance with dive cover",              category: "Documents"  },
-      { name: "Swimwear (2–3)",                                 category: "Clothing"   },
-      { name: "Rash guard",                                     category: "Clothing"   },
-      { name: "Wetsuit (3mm–5mm depending on water temp)",      category: "Clothing"   },
+      { name: "Swimwear (2–3)",                                 category: "Activewear" },
+      { name: "Rash guard",                                     category: "Activewear" },
+      { name: "Wetsuit (3mm–5mm depending on water temp)",      category: "Activewear" },
       { name: "Dive booties",                                   category: "Shoes"      },
       { name: "Sun hat",                                        category: "Clothing"   },
       { name: "Sunglasses",                                     category: "Clothing"   },
@@ -314,6 +314,9 @@ const ACCESSORY_RE = /\b(sunglasses|hat|beanie|gloves?|gaiter|sarong|scarf|belt|
 /** Items whose names indicate they are outerwear (used to fix miscategorised DB rows). */
 const OUTERWEAR_RE = /\b(jacket|fleece|coat|parka|windbreaker|shell|hoodie|jumper|sweater|cardigan|anorak)\b/i;
 
+/** Items whose names indicate they are activewear (used to fix miscategorised DB rows). */
+const ACTIVEWEAR_RE = /\b(swimwear|swimsuit|bikini|trunks|boardshorts|rash.?guard|wetsuit|base.?layer|ski.?pants|leggings?|sports?.?bra|workout|gym|yoga|running|cycling|wetsuit|wetsuit)\b/i;
+
 /**
  * Generic/deprecated item names (normalised) that should always be deleted —
  * they add no value as individual packing items.
@@ -392,6 +395,9 @@ function dedupPackingItems(items: PackingItem[]): {
       } else if (item.category === "Clothing" && OUTERWEAR_RE.test(item.name)) {
         toUpdate.push({ id: item.id, category: "Outerwear" });
         unique.push({ ...item, category: "Outerwear" });
+      } else if (item.category === "Clothing" && ACTIVEWEAR_RE.test(item.name)) {
+        toUpdate.push({ id: item.id, category: "Activewear" });
+        unique.push({ ...item, category: "Activewear" });
       } else {
         unique.push(item);
       }
