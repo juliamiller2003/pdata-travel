@@ -285,6 +285,23 @@ function dedup(items: TemplateItem[]): TemplateItem[] {
   });
 }
 
+/** Dedup saved packing items by name, returning unique items + IDs to delete. */
+function dedupPackingItems(items: PackingItem[]): { unique: PackingItem[]; toDelete: string[] } {
+  const seen = new Set<string>();
+  const unique: PackingItem[] = [];
+  const toDelete: string[] = [];
+  for (const item of items) {
+    const key = item.name.trim().toLowerCase();
+    if (seen.has(key)) {
+      toDelete.push(item.id);
+    } else {
+      seen.add(key);
+      unique.push(item);
+    }
+  }
+  return { unique, toDelete };
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 interface Props { tripId: string; initialItems: PackingItem[] }
@@ -293,15 +310,26 @@ export default function PackingListSection({ tripId, initialItems }: Props) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = createClient() as any;
 
+  // Deduplicate on load and clean up any stale DB duplicates
+  const { unique: dedupedInitial, toDelete: initialDupes } = dedupPackingItems(initialItems);
+
   // ── Packing list state ──────────────────────────────────────────────────────
-  const [items, setItems]         = useState<PackingItem[]>(initialItems);
+  const [items, setItems]         = useState<PackingItem[]>(dedupedInitial);
   const [newItem, setNewItem]     = useState("");
   const [newCat, setNewCat]       = useState("Other");
   const [showAdd, setShowAdd]     = useState(false);
   const [clearing, setClearing]   = useState(false);
 
   // ── View state ──────────────────────────────────────────────────────────────
-  const [view, setView] = useState<View>(initialItems.length === 0 ? "select" : "list");
+  const [view, setView] = useState<View>(dedupedInitial.length === 0 ? "select" : "list");
+
+  // ── Clean up DB duplicates on mount ─────────────────────────────────────────
+  useEffect(() => {
+    if (initialDupes.length > 0) {
+      db.from("packing_items").delete().in("id", initialDupes);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Template selector state ─────────────────────────────────────────────────
   const [selBuiltin, setSelBuiltin]           = useState<Set<string>>(new Set());
