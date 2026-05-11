@@ -30,6 +30,28 @@ interface TripPageProps {
   params: { id: string };
 }
 
+export async function generateMetadata({ params }: TripPageProps) {
+  const supabase = await createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: trip } = await (supabase as any)
+    .from("trips")
+    .select("title, destination")
+    .eq("id", params.id)
+    .single();
+
+  if (!trip) return {};
+
+  const title = trip.destination
+    ? `${trip.title} · ${trip.destination}`
+    : trip.title;
+
+  return {
+    title,
+    openGraph: { title, description: "View this trip on Pathway Travel." },
+    twitter: { title },
+  };
+}
+
 export default async function TripDetailPage({ params }: TripPageProps) {
   const { id } = params;
   const supabase = await createClient();
