@@ -101,10 +101,13 @@ const MODE_ICONS: Record<TransportMode, JSX.Element> = {
 function LegCard({ leg, onDelete }: { leg: TransportLeg; onDelete: () => void }) {
   function fmt(t: string | null) {
     if (!t) return null;
-    const [h, m] = t.split(":");
-    const d = new Date();
-    d.setHours(Number(h), Number(m));
-    return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+    const [hStr, mStr] = t.split(":");
+    const h = parseInt(hStr, 10);
+    const m = parseInt(mStr, 10);
+    if (isNaN(h) || isNaN(m)) return t;
+    const period = h >= 12 ? "PM" : "AM";
+    const h12 = h % 12 || 12;
+    return `${h12}:${String(m).padStart(2, "0")} ${period}`;
   }
 
   return (
@@ -439,10 +442,10 @@ export default function TransportationSection({ tripId, tripStartDate, initialFl
             to: f.arrival_iata ?? f.arrival_city ?? "?",
             mode: "flight",
             depTime: f.departure_time
-              ? (() => { const t = f.departure_time!.includes("T") ? (() => { const d = new Date(f.departure_time!); return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; })() : f.departure_time!.slice(0,5); return t; })()
+              ? (f.departure_time.includes("T") ? f.departure_time.slice(11, 16) : f.departure_time.slice(0, 5))
               : null,
             arrTime: f.arrival_time
-              ? (() => { const t = f.arrival_time!.includes("T") ? (() => { const d = new Date(f.arrival_time!); return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; })() : f.arrival_time!.slice(0,5); return t; })()
+              ? (f.arrival_time.includes("T") ? f.arrival_time.slice(11, 16) : f.arrival_time.slice(0, 5))
               : null,
             label: f.flight_number,
           })),
