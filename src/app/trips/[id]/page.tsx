@@ -249,7 +249,11 @@ export default async function TripDetailPage({ params }: TripPageProps) {
       </div>
 
       {tripStatus === "ongoing" && (
-        <WhereNextSection currentDestination={trip.destination} />
+        <WhereNextSection
+          currentDestination={trip.destination}
+          tripStartDate={trip.start_date ?? null}
+          tripCountries={(trip.country_codes as string[] | null) ?? []}
+        />
       )}
 
       <SectionGuard section="itinerary">
@@ -263,6 +267,7 @@ export default async function TripDetailPage({ params }: TripPageProps) {
           initialNotes={trip.itinerary_notes ?? null}
           flights={flights}
           transportLegs={transportLegsData ?? []}
+          tripCountries={(trip.country_codes as string[] | null) ?? []}
         />
       </SectionGuard>
 

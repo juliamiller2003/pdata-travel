@@ -58,6 +58,7 @@ interface ItinerarySectionProps {
   initialNotes: string | null;
   flights?: Flight[];
   transportLegs?: TransportLeg[];
+  tripCountries?: string[];
 }
 
 function sortActivities(activities: ActivityRow[]): ActivityRow[] {
@@ -593,6 +594,7 @@ function ItinerarySection({
   initialNotes,
   flights = [],
   transportLegs = [],
+  tripCountries = [],
 }: ItinerarySectionProps) {
   const supabase = createClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -881,6 +883,9 @@ function ItinerarySection({
             .flatMap((d) => Object.values(dayNotes[d.id] ?? {}).filter(Boolean))
             .join("\n\n"),
           travel_events: buildTravelEventsContext(flights, transportLegs, tripStartDate),
+          trip_start_date: tripStartDate ?? undefined,
+          trip_end_date: tripEndDate ?? undefined,
+          trip_countries: tripCountries.length > 0 ? tripCountries : undefined,
         }),
       });
 

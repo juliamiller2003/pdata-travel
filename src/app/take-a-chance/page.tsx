@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { getTravelPrefs } from "@/lib/travelPrefs";
 
 const VIBES = [
   { value: "nature",             label: "Nature"             },
@@ -29,6 +30,7 @@ interface TripSuggestion {
   why: string;
   highlights: string[];
   best_time: string;
+  backpacker_note?: string | null;
 }
 
 export default function TakeAChancePage() {
@@ -58,6 +60,14 @@ export default function TakeAChancePage() {
     setError(null);
     setSuggestions(null);
 
+    let user_style = "";
+    let user_pace = "";
+    try {
+      const prefs = getTravelPrefs();
+      user_style = prefs.style ?? "";
+      user_pace = prefs.pace ?? "";
+    } catch {}
+
     const res = await fetch("/api/take-a-chance", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -69,6 +79,8 @@ export default function TakeAChancePage() {
         budget: budget ? parseInt(budget) : null,
         requests,
         vibes,
+        user_style,
+        user_pace,
       }),
     });
 
@@ -270,6 +282,16 @@ export default function TakeAChancePage() {
 
               {trip.best_time && (
                 <p className="text-xs text-gray-400 dark:text-gray-500">Best time: {trip.best_time}</p>
+              )}
+
+              {trip.backpacker_note && (
+                <div className="flex items-start gap-2 rounded-lg bg-[#cadede]/20 dark:bg-[#2a3f3f]/40 border border-[#cadede] dark:border-[#2a3f3f] px-3 py-2">
+                  <svg className="h-3.5 w-3.5 shrink-0 mt-0.5 text-[#1e2d2d] dark:text-[#cadede]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                  </svg>
+                  <p className="text-xs text-[#1e2d2d] dark:text-[#cadede]">{trip.backpacker_note}</p>
+                </div>
               )}
 
               <button

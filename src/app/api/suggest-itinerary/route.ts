@@ -12,6 +12,9 @@ interface SuggestRequest {
   travel_events?: string;
   user_pace?: string;
   user_style?: string;
+  trip_start_date?: string;
+  trip_end_date?: string;
+  trip_countries?: string[];
 }
 
 // ── Pace & style rules ────────────────────────────────────────────────────────
@@ -54,7 +57,43 @@ function styleRule(style: string | undefined): string {
   return "";
 }
 
-function buildPrompt(destination: string, num_days: number, style: ItineraryStyle, preferences: string, existing_activities: string[], existing_day_count: number, existing_notes?: string, travel_events?: string, user_pace?: string, user_style?: string) {
+// ── Destination context ───────────────────────────────────────────────────────
+
+function buildDestinationContext(
+  destination: string,
+  num_days: number,
+  existing_day_count: number,
+  trip_start_date?: string,
+  trip_countries?: string[]
+): string {
+  const totalDays = existing_day_count + num_days;
+
+  // Travel month from start date
+  let monthContext = "";
+  if (trip_start_date) {
+    try {
+      const d = new Date(trip_start_date + "T00:00:00");
+      const month = d.toLocaleString("en-US", { month: "long" });
+      const year = d.getFullYear();
+      monthContext = `Travel month: ${month} ${year} — account for seasonal weather, crowd levels, and local events. Avoid outdoor activities that are impractical this time of year; suggest weather-appropriate alternatives.`;
+    } catch {}
+  }
+
+  // Route context for multi-country trips
+  let routeContext = "";
+  const countries = (trip_countries ?? []).filter(Boolean);
+  if (countries.length > 1) {
+    routeContext = `Route context: This ${totalDays}-day trip passes through multiple countries (${countries.join(" → ")}). The traveler is planning the ${destination} leg of a longer journey — suggest activities suited to someone passing through, not just a dedicated visitor. Favour experiences that are efficient and don't require backtracking. Skip anything that requires multi-day commitment unless the days available for this leg allow it.`;
+  } else if (totalDays > 0) {
+    routeContext = `Trip length: ${totalDays} day${totalDays === 1 ? "" : "s"} in ${destination}.`;
+  }
+
+  const lines = [routeContext, monthContext].filter(Boolean);
+  return lines.length > 0 ? "\n" + lines.join("\n") : "";
+}
+
+function buildPrompt(destination: string, num_days: number, style: ItineraryStyle, preferences: string, existing_activities: string[], existing_day_count: number, existing_notes?: string, travel_events?: string, user_pace?: string, user_style?: string, trip_start_date?: string, trip_countries?: string[]) {
+  const destContext = buildDestinationContext(destination, num_days, existing_day_count, trip_start_date, trip_countries);
   const pref = preferences.trim() ? `\nUser preferences: ${preferences.trim()}` : "";
   const existing = existing_activities.length > 0
     ? `\nBanned — do NOT suggest any of these or anything at the same venue, even under a different name or framing: ${existing_activities.join(", ")}`
@@ -74,7 +113,7 @@ function buildPrompt(destination: string, num_days: number, style: ItineraryStyl
 
   if (style === "structured") {
     const paceLine = paceRule(user_pace, "structured");
-    return `You are a travel expert planning a trip to ${destination}. ${tripContext}${pref}${existing}${existingNotesContext}${travelEventsContext}
+    return `You are a travel expert planning a trip to ${destination}. ${tripContext}${destContext}${pref}${existing}${existingNotesContext}${travelEventsContext}
 
 Return ONLY a JSON object with this exact structure (no markdown, no commentary):
 {
@@ -106,7 +145,7 @@ Rules:
   const styleFragment = styleLine ? `\n- ${styleLine}` : "";
 
   if (style === "notes") {
-    return `You are a travel planner writing quick personal notes for a trip to ${destination}. ${tripContext}${pref}${existing}${existingNotesContext}${travelEventsContext}
+    return `You are a travel planner writing quick personal notes for a trip to ${destination}. ${tripContext}${destContext}${pref}${existing}${existingNotesContext}${travelEventsContext}
 
 Return ONLY a JSON object:
 { "content": "Day ${startDay}\\n\\n9am - ...\\n\\nAfternoon - ..." }
@@ -125,7 +164,7 @@ Style rules:
   }
 
   if (style === "notes_day_night") {
-    return `You are a travel planner writing quick personal notes for a trip to ${destination}. ${tripContext}${pref}${existing}${existingNotesContext}${travelEventsContext}
+    return `You are a travel planner writing quick personal notes for a trip to ${destination}. ${tripContext}${destContext}${pref}${existing}${existingNotesContext}${travelEventsContext}
 
 Return ONLY a JSON object:
 {
@@ -152,7 +191,7 @@ Style rules:
   }
 
   // notes_day_afternoon_night
-  return `You are a travel planner writing quick personal notes for a trip to ${destination}. ${tripContext}${pref}${existing}${existingNotesContext}${travelEventsContext}
+  return `You are a travel planner writing quick personal notes for a trip to ${destination}. ${tripContext}${destContext}${pref}${existing}${existingNotesContext}${travelEventsContext}
 
 Return ONLY a JSON object:
 {
@@ -183,7 +222,7 @@ export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "Not configured" }, { status: 500 });
 
-  const { destination, num_days, style, preferences, existing_activities = [], existing_day_count = 0, existing_notes = "", travel_events = "", user_pace = "", user_style = "" }: SuggestRequest = await req.json();
+  const { destination, num_days, style, preferences, existing_activities = [], existing_day_count = 0, existing_notes = "", travel_events = "", user_pace = "", user_style = "", trip_start_date, trip_end_date: _trip_end_date, trip_countries }: SuggestRequest = await req.json();
 
   const VALID_STYLES: ItineraryStyle[] = ["structured", "notes", "notes_day_night", "notes_day_afternoon_night"];
 
@@ -195,7 +234,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid itinerary style" }, { status: 400 });
   }
 
-  const prompt = buildPrompt(destination, num_days, style, preferences ?? "", existing_activities, existing_day_count, existing_notes, travel_events, user_pace, user_style);
+  const prompt = buildPrompt(destination, num_days, style, preferences ?? "", existing_activities, existing_day_count, existing_notes, travel_events, user_pace, user_style, trip_start_date, trip_countries);
 
   let anthropicRes: Response;
   try {
