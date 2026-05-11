@@ -297,7 +297,7 @@ function normaliseItemName(name: string): string {
   // Strip leading clothing/material modifiers so "hiking socks" = "socks",
   // "down jacket" = "jacket", "moisture-wicking shirts" = "shirts" etc.
   s = s.replace(
-    /^(hiking|heavyweight|lightweight|quick-dry|moisture-wicking|thermal|waterproof|down|rain|light|smart|linen|casual|formal|evening|going-out|reef-safe)\s+/,
+    /^(hiking|heavyweight|lightweight|quick-dry|moisture-wicking|thermal|waterproof|down|rain|light|smart|linen|casual|formal|evening|going-out|reef-safe|comfortable)\s+/,
     ""
   );
   s = s.replace(/^\d+\s+/, ""); // strip leading quantity "2 " / "3 "
@@ -322,6 +322,8 @@ const REMOVE_ALWAYS = new Set([
  */
 const RENAME_ALIASES: Record<string, string> = {
   "toothbrush & toiletries": "toothbrush & toothpaste",
+  // "Wellies / waterproof boots" → slash-drop → "wellies"; map to same key as "Waterproof boots" → "boots"
+  "wellies": "boots",
 };
 
 function dedup(items: TemplateItem[]): TemplateItem[] {
