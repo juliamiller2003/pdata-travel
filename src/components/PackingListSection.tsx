@@ -307,6 +307,23 @@ function normaliseItemName(name: string): string {
 /** Items whose names indicate they are footwear (used to fix miscategorised DB rows). */
 const SHOE_RE = /\b(shoes?|boots?|sandals?|flip.?flops?|wellies|booties?|sneakers?|trainers?|heels?|loafers?)\b/i;
 
+/**
+ * Generic/deprecated item names (normalised) that should always be deleted —
+ * they add no value as individual packing items.
+ */
+const REMOVE_ALWAYS = new Set([
+  "toiletries",
+  "toiletry bag",
+]);
+
+/**
+ * Rename aliases: maps a bad/mangled normalised name → the canonical normalised name
+ * so the dedup can then collapse them correctly.
+ */
+const RENAME_ALIASES: Record<string, string> = {
+  "toothbrush & toiletries": "toothbrush & toothpaste",
+};
+
 function dedup(items: TemplateItem[]): TemplateItem[] {
   const seen = new Set<string>();
   return items.filter(({ name }) => {
@@ -319,11 +336,13 @@ function dedup(items: TemplateItem[]): TemplateItem[] {
 
 /**
  * Dedup saved packing items by normalised name.
- * Also fixes footwear items that were saved under "Clothing" before the
- * Shoes category existed.
+ * Also:
+ *  - Deletes generic/deprecated items (toiletries, toiletry bag)
+ *  - Renames mangled items to canonical forms before deduping
+ *  - Fixes footwear items saved under "Clothing" before the Shoes category existed
  * Returns:
  *   unique    – deduplicated items with corrected categories
- *   toDelete  – IDs of duplicate rows to remove from DB
+ *   toDelete  – IDs of rows to remove from DB
  *   toUpdate  – { id, category } for rows whose category needs updating in DB
  */
 function dedupPackingItems(items: PackingItem[]): {
@@ -336,7 +355,16 @@ function dedupPackingItems(items: PackingItem[]): {
   const toDelete: string[] = [];
   const toUpdate: { id: string; category: string }[] = [];
   for (const item of items) {
-    const key = normaliseItemName(item.name);
+    const raw = normaliseItemName(item.name);
+
+    // Always remove generic / deprecated items
+    if (REMOVE_ALWAYS.has(raw)) {
+      toDelete.push(item.id);
+      continue;
+    }
+
+    // Apply rename aliases then dedup
+    const key = RENAME_ALIASES[raw] ?? raw;
     if (seen.has(key)) {
       toDelete.push(item.id);
     } else {
