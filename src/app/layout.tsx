@@ -18,14 +18,14 @@ import OfflineBanner from "@/components/OfflineBanner";
 export const metadata: Metadata = {
   metadataBase: new URL("https://pdata-travel-two.vercel.app"),
   title: {
-    default: "Pathway Travel – Travel Planning & Journaling",
+    default: "Pathway Travel – Trip Planning App for Backpackers",
     template: "%s – Pathway Travel",
   },
-  description: "Plan trips and journal your adventures as a solo traveler. Budget tracking, offline maps, AI itineraries, packing lists — built for backpackers.",
+  description: "Plan trips, track your budget, and journal your adventures as a solo traveler. Offline maps, AI itineraries, flight tracking, and packing lists — built for backpackers.",
   keywords: ["travel planning", "backpacker app", "travel journal", "trip planner", "budget travel", "solo travel", "itinerary planner"],
   openGraph: {
-    title: "Pathway Travel – Travel Planning & Journaling",
-    description: "Plan trips and journal your adventures as a solo traveler. Built for backpackers.",
+    title: "Pathway Travel – Trip Planning App for Backpackers",
+    description: "Plan trips, track your budget, and journal your adventures as a solo traveler. Offline maps, AI itineraries, and packing lists — built for backpackers.",
     url: "https://pdata-travel-two.vercel.app",
     siteName: "Pathway Travel",
     images: [{ url: "/og.jpg", width: 1340, height: 895, alt: "Pathway Travel" }],
@@ -34,8 +34,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Pathway Travel – Travel Planning & Journaling",
-    description: "Plan trips and journal your adventures as a solo traveler. Built for backpackers.",
+    title: "Pathway Travel – Trip Planning App for Backpackers",
+    description: "Plan trips, track your budget, and journal your adventures as a solo traveler. Offline maps, AI itineraries, and packing lists — built for backpackers.",
     images: ["/og.jpg"],
   },
   robots: { index: true, follow: true },
