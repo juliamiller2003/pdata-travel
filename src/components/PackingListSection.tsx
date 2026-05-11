@@ -26,10 +26,10 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
       { name: "Visas",                         category: "Documents"     },
       { name: "Booking confirmations",        category: "Documents"     },
       { name: "T-shirts (3–4)",               category: "Clothing"      },
-      { name: "Underwear (4–5)",              category: "Clothing"      },
-      { name: "Socks (4–5)",                  category: "Clothing"      },
       { name: "Trousers (1)",                  category: "Clothing"      },
       { name: "Shorts (2)",                   category: "Clothing"      },
+      { name: "Underwear (4–5)",              category: "Clothing"      },
+      { name: "Socks (4–5)",                  category: "Clothing"      },
       { name: "Light jacket",                 category: "Outerwear"     },
       { name: "Rain jacket",                  category: "Outerwear"     },
       { name: "Swimwear",                     category: "Activewear"    },
@@ -66,9 +66,9 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
       { name: "Passport + copies",                        category: "Documents"     },
       { name: "Travel insurance details",                 category: "Documents"     },
       { name: "T-shirts (2)",                             category: "Clothing"      },
+      { name: "1 versatile outfit",                       category: "Clothing"      },
       { name: "Underwear (3)",                            category: "Clothing"      },
       { name: "Socks (3)",                                category: "Clothing"      },
-      { name: "1 versatile outfit",                       category: "Clothing"      },
       { name: "Light jacket",                             category: "Outerwear"     },
       { name: "Toothbrush & toothpaste",                   category: "Toiletries"    },
       { name: "Deodorant",                                category: "Toiletries"    },
@@ -76,7 +76,8 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
       { name: "Phone + charger",                          category: "Electronics"   },
       { name: "Power bank",                               category: "Electronics"   },
       { name: "Universal adapter",                        category: "Electronics"   },
-      { name: "Basic meds (painkillers, antihistamines)", category: "Health"        },
+      { name: "Painkillers",                              category: "Health"        },
+      { name: "Antihistamines",                           category: "Health"        },
       { name: "Padlock",                                  category: "Sleep & Hostel"},
       { name: "Travel card / debit card",                 category: "Money"         },
       { name: "Local cash",                               category: "Money"         },
@@ -87,9 +88,9 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
     items: [
       { name: "Passport + copies",        category: "Documents"  },
       { name: "T-shirts (2)",         category: "Clothing"   },
+      { name: "1 going-out outfit",   category: "Clothing"   },
       { name: "Underwear (2)",        category: "Clothing"   },
       { name: "Socks (2)",            category: "Clothing"   },
-      { name: "1 going-out outfit",   category: "Clothing"   },
       { name: "Toothbrush & toothpaste", category: "Toiletries" },
       { name: "Deodorant",               category: "Toiletries" },
       { name: "Phone + charger",      category: "Electronics"},
@@ -132,7 +133,7 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
       { name: "Light shorts (2)",                           category: "Clothing"      },
       { name: "Flip flops",                                 category: "Shoes"         },
       { name: "Light dress / linen shirt",                  category: "Clothing"      },
-      { name: "Sun hat",                                    category: "Clothing"      },
+      { name: "Sun hat",                                    category: "Accessories"   },
       { name: "Sunglasses",                                 category: "Accessories"   },
       { name: "Sunscreen",                                   category: "Toiletries"    },
       { name: "After-sun lotion",                           category: "Toiletries"    },
@@ -179,8 +180,8 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
       { name: "Passport + copies",                                     category: "Documents"     },
       { name: "Travel insurance details",                          category: "Documents"     },
       { name: "T-shirts (3)",                                      category: "Clothing"      },
-      { name: "Evening outfit",                                     category: "Clothing"      },
       { name: "Trousers (1–2)",                                    category: "Clothing"      },
+      { name: "Evening outfit",                                     category: "Clothing"      },
       { name: "Walking shoes",                                      category: "Shoes"         },
       { name: "Light jacket",                                       category: "Outerwear"     },
       { name: "Toothbrush & toothpaste",                           category: "Toiletries"    },
@@ -189,7 +190,8 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
       { name: "Power bank",                                        category: "Electronics"   },
       { name: "Earphones",                                         category: "Electronics"   },
       { name: "Offline maps downloaded",                           category: "Electronics"   },
-      { name: "Basic meds (painkillers, antihistamines)",          category: "Health"        },
+      { name: "Painkillers",                                        category: "Health"        },
+      { name: "Antihistamines",                                     category: "Health"        },
       { name: "Padlock",                                            category: "Sleep & Hostel"},
       { name: "Day pack",                                           category: "Other"         },
       { name: "Travel card / debit card",                          category: "Money"         },
@@ -266,7 +268,8 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
       { name: "Toothbrush & toothpaste",                         category: "Toiletries"    },
       { name: "Deodorant",                                       category: "Toiletries"    },
       { name: "Shampoo",                                         category: "Toiletries"    },
-      { name: "Basic meds",                                     category: "Health"        },
+      { name: "Painkillers",                                     category: "Health"        },
+      { name: "Antihistamines",                                  category: "Health"        },
       { name: "Blue-light glasses",                             category: "Health"        },
       { name: "Travel card / debit card",                       category: "Money"         },
       { name: "Backup card",                                    category: "Money"         },
@@ -323,6 +326,7 @@ const ACTIVEWEAR_RE = /\b(swimwear|swimsuit|bikini|trunks|boardshorts|rash.?guar
 const REMOVE_ALWAYS = new Set([
   "toiletries",
   "toiletry bag",
+  "basic meds",
 ]);
 
 /**
@@ -428,6 +432,11 @@ export default function PackingListSection({ tripId, initialItems }: Props) {
   const [showAdd, setShowAdd]     = useState(false);
   const [clearing, setClearing]   = useState(false);
 
+  // ── Inline item edit state ──────────────────────────────────────────────────
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editItemName, setEditItemName]   = useState("");
+  const [editItemCat,  setEditItemCat]    = useState("Other");
+
   // ── View state ──────────────────────────────────────────────────────────────
   const [view, setView] = useState<View>(dedupedInitial.length === 0 ? "select" : "list");
 
@@ -504,6 +513,23 @@ export default function PackingListSection({ tripId, initialItems }: Props) {
   async function deleteItem(id: string) {
     await db.from("packing_items").delete().eq("id", id);
     setItems((prev) => prev.filter((i) => i.id !== id));
+  }
+
+  async function saveEditItem(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingItemId || !editItemName.trim()) return;
+    const { data, error } = await db.from("packing_items")
+      .update({ name: editItemName.trim(), category: editItemCat })
+      .eq("id", editingItemId)
+      .select().single();
+    if (!error) {
+      setItems((prev) => prev.map((i) =>
+        i.id === editingItemId
+          ? (data ?? { ...i, name: editItemName.trim(), category: editItemCat })
+          : i
+      ));
+      setEditingItemId(null);
+    }
   }
 
   async function clearAll() {
@@ -664,28 +690,57 @@ export default function PackingListSection({ tripId, initialItems }: Props) {
                 <div key={cat}>
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8] mb-2">{cat}</p>
                   <div className="space-y-1">
-                    {catItems.map((item) => (
-                      <div key={item.id} className="flex items-center gap-3 group">
-                        <button
-                          onClick={() => togglePacked(item)}
-                          className={`h-6 w-6 sm:h-4 sm:w-4 shrink-0 rounded border flex items-center justify-center transition-colors ${item.packed ? "border-[#9fb8b8] bg-[#9fb8b8]" : "border-gray-300 dark:border-[#3a3a3a] bg-white dark:bg-transparent"}`}
-                        >
-                          {item.packed && (
-                            <svg className="h-3.5 w-3.5 sm:h-2.5 sm:w-2.5 text-white dark:text-[#1e1e1e]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    {catItems.map((item) =>
+                      editingItemId === item.id ? (
+                        <form key={item.id} onSubmit={saveEditItem} className="flex items-center gap-2 py-0.5">
+                          <input
+                            value={editItemName}
+                            onChange={(e) => setEditItemName(e.target.value)}
+                            className="input flex-1 min-w-0 text-sm py-1"
+                            autoFocus
+                          />
+                          <select
+                            value={editItemCat}
+                            onChange={(e) => setEditItemCat(e.target.value)}
+                            className="input w-32 shrink-0 text-xs py-1"
+                          >
+                            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                          </select>
+                          <button type="submit" className="text-xs font-medium text-[#9fb8b8] hover:text-[#7a9e9e] transition-colors shrink-0">Save</button>
+                          <button type="button" onClick={() => setEditingItemId(null)} className="text-xs text-gray-400 hover:text-gray-600 transition-colors shrink-0">Cancel</button>
+                        </form>
+                      ) : (
+                        <div key={item.id} className="flex items-center gap-3 group">
+                          <button
+                            onClick={() => togglePacked(item)}
+                            className={`h-6 w-6 sm:h-4 sm:w-4 shrink-0 rounded border flex items-center justify-center transition-colors ${item.packed ? "border-[#9fb8b8] bg-[#9fb8b8]" : "border-gray-300 dark:border-[#3a3a3a] bg-white dark:bg-transparent"}`}
+                          >
+                            {item.packed && (
+                              <svg className="h-3.5 w-3.5 sm:h-2.5 sm:w-2.5 text-white dark:text-[#1e1e1e]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                              </svg>
+                            )}
+                          </button>
+                          <span className={`flex-1 text-sm transition-colors ${item.packed ? "line-through text-gray-300 dark:text-[#3a3a3a]" : "text-gray-700 dark:text-[#efefef]"}`}>
+                            {item.name}
+                          </span>
+                          <button
+                            onClick={() => { setEditingItemId(item.id); setEditItemName(item.name); setEditItemCat(item.category); }}
+                            className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-sky-400 transition-all"
+                            title="Edit"
+                          >
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
                             </svg>
-                          )}
-                        </button>
-                        <span className={`flex-1 text-sm transition-colors ${item.packed ? "line-through text-gray-300 dark:text-[#3a3a3a]" : "text-gray-700 dark:text-[#efefef]"}`}>
-                          {item.name}
-                        </span>
-                        <button onClick={() => deleteItem(item.id)} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all">
-                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
+                          </button>
+                          <button onClick={() => deleteItem(item.id)} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all" title="Delete">
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      )
+                    )}
                   </div>
                 </div>
               ))}
