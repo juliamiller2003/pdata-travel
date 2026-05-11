@@ -57,7 +57,8 @@ function formatDate(d: string | null) {
 
 function nights(checkIn: string | null, checkOut: string | null): number | null {
   if (!checkIn || !checkOut) return null;
-  const diff = (new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24);
+  // Anchor to T00:00:00 so date-only strings parse as local midnight, not UTC midnight
+  const diff = (new Date(checkOut + "T00:00:00").getTime() - new Date(checkIn + "T00:00:00").getTime()) / (1000 * 60 * 60 * 24);
   return Math.max(0, Math.round(diff));
 }
 

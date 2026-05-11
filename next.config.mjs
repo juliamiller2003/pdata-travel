@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  productionBrowserSourceMaps: true,
   transpilePackages: ["react-simple-maps"],
   images: {
     remotePatterns: [
