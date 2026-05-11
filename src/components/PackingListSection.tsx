@@ -90,7 +90,8 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
       { name: "Underwear (2)",        category: "Clothing"   },
       { name: "Socks (2)",            category: "Clothing"   },
       { name: "1 going-out outfit",   category: "Clothing"   },
-      { name: "Toiletry bag",         category: "Toiletries" },
+      { name: "Toothbrush & toothpaste", category: "Toiletries" },
+      { name: "Deodorant",               category: "Toiletries" },
       { name: "Phone + charger",      category: "Electronics"},
       { name: "Power bank",           category: "Electronics"},
       { name: "Painkillers",          category: "Health"     },
@@ -262,7 +263,9 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
       { name: "One smart top (for video calls)",                category: "Clothing"      },
       { name: "Comfortable trousers (2)",                       category: "Clothing"      },
       { name: "Light jacket",                                   category: "Clothing"      },
-      { name: "Toiletries",                                     category: "Toiletries"    },
+      { name: "Toothbrush & toothpaste",                         category: "Toiletries"    },
+      { name: "Deodorant",                                       category: "Toiletries"    },
+      { name: "Shampoo",                                         category: "Toiletries"    },
       { name: "Basic meds",                                     category: "Health"        },
       { name: "Blue-light glasses",                             category: "Health"        },
       { name: "Travel card / debit card",                       category: "Money"         },
@@ -285,13 +288,29 @@ function dedup(items: TemplateItem[]): TemplateItem[] {
   });
 }
 
+/**
+ * Normalise a packing item name for fuzzy-dedup.
+ * Strips parenthetical suffixes, slash variants, and size qualifiers so that
+ * e.g. "Sunscreen (reef-safe SPF 50+)", "Sunscreen SPF 50+", and "Sunscreen"
+ * all collapse to the same key, as do "After-sun lotion / aloe vera" → "after-sun lotion".
+ */
+function normaliseItemName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/\s*\(.*?\)/g, "")   // strip (parenthetical)
+    .replace(/\s*\/.*$/, "")      // strip / anything after slash
+    .replace(/\s+spf\s*\d+\+?/g, "") // strip SPF 50+ etc.
+    .replace(/\s+(travel size|travel-size|mini)$/g, "") // strip size qualifiers
+    .trim();
+}
+
 /** Dedup saved packing items by name, returning unique items + IDs to delete. */
 function dedupPackingItems(items: PackingItem[]): { unique: PackingItem[]; toDelete: string[] } {
   const seen = new Set<string>();
   const unique: PackingItem[] = [];
   const toDelete: string[] = [];
   for (const item of items) {
-    const key = item.name.trim().toLowerCase();
+    const key = normaliseItemName(item.name);
     if (seen.has(key)) {
       toDelete.push(item.id);
     } else {
