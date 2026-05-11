@@ -206,8 +206,8 @@ const BUILTIN: Record<string, { label: string; sub: string; items: TemplateItem[
       { name: "Rash guard",                                     category: "Activewear" },
       { name: "Wetsuit (3mm–5mm depending on water temp)",      category: "Activewear" },
       { name: "Dive booties",                                   category: "Shoes"      },
-      { name: "Sun hat",                                        category: "Clothing"   },
-      { name: "Sunglasses",                                     category: "Clothing"   },
+      { name: "Sun hat",                                        category: "Accessories"},
+      { name: "Sunglasses",                                     category: "Accessories"},
       { name: "Sunscreen",                                       category: "Toiletries" },
       { name: "After-sun lotion",                               category: "Toiletries" },
       { name: "Underwater camera + housing",                    category: "Electronics"},
@@ -295,12 +295,11 @@ function normaliseItemName(name: string): string {
   s = s.replace(/\s*\+.*$/, "");            // strip + compound items ("Sun hat + sunglasses" → "sun hat")
   s = s.replace(/\s+spf\s*[\d+]+\+?/g, ""); // strip SPF numbers
   s = s.replace(/\s+(travel size|travel-size|mini)$/g, ""); // size qualifiers
-  // Strip leading clothing/material modifiers so "hiking socks" = "socks",
-  // "down jacket" = "jacket", "moisture-wicking shirts" = "shirts" etc.
-  s = s.replace(
-    /^(hiking|heavyweight|lightweight|quick-dry|moisture-wicking|thermal|waterproof|down|rain|light|smart|linen|casual|formal|evening|going-out|reef-safe|comfortable)\s+/,
-    ""
-  );
+  // Strip leading clothing/material modifiers repeatedly (handles chains like
+  // "waterproof rain jacket" → "rain jacket" → "jacket").
+  const MODIFIER_RE = /^(hiking|heavyweight|lightweight|quick-dry|moisture-wicking|thermal|waterproof|down|rain|light|smart|linen|casual|formal|evening|going-out|reef-safe|comfortable|insulated|warm|technical|merino|softshell|hardshell)\s+/;
+  // eslint-disable-next-line no-constant-condition
+  while (true) { const next = s.replace(MODIFIER_RE, ""); if (next === s) break; s = next; }
   s = s.replace(/^\d+\s+/, ""); // strip leading quantity "2 " / "3 "
   return s.trim();
 }
@@ -338,6 +337,11 @@ const RENAME_ALIASES: Record<string, string> = {
   "shoes for long days": "walking shoes",
   // "Woolen hat / beanie" → slash-drop → "woolen hat"; map to the canonical template name
   "woolen hat": "beanie",
+  // Outerwear variants → canonical keys
+  "poncho":      "jacket",   // "Rain poncho / waterproof jacket" → "poncho"
+  "outer shell": "jacket",   // "Waterproof outer shell" → "outer shell"
+  "layer":       "jacket",   // "Light layer / jacket", "Warm layer / fleece" → "layer"
+  "mid-layer":   "fleece",   // "Fleece / mid-layer", "Warm mid-layer / fleece" → "mid-layer"
 };
 
 function dedup(items: TemplateItem[]): TemplateItem[] {
