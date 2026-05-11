@@ -1146,7 +1146,7 @@ function ItinerarySection({
                   {day.activities.map((act, i) => (
                     <li key={i} className="text-xs text-gray-600 dark:text-[#9fb8b8]">
                       <div className="flex gap-2">
-                        <span className="shrink-0 w-16 whitespace-nowrap font-mono text-gray-400 dark:text-[#9fb8b8]">{formatActivityTime(act.time, clockFormat)}</span>
+                        <span className="shrink-0 w-12 sm:w-16 whitespace-nowrap font-mono text-gray-400 dark:text-[#9fb8b8]">{formatActivityTime(act.time, clockFormat)}</span>
                         <div className="min-w-0">
                           <span className="font-medium">{act.title}</span>
                           {act.place_name && <span className="ml-1 text-gray-400">· {act.place_name}</span>}

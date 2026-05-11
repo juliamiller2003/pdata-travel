@@ -360,7 +360,9 @@ export default function TransportationSection({ tripId, tripStartDate, initialFl
               : "text-gray-500 dark:text-[#9fb8b8] hover:text-gray-700 dark:hover:text-[#efefef]"
           }`}
         >
-          Ground &amp; Sea {legs.length > 0 && `(${legs.length})`}
+          <span className="hidden sm:inline">Ground &amp; Sea</span>
+          <span className="sm:hidden">Ground</span>
+          {legs.length > 0 && ` (${legs.length})`}
         </button>
         <button
           onClick={() => setTab("route")}

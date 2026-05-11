@@ -82,7 +82,7 @@ export default function Nav({ user }: NavProps) {
               </button>
 
               {open && (
-                <div className="absolute right-0 top-full mt-2 w-52 rounded-xl bg-white shadow-xl border border-gray-100 overflow-hidden z-50 py-1 dark:bg-[#2e2e2e] dark:border-[#3a3a3a]">
+                <div className="absolute right-0 top-full mt-2 w-44 sm:w-52 max-w-[calc(100vw-1rem)] rounded-xl bg-white shadow-xl border border-gray-100 overflow-hidden z-50 py-1 dark:bg-[#2e2e2e] dark:border-[#3a3a3a]">
                   <a href="/trips" className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-[#cadede] dark:font-medium dark:hover:bg-[#3a3a3a]">
                     <svg className="h-4 w-4 text-gray-400 dark:text-[#9fb8b8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />

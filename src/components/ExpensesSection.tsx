@@ -149,21 +149,21 @@ export default function ExpensesSection({ tripId, budget, initialExpenses, start
       {/* Budget overview */}
       {(budget != null || totalSpent > 0) && (
         <div className="card p-5 mb-4 space-y-4">
-          <div className="grid grid-cols-3 gap-4 text-center">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-center">
             {budget != null && (
               <div>
                 <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8]">Budget</p>
-                <p className="mt-1 text-xl font-bold text-gray-900 dark:text-[#efefef]">${fmt(budget)}</p>
+                <p className="mt-1 text-lg sm:text-xl font-bold text-gray-900 dark:text-[#efefef]">${fmt(budget)}</p>
               </div>
             )}
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8]">Spent</p>
-              <p className="mt-1 text-xl font-bold text-gray-900 dark:text-[#efefef]">${fmt(totalSpent)}</p>
+              <p className="mt-1 text-lg sm:text-xl font-bold text-gray-900 dark:text-[#efefef]">${fmt(totalSpent)}</p>
             </div>
             {remaining != null && (
               <div>
                 <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8]">Remaining</p>
-                <p className={`mt-1 text-xl font-bold ${remaining >= 0 ? "text-green-600" : "text-red-500"}`}>
+                <p className={`mt-1 text-lg sm:text-xl font-bold ${remaining >= 0 ? "text-green-600" : "text-red-500"}`}>
                   {remaining < 0 ? "-" : ""}${fmt(Math.abs(remaining))}
                 </p>
               </div>
@@ -197,17 +197,17 @@ export default function ExpensesSection({ tripId, budget, initialExpenses, start
           {showDailyMode && (
             <div className="border-t border-gray-100 dark:border-[#3a3a3a] pt-4 space-y-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8]">Daily Budget</p>
-              <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-center">
                 {dailyBudget && (
                   <div>
                     <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8]">Per Day</p>
-                    <p className="mt-1 text-lg font-bold text-gray-900 dark:text-[#efefef]">${fmt(dailyBudget)}</p>
+                    <p className="mt-1 text-base sm:text-lg font-bold text-gray-900 dark:text-[#efefef]">${fmt(dailyBudget)}</p>
                   </div>
                 )}
                 {avgDailySpend != null && (
                   <div>
                     <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8]">Avg / Day</p>
-                    <p className={`mt-1 text-lg font-bold ${dailyBudget && avgDailySpend > dailyBudget ? "text-red-500" : "text-gray-900 dark:text-[#efefef]"}`}>
+                    <p className={`mt-1 text-base sm:text-lg font-bold ${dailyBudget && avgDailySpend > dailyBudget ? "text-red-500" : "text-gray-900 dark:text-[#efefef]"}`}>
                       ${fmt(avgDailySpend)}
                     </p>
                   </div>
@@ -215,7 +215,7 @@ export default function ExpensesSection({ tripId, budget, initialExpenses, start
                 {daysRemaining != null && (
                   <div>
                     <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8]">Days Left</p>
-                    <p className="mt-1 text-lg font-bold text-gray-900 dark:text-[#efefef]">{daysRemaining}</p>
+                    <p className="mt-1 text-base sm:text-lg font-bold text-gray-900 dark:text-[#efefef]">{daysRemaining}</p>
                   </div>
                 )}
               </div>

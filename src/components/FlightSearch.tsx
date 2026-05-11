@@ -209,7 +209,7 @@ export default function FlightSearch({ tripId, onFlightAdded, defaultDate }: Fli
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="flex-1 space-y-1">
               <input
                 type="text"
@@ -363,7 +363,7 @@ export function FlightCard({ flight, onDelete }: { flight: Flight; onDelete: () 
       </div>
 
       {(flight.departure_iata || flight.arrival_iata) ? (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <div className="flex-1 text-center">
             <p className="text-xl font-bold text-gray-900 dark:text-[#efefef]">{flight.departure_iata ?? "—"}</p>
             <p className="text-xs text-gray-400 dark:text-[#9fb8b8] line-clamp-1">{flight.departure_airport ?? ""}</p>
