@@ -292,6 +292,7 @@ function normaliseItemName(name: string): string {
   let s = name.toLowerCase();
   s = s.replace(/\s*\(.*?\)/g, "");          // strip (parenthetical)
   s = s.replace(/\s*\/.*$/, "");             // strip / slash variants
+  s = s.replace(/\s*\+.*$/, "");            // strip + compound items ("Sun hat + sunglasses" → "sun hat")
   s = s.replace(/\s+spf\s*[\d+]+\+?/g, ""); // strip SPF numbers
   s = s.replace(/\s+(travel size|travel-size|mini)$/g, ""); // size qualifiers
   // Strip leading clothing/material modifiers so "hiking socks" = "socks",
@@ -329,6 +330,8 @@ const RENAME_ALIASES: Record<string, string> = {
   "wellies": "boots",
   // "Comfortable shoes for long days" → strip "comfortable" → "shoes for long days"
   "shoes for long days": "walking shoes",
+  // "Woolen hat / beanie" → slash-drop → "woolen hat"; map to the canonical template name
+  "woolen hat": "beanie",
 };
 
 function dedup(items: TemplateItem[]): TemplateItem[] {
