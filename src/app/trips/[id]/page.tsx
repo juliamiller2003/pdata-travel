@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
@@ -17,6 +18,15 @@ import TransportationSection from "@/components/TransportationSection";
 import CurrencySection from "@/components/CurrencySection";
 import { effectiveStatus, formatDate } from "@/lib/tripUtils";
 
+// Deduplicate the trip fetch between generateMetadata and the page component
+// within a single render pass — avoids a duplicate DB round trip.
+const getTrip = cache(async (id: string) => {
+  const supabase = await createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any).from("trips").select("*").eq("id", id).single();
+  return data;
+});
+
 const STATUS_STYLES: Record<TripStatus, string> = {
   planning:  "bg-[#e5dd83] dark:bg-[#f5ee9e] text-[#1e1e1e]",
   ongoing:   "bg-[#cadede] text-[#1e1e1e]",
@@ -31,14 +41,7 @@ interface TripPageProps {
 }
 
 export async function generateMetadata({ params }: TripPageProps) {
-  const supabase = await createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: trip } = await (supabase as any)
-    .from("trips")
-    .select("title, destination")
-    .eq("id", params.id)
-    .single();
-
+  const trip = await getTrip(params.id);
   if (!trip) return {};
 
   const title = trip.destination
@@ -63,24 +66,13 @@ export default async function TripDetailPage({ params }: TripPageProps) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // Fetch trip
-  const { data: trip } = await db
-    .from("trips")
-    .select("*")
-    .eq("id", id)
-    .single();
-
+  // Trip is served from the React cache populated by generateMetadata — no extra round trip.
+  const trip = await getTrip(id);
   if (!trip) notFound();
 
-  // Fetch itinerary days + activities
-  const { data: days } = await db
-    .from("itinerary_days")
-    .select("*, activities(*)")
-    .eq("trip_id", id)
-    .order("day_number");
-
-  // Fetch journal, flights, expenses, user settings, accommodations, packing, transport, maps in parallel
+  // Fetch all section data in a single parallel round trip (itinerary included).
   const [
+    { data: days },
     { data: journal },
     { data: flightsData },
     { data: expensesData },
@@ -89,6 +81,11 @@ export default async function TripDetailPage({ params }: TripPageProps) {
     { data: packingData },
     { data: transportLegsData },
   ] = await Promise.all([
+    db
+      .from("itinerary_days")
+      .select("*, activities(*)")
+      .eq("trip_id", id)
+      .order("day_number"),
     db
       .from("journal_entries")
       .select("*")

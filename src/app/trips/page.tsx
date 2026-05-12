@@ -17,12 +17,14 @@ export default async function TripsPage() {
 
   if (!user) redirect("/login");
 
-  // Auto-update trip statuses based on today's date
+  // Auto-update trip statuses based on today's date.
+  // Fire-and-forget: kick off status updates and data fetches in parallel
+  // so status corrections don't block rendering on this visit.
   const today = new Date().toISOString().split("T")[0];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
 
-  await Promise.all([
+  const statusUpdatePromise = Promise.all([
     // planning → ongoing when start date has arrived
     db
       .from("trips")
@@ -44,6 +46,10 @@ export default async function TripsPage() {
     db.from("trips").select("*").order("created_at", { ascending: false }),
     db.from("user_settings").select("*").eq("user_id", user.id).single(),
   ]);
+
+  // Allow status updates to settle in the background — not awaited so they
+  // don't block this render. On the next page load statuses will be correct.
+  void statusUpdatePromise;
 
   const allTrips: import("@/types/database").Trip[] = trips ?? [];
   const mapView = (settings as import("@/types/database").UserSettings | null)?.map_view ?? "world";
