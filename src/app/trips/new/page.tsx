@@ -134,7 +134,7 @@ export default function NewTripPage() {
 
           <div>
             <label htmlFor="destination" className="label">Destination *</label>
-            <p className="text-xs text-gray-400 mb-1">City or region — shown as the trip's main label, e.g. "Tokyo" or "Southeast Asia"</p>
+            <p className="text-xs text-gray-400 mb-1">City or region &mdash; shown as the trip&apos;s main label, e.g. &ldquo;Tokyo&rdquo; or &ldquo;Southeast Asia&rdquo;</p>
             <input
               id="destination"
               type="text"
