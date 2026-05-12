@@ -129,9 +129,6 @@ export default function SettingsPage() {
           {/* Map view preference */}
           <div>
             <p className="label mb-2">Map view</p>
-            <p className="text-xs text-gray-500 mb-3">
-              Choose whether to show a world map or zoom into your home country by default.
-            </p>
             <div className="grid grid-cols-2 gap-3">
               {(["world", "country"] as MapView[]).map((v) => (
                 <label
@@ -234,7 +231,6 @@ export default function SettingsPage() {
         {/* Default itinerary style */}
         <div className="mt-6 border-t border-gray-100 pt-6 dark:border-gray-700">
           <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Default itinerary style</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Applied when creating a new trip. You can override it per trip in trip settings.</p>
           <div className="grid grid-cols-2 gap-2">
             {ITINERARY_STYLE_OPTIONS.map((opt) => (
               <button

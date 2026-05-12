@@ -19,6 +19,8 @@ export default function NewTripPage() {
   const router = useRouter();
   const supabase = createClient();
 
+  const DRAFT_KEY = "pathway-new-trip-draft";
+
   const [title, setTitle] = useState("");
   const [destination, setDestination] = useState("");
   const [countryCodes, setCountryCodes] = useState<string[]>([]);
@@ -31,9 +33,35 @@ export default function NewTripPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Restore draft from sessionStorage on mount
   useEffect(() => {
     setItineraryStyle(getDefaultItineraryStyle());
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d.title) setTitle(d.title);
+        if (d.destination) setDestination(d.destination);
+        if (d.countryCodes) setCountryCodes(d.countryCodes);
+        if (d.startDate) setStartDate(d.startDate);
+        if (d.endDate) setEndDate(d.endDate);
+        if (d.endDateTouched) setEndDateTouched(true);
+        if (d.status) setStatus(d.status);
+        if (d.budget) setBudget(d.budget);
+        if (d.itineraryStyle) setItineraryStyle(d.itineraryStyle);
+      }
+    } catch {}
   }, []);
+
+  // Persist draft to sessionStorage whenever any field changes
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
+        title, destination, countryCodes, startDate, endDate,
+        endDateTouched, status, budget, itineraryStyle,
+      }));
+    } catch {}
+  }, [title, destination, countryCodes, startDate, endDate, endDateTouched, status, budget, itineraryStyle]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -74,6 +102,7 @@ export default function NewTripPage() {
       return;
     }
 
+    try { sessionStorage.removeItem(DRAFT_KEY); } catch {}
     router.push(`/trips/${data.id}`);
   }
 
@@ -105,6 +134,7 @@ export default function NewTripPage() {
 
           <div>
             <label htmlFor="destination" className="label">Destination *</label>
+            <p className="text-xs text-gray-400 mb-1">City or region — shown as the trip's main label, e.g. "Tokyo" or "Southeast Asia"</p>
             <input
               id="destination"
               type="text"
@@ -118,7 +148,7 @@ export default function NewTripPage() {
 
           <div>
             <label className="label">Countries</label>
-            <p className="text-xs text-gray-400 mb-1">Used to show this trip on your travel map. Add all countries you visited.</p>
+            <p className="text-xs text-gray-400 mb-1">Add the countries you will visit — used to show this trip on your travel map.</p>
             <CountryMultiSelect value={countryCodes} onChange={setCountryCodes} />
           </div>
 
@@ -193,7 +223,7 @@ export default function NewTripPage() {
             <button type="submit" disabled={loading} className="btn-primary flex-1">
               {loading ? "Creating…" : "Create Trip"}
             </button>
-            <Link href="/trips" className="btn-secondary">Cancel</Link>
+            <button type="button" onClick={() => router.back()} className="btn-secondary">← Back</button>
           </div>
         </form>
       </div>

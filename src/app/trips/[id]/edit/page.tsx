@@ -169,6 +169,7 @@ export default function EditTripPage() {
 
           <div>
             <label htmlFor="destination" className="label">Destination *</label>
+            <p className="text-xs text-gray-400 mb-1">City or region — shown as the trip's main label, e.g. "Tokyo" or "Southeast Asia"</p>
             <input
               id="destination"
               type="text"
@@ -181,7 +182,7 @@ export default function EditTripPage() {
 
           <div>
             <label className="label">Countries</label>
-            <p className="text-xs text-gray-400 mb-1">Used to show this trip on your travel map. Add all countries you visited.</p>
+            <p className="text-xs text-gray-400 mb-1">Add the countries you will visit — used to show this trip on your travel map.</p>
             <CountryMultiSelect value={countryCodes} onChange={setCountryCodes} />
           </div>
 

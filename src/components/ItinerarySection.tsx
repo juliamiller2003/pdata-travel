@@ -873,6 +873,7 @@ function ItinerarySection({
       const res = await fetch("/api/suggest-itinerary", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: AbortSignal.timeout(55_000), // 55 s — just under Vercel's 60 s limit
         body: JSON.stringify({
           destination,
           num_days,
@@ -903,23 +904,46 @@ function ItinerarySection({
         }),
       });
 
-      const data = await res.json();
+      let data: Record<string, unknown>;
+      try {
+        data = await res.json();
+      } catch {
+        setAiError(`Server returned an unreadable response (HTTP ${res.status}). Please try again.`);
+        return;
+      }
 
       if (!res.ok || data.error) {
-        setAiError(data.error ?? "Something went wrong. Try again.");
+        const msg = typeof data.error === "string" ? data.error : null;
+        if (res.status === 529 || (msg && msg.toLowerCase().includes("overload"))) {
+          setAiError("The AI is overloaded right now. Wait a few seconds and try again.");
+        } else if (res.status === 408 || res.status === 504 || (msg && msg.toLowerCase().includes("timeout"))) {
+          setAiError("The request timed out — try generating fewer days at once.");
+        } else if (res.status === 500 && msg && msg.includes("Truncated")) {
+          setAiError("The AI response was cut off. Try generating 1–2 days at a time.");
+        } else {
+          setAiError(msg ?? `Generation failed (HTTP ${res.status}). Please try again.`);
+        }
         return;
       }
 
       if (style === "structured") {
-        setStructuredSuggestion(data.days ?? []);
-        if (data.traveler_note) setTravelerNote(data.traveler_note);
+        setStructuredSuggestion(data.days as never[] ?? []);
+        if (data.traveler_note) setTravelerNote(data.traveler_note as string);
       } else if (style === "notes") {
-        setNotesSuggestion(data.content ?? "");
+        setNotesSuggestion((data.content as string) ?? "");
       } else {
-        setDayNotesSuggestion(data.days ?? []);
+        setDayNotesSuggestion(data.days as never[] ?? []);
       }
-    } catch {
-      setAiError("Something went wrong. Try again.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const isAbort = err instanceof DOMException && (err.name === "TimeoutError" || err.name === "AbortError");
+      if (isAbort || msg.toLowerCase().includes("timeout") || msg.toLowerCase().includes("timed out") || msg.toLowerCase().includes("aborted")) {
+        setAiError("The request timed out — the AI took too long. Try generating 1–2 days at a time.");
+      } else if (msg.includes("fetch") || msg.includes("network") || msg.includes("Failed to fetch")) {
+        setAiError("Network error — check your connection and try again.");
+      } else {
+        setAiError(`Something went wrong: ${msg}`);
+      }
     } finally {
       setGenerating(false);
     }
