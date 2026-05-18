@@ -26,22 +26,28 @@ Respond with ONLY valid JSON — no markdown, no code blocks, no explanation. Us
 
 Keep highlights and tips concise (under 12 words each). If the query is not travel-related, set destination to null and all other fields to null.`;
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": process.env.ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 1024,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5",
+        max_tokens: 1024,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+  } catch (err) {
+    return NextResponse.json({ error: `Network error: ${String(err)}` }, { status: 502 });
+  }
 
   if (!response.ok) {
-    return NextResponse.json({ error: "Failed to reach AI" }, { status: 500 });
+    const errText = await response.text().catch(() => "");
+    return NextResponse.json({ error: `AI error (${response.status}): ${errText.slice(0, 200)}` }, { status: 500 });
   }
 
   const data = await response.json();

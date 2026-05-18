@@ -38,22 +38,28 @@ Respond with ONLY valid JSON — no markdown, no explanation:
   ${visaField}
 }`;
 
-  const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": process.env.ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 1024,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
+  let aiRes: Response;
+  try {
+    aiRes = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5",
+        max_tokens: 1024,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+  } catch (err) {
+    return NextResponse.json({ error: `Network error: ${String(err)}` }, { status: 502 });
+  }
 
   if (!aiRes.ok) {
-    return NextResponse.json({ error: "Failed to reach AI" }, { status: 500 });
+    const errText = await aiRes.text().catch(() => "");
+    return NextResponse.json({ error: `AI error (${aiRes.status}): ${errText.slice(0, 200)}` }, { status: 500 });
   }
 
   const aiData = await aiRes.json();
