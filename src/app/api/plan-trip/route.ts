@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { anthropicFetch } from "@/lib/anthropicFetch";
 
 export async function POST(req: NextRequest) {
   const { query } = await req.json();
@@ -28,19 +29,10 @@ Keep highlights and tips concise (under 12 words each). If the query is not trav
 
   let response: Response;
   try {
-    response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5",
-        max_tokens: 1024,
-        messages: [{ role: "user", content: prompt }],
-      }),
-    });
+    response = await anthropicFetch(
+      { model: "claude-haiku-4-5", max_tokens: 1024, messages: [{ role: "user", content: prompt }] },
+      process.env.ANTHROPIC_API_KEY,
+    );
   } catch (err) {
     return NextResponse.json({ error: `Network error: ${String(err)}` }, { status: 502 });
   }

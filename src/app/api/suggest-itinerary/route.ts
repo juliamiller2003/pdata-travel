@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { anthropicFetch } from "@/lib/anthropicFetch";
 import type { ItineraryStyle } from "@/types/database";
 
 export const maxDuration = 60;
@@ -362,20 +363,10 @@ export async function POST(req: NextRequest) {
 
   let anthropicRes: Response;
   try {
-    anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5",
-        max_tokens: 8192,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: prompt }],
-      }),
-    });
+    anthropicRes = await anthropicFetch(
+      { model: "claude-haiku-4-5", max_tokens: 8192, system: SYSTEM_PROMPT, messages: [{ role: "user", content: prompt }] },
+      apiKey,
+    );
   } catch (err) {
     return NextResponse.json({ error: `Network error reaching AI: ${String(err)}` }, { status: 502 });
   }

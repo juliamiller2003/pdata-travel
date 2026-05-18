@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { anthropicFetch } from "@/lib/anthropicFetch";
 import { OUTLET_LOOKUP, CURRENCY_CODES } from "@/lib/countryData";
 
 export async function POST(req: NextRequest) {
@@ -40,19 +41,10 @@ Respond with ONLY valid JSON — no markdown, no explanation:
 
   let aiRes: Response;
   try {
-    aiRes = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5",
-        max_tokens: 1024,
-        messages: [{ role: "user", content: prompt }],
-      }),
-    });
+    aiRes = await anthropicFetch(
+      { model: "claude-haiku-4-5", max_tokens: 1024, messages: [{ role: "user", content: prompt }] },
+      process.env.ANTHROPIC_API_KEY,
+    );
   } catch (err) {
     return NextResponse.json({ error: `Network error: ${String(err)}` }, { status: 502 });
   }

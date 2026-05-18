@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { anthropicFetch } from "@/lib/anthropicFetch";
 
 export async function POST(req: NextRequest) {
   const { location, distance, duration, travelDate, budget, requests, vibes, user_style, user_pace } = await req.json();
@@ -60,19 +61,10 @@ country_code must be a valid ISO 3166-1 alpha-2 code.`;
 
   let response: Response;
   try {
-    response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-5",
-        max_tokens: 2048,
-        messages: [{ role: "user", content: prompt }],
-      }),
-    });
+    response = await anthropicFetch(
+      { model: "claude-sonnet-4-5", max_tokens: 2048, messages: [{ role: "user", content: prompt }] },
+      process.env.ANTHROPIC_API_KEY,
+    );
   } catch (err) {
     return NextResponse.json({ error: `Network error: ${String(err)}` }, { status: 502 });
   }
