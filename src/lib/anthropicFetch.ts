@@ -1,6 +1,8 @@
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 /**
- * Wraps fetch to the Anthropic API with a single automatic retry on 529
- * (overloaded). Waits 3 seconds before retrying so the user doesn't have to.
+ * Wraps fetch to the Anthropic API with automatic retries on 529 (overloaded).
+ * Retries up to 3 times with increasing delays: 5s, 10s, 20s.
  */
 export async function anthropicFetch(
   body: Record<string, unknown>,
@@ -17,11 +19,13 @@ export async function anthropicFetch(
       body: JSON.stringify(body),
     });
 
-  const res = await call();
+  const delays = [5000, 10000, 20000];
 
-  if (res.status === 529) {
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-    return call();
+  let res = await call();
+  for (const delay of delays) {
+    if (res.status !== 529) break;
+    await sleep(delay);
+    res = await call();
   }
 
   return res;
