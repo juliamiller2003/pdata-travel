@@ -124,8 +124,9 @@ export default function EditTripPage() {
       return;
     }
 
-    router.refresh(); // invalidate Router Cache so the trip page re-fetches from DB
-    router.push(`/trips/${id}`);
+    // Hard navigate to bypass Next.js Router Cache — ensures the trip page
+    // always fetches fresh data from the DB rather than serving a stale RSC payload.
+    window.location.href = `/trips/${id}`;
   }
 
   if (loading) {
