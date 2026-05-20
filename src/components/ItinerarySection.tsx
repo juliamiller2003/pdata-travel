@@ -802,16 +802,36 @@ function ItinerarySection({
 
   // ── Day CRUD ─────────────────────────────────────────────────
 
+  const [addingDay, setAddingDay] = useState(false);
+
   async function handleAddDay() {
-    const nextNum = days.length > 0 ? Math.max(...days.map((d) => d.day_number)) + 1 : 1;
+    setAddingDay(true);
+
+    // Query the DB for the real current max so we never conflict with
+    // any in-flight normalization updates that haven't persisted yet.
+    const { data: existing } = await db
+      .from("itinerary_days")
+      .select("day_number")
+      .eq("trip_id", tripId)
+      .order("day_number", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const nextNum = existing ? existing.day_number + 1 : 1;
     const { data, error } = await db
       .from("itinerary_days")
       .insert({ trip_id: tripId, day_number: nextNum, date: dateForDayNum(nextNum) })
       .select().single();
-    if (!error && data) {
-      setDays((prev) => [...prev, { ...data, activities: [], section_notes: {} }]);
-      setDayNotes((prev) => ({ ...prev, [data.id]: {} }));
+
+    setAddingDay(false);
+
+    if (error || !data) {
+      console.error("[handleAddDay] insert failed:", error);
+      return;
     }
+
+    setDays((prev) => [...prev, { ...data, activities: [], section_notes: {} }]);
+    setDayNotes((prev) => ({ ...prev, [data.id]: {} }));
   }
 
   async function handleDeleteDay(dayId: string) {
@@ -1113,9 +1133,10 @@ function ItinerarySection({
   const addDayButton = (
     <button
       onClick={handleAddDay}
-      className="w-full rounded-xl border-2 border-dashed border-gray-200 dark:border-[#2e2e2e] py-3 text-sm font-medium text-gray-400 dark:text-[#9fb8b8] hover:border-[#9fb8b8] hover:text-[#9fb8b8] transition-colors"
+      disabled={addingDay}
+      className="w-full rounded-xl border-2 border-dashed border-gray-200 dark:border-[#2e2e2e] py-3 text-sm font-medium text-gray-400 dark:text-[#9fb8b8] hover:border-[#9fb8b8] hover:text-[#9fb8b8] transition-colors disabled:opacity-50"
     >
-      + Add day
+      {addingDay ? "Adding…" : "+ Add day"}
     </button>
   );
 
