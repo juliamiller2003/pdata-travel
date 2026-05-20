@@ -55,6 +55,7 @@ export default function FlightSearch({ tripId, onFlightAdded, defaultDate }: Fli
   const [editDepartureTime, setEditDepartureTime] = useState("");
   const [editArrivalTime, setEditArrivalTime] = useState("");
   const [lookupError, setLookupError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [looking, setLooking] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -101,6 +102,7 @@ export default function FlightSearch({ tripId, onFlightAdded, defaultDate }: Fli
   async function handleSave() {
     if (!lookupResult) return;
     setSaving(true);
+    setSaveError(null);
 
     const miles = distanceMiles ? parseInt(distanceMiles, 10) : null;
 
@@ -113,11 +115,11 @@ export default function FlightSearch({ tripId, onFlightAdded, defaultDate }: Fli
         departure_airport: lookupResult.departureAirport,
         departure_city: editDepartureCity || lookupResult.departureCity,
         departure_iata: editDepartureIata || lookupResult.departureIata,
-        departure_time: editDepartureTime || null,
+        departure_time: editDepartureTime ? `${flightDate}T${editDepartureTime}:00` : null,
         arrival_airport: lookupResult.arrivalAirport,
         arrival_city: editArrivalCity || lookupResult.arrivalCity,
         arrival_iata: editArrivalIata || lookupResult.arrivalIata,
-        arrival_time: editArrivalTime || null,
+        arrival_time: editArrivalTime ? `${flightDate}T${editArrivalTime}:00` : null,
         flight_date: flightDate,
         status: lookupResult.status,
         distance_miles: miles,
@@ -126,7 +128,10 @@ export default function FlightSearch({ tripId, onFlightAdded, defaultDate }: Fli
       .single();
 
     setSaving(false);
-    if (error || !data) return;
+    if (error || !data) {
+      setSaveError(error?.message ?? "Failed to save flight — please try again.");
+      return;
+    }
 
     onFlightAdded(data);
     setShowForm(false);
@@ -314,6 +319,9 @@ export default function FlightSearch({ tripId, onFlightAdded, defaultDate }: Fli
             />
           </div>
 
+          {saveError && (
+            <p className="text-sm text-red-600 dark:text-red-400">{saveError}</p>
+          )}
           <button
             onClick={handleSave}
             disabled={saving}
