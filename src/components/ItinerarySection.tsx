@@ -670,6 +670,26 @@ function ItinerarySection({
     try { localStorage.setItem(`pathway-itinerary-${tripId}`, JSON.stringify(days)); } catch {}
   }, [days, tripId]);
 
+  // On mount: silently fix any gaps in day_number / date caused by prior deletions
+  // (e.g. days stored as [1,2,5,6,7] get renumbered to [1,2,3,4,5])
+  useEffect(() => {
+    const sorted = [...initialDays].sort((a, b) => a.day_number - b.day_number);
+    const hasGaps = sorted.some((d, i) => d.day_number !== i + 1);
+    const missingDates = sorted.some((d) => !d.date && tripStartDate);
+    if (!hasGaps && !missingDates) return;
+
+    const updated = sorted.map((day, idx) => ({
+      ...day,
+      day_number: idx + 1,
+      date: tripStartDate ? dateForDayNum(idx + 1) : day.date,
+    }));
+    updated.forEach((day) => {
+      void db.from("itinerary_days").update({ day_number: day.day_number, date: day.date }).eq("id", day.id);
+    });
+    setDays(updated.map((d) => ({ ...d, activities: sortActivities(d.activities) })));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally runs once on mount only
+
   // Structured mode — which day/activity form is open (not the form values themselves;
   // those live in AddActivityForm / EditActivityInline to avoid parent re-renders)
   const [addingActivity, setAddingActivity] = useState<string | null>(null);
@@ -794,12 +814,24 @@ function ItinerarySection({
     }
   }
 
-  const handleDeleteDay = useCallback(async (dayId: string) => {
+  async function handleDeleteDay(dayId: string) {
     await db.from("itinerary_days").delete().eq("id", dayId);
-    setDays((prev) => prev.filter((d) => d.id !== dayId));
+    setDays((prev) => {
+      const remaining = prev.filter((d) => d.id !== dayId);
+      // Renumber sequentially so day_number and date stay consistent
+      remaining.forEach((day, idx) => {
+        const newNum = idx + 1;
+        const newDate = dateForDayNum(newNum);
+        void db.from("itinerary_days").update({ day_number: newNum, date: newDate }).eq("id", day.id);
+      });
+      return remaining.map((day, idx) => ({
+        ...day,
+        day_number: idx + 1,
+        date: dateForDayNum(idx + 1),
+      }));
+    });
     setDayNotes((prev) => { const n = { ...prev }; delete n[dayId]; return n; });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db]);
+  }
 
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
