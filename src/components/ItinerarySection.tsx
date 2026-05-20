@@ -93,7 +93,7 @@ const SECTION_CONFIG: Record<string, { key: string; label: string }[]> = {
 
 function formatDayDate(date: string | null) {
   if (!date) return null;
-  return new Date(date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return new Date(date + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
 function computeDuration(start: string | null, end: string | null): number | null {
