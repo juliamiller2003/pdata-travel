@@ -228,7 +228,12 @@ export default function AccommodationSection({ tripId, initialAccommodations, tr
         </div>
       ) : (
         <div className="space-y-3">
-          {items.map((a) => {
+          {[...items].sort((a, b) => {
+            if (!a.check_in && !b.check_in) return 0;
+            if (!a.check_in) return 1;
+            if (!b.check_in) return -1;
+            return a.check_in < b.check_in ? -1 : 1;
+          }).map((a) => {
             const n = nights(a.check_in, a.check_out);
             const totalCost = n && a.cost_per_night ? n * a.cost_per_night : null;
             return (
