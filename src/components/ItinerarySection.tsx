@@ -674,6 +674,7 @@ function ItinerarySection({
   // those live in AddActivityForm / EditActivityInline to avoid parent re-renders)
   const [addingActivity, setAddingActivity] = useState<string | null>(null);
   const [editingActivity, setEditingActivity] = useState<string | null>(null);
+  const [movingAllFromDay, setMovingAllFromDay] = useState<string | null>(null);
 
   // Notes mode
   const [tripNotes, setTripNotes] = useState(initialNotes ?? "");
@@ -831,6 +832,26 @@ function ItinerarySection({
     setDays((prev) => prev.map((d) =>
       d.id === dayId ? { ...d, activities: d.activities.filter((a) => a.id !== activityId) } : d
     ));
+  }
+
+  async function handleMoveAllActivities(fromDayId: string, toDayId: string) {
+    const fromDay = days.find((d) => d.id === fromDayId);
+    if (!fromDay || fromDay.activities.length === 0) return;
+
+    await db.from("activities").update({ day_id: toDayId }).eq("day_id", fromDayId);
+
+    setDays((prev) => prev.map((d) => {
+      if (d.id === fromDayId) return { ...d, activities: [] };
+      if (d.id === toDayId) return {
+        ...d,
+        activities: sortActivities([
+          ...d.activities,
+          ...fromDay.activities.map((a) => ({ ...a, day_id: toDayId })),
+        ]),
+      };
+      return d;
+    }));
+    setMovingAllFromDay(null);
   }
 
   // ── Notes saves ───────────────────────────────────────────────
@@ -1501,9 +1522,46 @@ function ItinerarySection({
                 onCancel={() => setAddingActivity(null)}
               />
             ) : (
-              <button onClick={() => { setAddingActivity(day.id); setEditingActivity(null); }} className="text-xs text-gray-400 dark:text-[#9fb8b8] hover:text-[#9fb8b8] transition-colors">
-                + Add activity
-              </button>
+              <div className="flex items-center justify-between gap-3">
+                <button onClick={() => { setAddingActivity(day.id); setEditingActivity(null); setMovingAllFromDay(null); }} className="text-xs text-gray-400 dark:text-[#9fb8b8] hover:text-[#9fb8b8] transition-colors">
+                  + Add activity
+                </button>
+                {day.activities.length > 0 && days.length > 1 && (
+                  movingAllFromDay === day.id ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-gray-400 dark:text-[#9fb8b8] shrink-0">Move all to</span>
+                      <select
+                        className="input text-xs py-0.5 px-2 h-auto"
+                        defaultValue=""
+                        autoFocus
+                        onChange={(e) => {
+                          if (e.target.value) handleMoveAllActivities(day.id, e.target.value);
+                        }}
+                      >
+                        <option value="" disabled>Day…</option>
+                        {days.filter((d) => d.id !== day.id).map((d) => (
+                          <option key={d.id} value={d.id}>
+                            Day {d.day_number}{d.date ? ` · ${formatDayDate(d.date)}` : ""}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => setMovingAllFromDay(null)}
+                        className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-[#efefef] transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => { setMovingAllFromDay(day.id); setAddingActivity(null); setEditingActivity(null); }}
+                      className="text-xs text-gray-400 dark:text-[#9fb8b8] hover:text-[#9fb8b8] transition-colors"
+                    >
+                      Move all →
+                    </button>
+                  )
+                )}
+              </div>
             )}
           </SortableDayCard>
         ))}

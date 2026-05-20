@@ -16,7 +16,11 @@ function formatTime(iso: string | null) {
   // Extract HH:MM directly from the string so we always show the local departure/arrival
   // time as stored — no Date() construction means no timezone conversion that would
   // cause server/client hydration mismatches.
-  const timePart = iso.includes("T") ? iso.slice(11, 16) : iso.slice(0, 5);
+  // Handles both ISO "T" separator ("2026-06-04T18:20:00+09:00")
+  // and AeroDataBox space separator ("2026-06-04 18:20+09:00").
+  const timePart = iso.length >= 16 && (iso[10] === "T" || iso[10] === " ")
+    ? iso.slice(11, 16)
+    : iso.slice(0, 5);
   if (!timePart.includes(":")) return iso;
   const [hStr, mStr] = timePart.split(":");
   const h = parseInt(hStr, 10);
@@ -25,6 +29,14 @@ function formatTime(iso: string | null) {
   const period = h >= 12 ? "PM" : "AM";
   const hour12 = h % 12 || 12;
   return `${hour12}:${String(m).padStart(2, "0")} ${period}`;
+}
+
+/** Extracts HH:MM from any time string for use in <input type="time"> */
+function toTimeInput(iso: string | null): string {
+  if (!iso) return "";
+  if (iso.length >= 16 && (iso[10] === "T" || iso[10] === " ")) return iso.slice(11, 16);
+  if (iso.length >= 5 && iso[2] === ":") return iso.slice(0, 5);
+  return "";
 }
 
 export default function FlightSearch({ tripId, onFlightAdded, defaultDate }: FlightSearchProps) {
@@ -40,6 +52,8 @@ export default function FlightSearch({ tripId, onFlightAdded, defaultDate }: Fli
   const [editArrivalIata, setEditArrivalIata] = useState("");
   const [editDepartureCity, setEditDepartureCity] = useState("");
   const [editArrivalCity, setEditArrivalCity] = useState("");
+  const [editDepartureTime, setEditDepartureTime] = useState("");
+  const [editArrivalTime, setEditArrivalTime] = useState("");
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [looking, setLooking] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -54,6 +68,8 @@ export default function FlightSearch({ tripId, onFlightAdded, defaultDate }: Fli
     setEditArrivalIata("");
     setEditDepartureCity("");
     setEditArrivalCity("");
+    setEditDepartureTime("");
+    setEditArrivalTime("");
   }
 
   async function handleLookup(e: React.FormEvent) {
@@ -77,6 +93,8 @@ export default function FlightSearch({ tripId, onFlightAdded, defaultDate }: Fli
     setEditArrivalIata(data.arrivalIata ?? "");
     setEditDepartureCity(data.departureCity ?? "");
     setEditArrivalCity(data.arrivalCity ?? "");
+    setEditDepartureTime(toTimeInput(data.departureTime));
+    setEditArrivalTime(toTimeInput(data.arrivalTime));
     if (data.distanceMiles) setDistanceMiles(String(data.distanceMiles));
   }
 
@@ -95,11 +113,11 @@ export default function FlightSearch({ tripId, onFlightAdded, defaultDate }: Fli
         departure_airport: lookupResult.departureAirport,
         departure_city: editDepartureCity || lookupResult.departureCity,
         departure_iata: editDepartureIata || lookupResult.departureIata,
-        departure_time: lookupResult.departureTime,
+        departure_time: editDepartureTime || null,
         arrival_airport: lookupResult.arrivalAirport,
         arrival_city: editArrivalCity || lookupResult.arrivalCity,
         arrival_iata: editArrivalIata || lookupResult.arrivalIata,
-        arrival_time: lookupResult.arrivalTime,
+        arrival_time: editArrivalTime || null,
         flight_date: flightDate,
         status: lookupResult.status,
         distance_miles: miles,
@@ -234,9 +252,14 @@ export default function FlightSearch({ tripId, onFlightAdded, defaultDate }: Fli
                 placeholder="City"
                 className="input text-center text-xs"
               />
-              {lookupResult.departureTime && (
-                <p className="text-sm font-medium text-gray-700 dark:text-[#efefef] text-center">{formatTime(lookupResult.departureTime)}</p>
-              )}
+              <input
+                type="text"
+                value={editDepartureTime}
+                onChange={(e) => setEditDepartureTime(e.target.value)}
+                placeholder="HH:MM"
+                maxLength={5}
+                className="input text-center text-sm"
+              />
             </div>
             <div className="flex flex-col items-center gap-1 text-gray-300 shrink-0">
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -259,18 +282,24 @@ export default function FlightSearch({ tripId, onFlightAdded, defaultDate }: Fli
                 placeholder="City"
                 className="input text-center text-xs"
               />
-              {lookupResult.arrivalTime && (
-                <p className="text-sm font-medium text-gray-700 text-center">{formatTime(lookupResult.arrivalTime)}</p>
-              )}
+              <input
+                type="text"
+                value={editArrivalTime}
+                onChange={(e) => setEditArrivalTime(e.target.value)}
+                placeholder="HH:MM"
+                maxLength={5}
+                className="input text-center text-sm"
+              />
             </div>
           </div>
-          {lookupResult.source === "ai" && (
+          {lookupResult.source === "ai" ? (
             <p className="text-xs text-amber-600">
               ⚠️ Route estimated by AI — may be incorrect. Edit the airport codes and cities above if needed.
             </p>
-          )}
-          {lookupResult.source !== "ai" && (!editDepartureIata || !editArrivalIata) && (
-            <p className="text-xs text-amber-600">Enter the 3-letter airport codes above to enable the trip map.</p>
+          ) : (
+            <p className="text-xs text-gray-400">
+              Route incorrect? Edit the airport codes and cities above before saving.
+            </p>
           )}
 
           <div>
@@ -338,7 +367,9 @@ export default function FlightSearch({ tripId, onFlightAdded, defaultDate }: Fli
 export function FlightCard({ flight, onDelete }: { flight: Flight; onDelete: () => void }) {
   function formatTime(iso: string | null) {
     if (!iso) return "—";
-    const timePart = iso.includes("T") ? iso.slice(11, 16) : iso.slice(0, 5);
+    const timePart = iso.length >= 16 && (iso[10] === "T" || iso[10] === " ")
+      ? iso.slice(11, 16)
+      : iso.slice(0, 5);
     if (!timePart.includes(":")) return iso;
     const [hStr, mStr] = timePart.split(":");
     const h = parseInt(hStr, 10);
