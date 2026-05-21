@@ -25,6 +25,15 @@ import { CSS } from "@dnd-kit/utilities";
 
 type SectionNotes = Record<string, string>;
 
+type AccommodationRow = {
+  id: string;
+  name: string;
+  type: string;
+  city: string | null;
+  check_in: string | null;
+  check_out: string | null;
+};
+
 type ActivityRow = {
   id: string;
   day_id: string;
@@ -68,6 +77,7 @@ interface ItinerarySectionProps {
   transportLegs?: TransportLeg[];
   tripCountries?: string[];
   journalProfile?: string | null;
+  accommodations?: AccommodationRow[];
 }
 
 function sortActivities(activities: ActivityRow[]): ActivityRow[] {
@@ -427,6 +437,48 @@ function TravelEventList({ day, flightsByDate, transportByDate, clockFormat }: T
   );
 }
 
+interface AccommodationEventListProps {
+  day: DayRow;
+  checkInByDate: Map<string, AccommodationRow[]>;
+  checkOutByDate: Map<string, AccommodationRow[]>;
+}
+
+function AccommodationEventList({ day, checkInByDate, checkOutByDate }: AccommodationEventListProps) {
+  if (!day.date) return null;
+  const checkIns  = checkInByDate.get(day.date)  ?? [];
+  const checkOuts = checkOutByDate.get(day.date) ?? [];
+  if (checkIns.length === 0 && checkOuts.length === 0) return null;
+
+  return (
+    <div className="mb-3 space-y-1.5">
+      {checkIns.map((a) => (
+        <div key={`ci-${a.id}`} className="flex items-center gap-2 rounded-lg bg-[#f5f5f5] dark:bg-[#252525] px-2.5 py-2 text-xs">
+          <svg className="h-3.5 w-3.5 shrink-0 text-gray-400 dark:text-[#9fb8b8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+          </svg>
+          <div className="min-w-0 flex-1">
+            <span className="font-medium text-gray-700 dark:text-[#efefef]">Check-in</span>
+            <span className="ml-1.5 text-gray-400 dark:text-[#9fb8b8]">{a.name}{a.city ? `, ${a.city}` : ""}</span>
+          </div>
+          <span className="shrink-0 rounded-full bg-[#cadede] dark:bg-[#2e2e2e] px-2 py-0.5 text-[10px] font-medium text-[#1e1e1e] dark:text-[#9fb8b8] capitalize">{a.type}</span>
+        </div>
+      ))}
+      {checkOuts.map((a) => (
+        <div key={`co-${a.id}`} className="flex items-center gap-2 rounded-lg bg-[#f5f5f5] dark:bg-[#252525] px-2.5 py-2 text-xs">
+          <svg className="h-3.5 w-3.5 shrink-0 text-gray-400 dark:text-[#9fb8b8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+          </svg>
+          <div className="min-w-0 flex-1">
+            <span className="font-medium text-gray-700 dark:text-[#efefef]">Check-out</span>
+            <span className="ml-1.5 text-gray-400 dark:text-[#9fb8b8]">{a.name}{a.city ? `, ${a.city}` : ""}</span>
+          </div>
+          <span className="shrink-0 rounded-full bg-[#cadede] dark:bg-[#2e2e2e] px-2 py-0.5 text-[10px] font-medium text-[#1e1e1e] dark:text-[#9fb8b8] capitalize">{a.type}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── NotesTextarea ─────────────────────────────────────────────────────────────
 // Uncontrolled textarea — the browser manages the value natively so React
 // never touches the DOM on every keystroke. The parent learns the new value
@@ -600,6 +652,7 @@ function ItinerarySection({
   transportLegs = [],
   tripCountries = [],
   journalProfile,
+  accommodations = [],
 }: ItinerarySectionProps) {
   const supabase = createClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -721,6 +774,21 @@ function ItinerarySection({
     const arr = transportByDate.get(t.travel_date) ?? [];
     arr.push(t);
     transportByDate.set(t.travel_date, arr);
+  }
+
+  const accomCheckInByDate  = new Map<string, AccommodationRow[]>();
+  const accomCheckOutByDate = new Map<string, AccommodationRow[]>();
+  for (const a of accommodations) {
+    if (a.check_in) {
+      const arr = accomCheckInByDate.get(a.check_in) ?? [];
+      arr.push(a);
+      accomCheckInByDate.set(a.check_in, arr);
+    }
+    if (a.check_out) {
+      const arr = accomCheckOutByDate.get(a.check_out) ?? [];
+      arr.push(a);
+      accomCheckOutByDate.set(a.check_out, arr);
+    }
   }
 
   // Collapse state — persisted to localStorage so refreshing keeps days collapsed.
@@ -1393,6 +1461,7 @@ function ItinerarySection({
                     >
                       <ActivityList day={day} clockFormat={clockFormat} />
                       <TravelEventList day={day} flightsByDate={flightsByDate} transportByDate={transportByDate} clockFormat={clockFormat} />
+                      <AccommodationEventList day={day} checkInByDate={accomCheckInByDate} checkOutByDate={accomCheckOutByDate} />
                       <NotesTextarea
                         initialValue={dayNotes[day.id]?.["notes"] ?? ""}
                         rows={4}
@@ -1447,6 +1516,7 @@ function ItinerarySection({
                     >
                       <ActivityList day={day} clockFormat={clockFormat} />
                       <TravelEventList day={day} flightsByDate={flightsByDate} transportByDate={transportByDate} clockFormat={clockFormat} />
+                      <AccommodationEventList day={day} checkInByDate={accomCheckInByDate} checkOutByDate={accomCheckOutByDate} />
                       <div className="space-y-3">
                         {sections.map(({ key, label }) => (
                           <div key={key}>

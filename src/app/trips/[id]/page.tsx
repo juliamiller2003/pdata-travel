@@ -289,6 +289,7 @@ export default async function TripDetailPage({ params }: TripPageProps) {
           transportLegs={transportLegsData ?? []}
           tripCountries={(trip.country_codes as string[] | null) ?? []}
           journalProfile={journalProfile}
+          accommodations={accommodationsData ?? []}
         />
       </SectionGuard>
 
