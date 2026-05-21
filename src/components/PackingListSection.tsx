@@ -483,7 +483,7 @@ export default function PackingListSection({ tripId, initialItems }: Props) {
   async function loadTemplates() {
     if (tplsLoaded) return;
     const { data: { user } } = await db.auth.getUser();
-    if (!user) return;
+    if (!user) { setTplsLoaded(true); return; }
     const { data } = await db.from("packing_templates").select("*").eq("user_id", user.id).order("created_at");
     if (data) setCustomTemplates(data.map((t: { id: string; name: string; items: TemplateItem[] }) => ({
       id: t.id, name: t.name, items: t.items ?? [],
@@ -754,7 +754,6 @@ export default function PackingListSection({ tripId, initialItems }: Props) {
         <div className="rounded-xl border border-[#e0e0e0] dark:border-[#2e2e2e] overflow-hidden">
           <div className="px-4 py-3 bg-[#efefef] dark:bg-[#2e2e2e]/60 flex items-center justify-between">
             <p className="text-xs font-semibold text-gray-600 dark:text-[#efefef]">Select templates to combine</p>
-            <p className="text-[10px] text-gray-400 dark:text-[#9fb8b8]">Duplicates removed automatically</p>
           </div>
 
           <div className="p-4 space-y-5">
