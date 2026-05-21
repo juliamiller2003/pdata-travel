@@ -451,6 +451,15 @@ export default function PackingListSection({ tripId, initialItems }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Auto-load templates when mounted directly in select view ─────────────────
+  // When the packing list is empty the view starts as "select" without the user
+  // ever clicking the Templates button, so loadTemplates() is never called and
+  // custom templates are stuck on "Loading…". Trigger it on mount in that case.
+  useEffect(() => {
+    if (view === "select") loadTemplates();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Template selector state ─────────────────────────────────────────────────
   const [selBuiltin, setSelBuiltin]           = useState<Set<string>>(new Set());
   const [selCustom, setSelCustom]             = useState<Set<string>>(new Set());
