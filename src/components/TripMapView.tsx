@@ -36,21 +36,62 @@ interface AccommodationInput {
 }
 
 interface TripMapViewProps {
+  tripId: string;
   flights: Flight[];
   activities: ActivityInput[];
   days: DayInfo[];
   accommodations?: AccommodationInput[];
 }
 
-export default function TripMapView({ flights, activities, days, accommodations = [] }: TripMapViewProps) {
+function loadMapPrefs(tripId: string, allDayNumbers: number[]) {
+  try {
+    const raw = localStorage.getItem(`trip_map_prefs_${tripId}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return {
+      showFlights: typeof parsed.showFlights === "boolean" ? parsed.showFlights : true,
+      showAccommodations: typeof parsed.showAccommodations === "boolean" ? parsed.showAccommodations : true,
+      selectedDays: Array.isArray(parsed.selectedDays)
+        ? new Set<number>(parsed.selectedDays.filter((n: unknown) => allDayNumbers.includes(n as number)))
+        : new Set<number>(allDayNumbers),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export default function TripMapView({ tripId, flights, activities, days, accommodations = [] }: TripMapViewProps) {
+  const allDayNumbers = days.map((d) => d.day_number);
+
   const [data, setData] = useState<TripMapData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [showFlights, setShowFlights] = useState(true);
   const [showAccommodations, setShowAccommodations] = useState(true);
   const [selectedDays, setSelectedDays] = useState<Set<number>>(
-    new Set(days.map((d) => d.day_number))
+    new Set(allDayNumbers)
   );
+
+  // Restore saved prefs on mount (client-only — localStorage unavailable during SSR)
+  useEffect(() => {
+    const prefs = loadMapPrefs(tripId, allDayNumbers);
+    if (!prefs) return;
+    setShowFlights(prefs.showFlights);
+    setShowAccommodations(prefs.showAccommodations);
+    // Only restore selectedDays if the saved set is a non-trivial subset of current days
+    if (prefs.selectedDays.size > 0) setSelectedDays(prefs.selectedDays);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist prefs whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        `trip_map_prefs_${tripId}`,
+        JSON.stringify({ showFlights, showAccommodations, selectedDays: Array.from(selectedDays) })
+      );
+    } catch { /* ignore quota errors */ }
+  }, [tripId, showFlights, showAccommodations, selectedDays]);
 
   const hasFlightRoutes = flights.some((f) => f.departure_iata && f.arrival_iata);
   const hasContent = hasFlightRoutes || activities.some((a) => a.place_name || a.title) || accommodations.length > 0;

@@ -295,6 +295,7 @@ export default async function TripDetailPage({ params }: TripPageProps) {
 
       <SectionGuard section="map">
         <TripMapView
+          tripId={id}
           flights={flights}
           activities={allActivities}
           days={mapDays}
