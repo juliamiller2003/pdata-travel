@@ -1589,6 +1589,7 @@ function ItinerarySection({
             travelBadge={getTravelBadge(day, flightsByDate, transportByDate)}
           >
             <TravelEventList day={day} flightsByDate={flightsByDate} transportByDate={transportByDate} clockFormat={clockFormat} />
+            <AccommodationEventList day={day} checkInByDate={accomCheckInByDate} checkOutByDate={accomCheckOutByDate} />
             {day.activities.length > 0 && (
               <ul className="space-y-2 mb-3">
                 {day.activities.map((act) =>

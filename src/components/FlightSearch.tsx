@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Flight } from "@/types/database";
 import type { FlightResult } from "@/app/api/flights/route";
+import { cityFromIata } from "@/lib/iataCity";
 
 interface FlightSearchProps {
   tripId: string;
@@ -246,7 +247,14 @@ export default function FlightSearch({ tripId, onFlightAdded, defaultDate }: Fli
                 type="text"
                 maxLength={3}
                 value={editDepartureIata}
-                onChange={(e) => setEditDepartureIata(e.target.value.toUpperCase())}
+                onChange={(e) => {
+                  const val = e.target.value.toUpperCase();
+                  setEditDepartureIata(val);
+                  if (val.length === 3) {
+                    const city = cityFromIata(val);
+                    if (city) setEditDepartureCity(city);
+                  }
+                }}
                 placeholder="DEP"
                 autoFocus={lookupResult.partial}
                 className="input text-center text-xl font-bold uppercase tracking-widest"
@@ -277,7 +285,14 @@ export default function FlightSearch({ tripId, onFlightAdded, defaultDate }: Fli
                 type="text"
                 maxLength={3}
                 value={editArrivalIata}
-                onChange={(e) => setEditArrivalIata(e.target.value.toUpperCase())}
+                onChange={(e) => {
+                  const val = e.target.value.toUpperCase();
+                  setEditArrivalIata(val);
+                  if (val.length === 3) {
+                    const city = cityFromIata(val);
+                    if (city) setEditArrivalCity(city);
+                  }
+                }}
                 placeholder="ARR"
                 className="input text-center text-xl font-bold uppercase tracking-widest"
               />
@@ -479,7 +494,7 @@ export function FlightCard({ flight, onDelete, onUpdated }: {
         {/* Route */}
         <div className="flex items-start gap-2 sm:gap-3">
           <div className="flex-1 space-y-1">
-            <input type="text" maxLength={3} value={depIata} onChange={(e) => setDepIata(e.target.value.toUpperCase())} placeholder="DEP" className="input text-center text-xl font-bold uppercase tracking-widest" />
+            <input type="text" maxLength={3} value={depIata} onChange={(e) => { const val = e.target.value.toUpperCase(); setDepIata(val); if (val.length === 3) { const city = cityFromIata(val); if (city) setDepCity(city); } }} placeholder="DEP" className="input text-center text-xl font-bold uppercase tracking-widest" />
             <input type="text" value={depCity} onChange={(e) => setDepCity(e.target.value)} placeholder="City" className="input text-center text-xs" />
             <input type="text" value={depTime} onChange={(e) => setDepTime(e.target.value)} placeholder="HH:MM" maxLength={5} className="input text-center text-sm" />
           </div>
@@ -489,7 +504,7 @@ export function FlightCard({ flight, onDelete, onUpdated }: {
             </svg>
           </div>
           <div className="flex-1 space-y-1">
-            <input type="text" maxLength={3} value={arrIata} onChange={(e) => setArrIata(e.target.value.toUpperCase())} placeholder="ARR" className="input text-center text-xl font-bold uppercase tracking-widest" />
+            <input type="text" maxLength={3} value={arrIata} onChange={(e) => { const val = e.target.value.toUpperCase(); setArrIata(val); if (val.length === 3) { const city = cityFromIata(val); if (city) setArrCity(city); } }} placeholder="ARR" className="input text-center text-xl font-bold uppercase tracking-widest" />
             <input type="text" value={arrCity} onChange={(e) => setArrCity(e.target.value)} placeholder="City" className="input text-center text-xs" />
             <input type="text" value={arrTime} onChange={(e) => setArrTime(e.target.value)} placeholder="HH:MM" maxLength={5} className="input text-center text-sm" />
           </div>
