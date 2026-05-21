@@ -459,12 +459,17 @@ export default function PackingListSection({ tripId, initialItems }: Props) {
   const [applying, setApplying]               = useState(false);
 
   // ── Template editor state ───────────────────────────────────────────────────
-  const [editingTpl, setEditingTpl]     = useState<CustomTemplate | null>(null);
-  const [tplName, setTplName]           = useState("");
-  const [tplItems, setTplItems]         = useState<TemplateItem[]>([]);
-  const [tplNewItem, setTplNewItem]     = useState("");
-  const [tplNewCat, setTplNewCat]       = useState("Other");
-  const [tplSaving, setTplSaving]       = useState(false);
+  const [editingTpl, setEditingTpl]         = useState<CustomTemplate | null>(null);
+  const [tplName, setTplName]               = useState("");
+  const [tplItems, setTplItems]             = useState<TemplateItem[]>([]);
+  const [tplNewItem, setTplNewItem]         = useState("");
+  const [tplNewCat, setTplNewCat]           = useState("Other");
+  const [tplSaving, setTplSaving]           = useState(false);
+  // Custom category management within the template editor
+  const [tplExtraCategories, setTplExtraCategories] = useState<string[]>([]);
+  const [tplNewCatName, setTplNewCatName]           = useState("");
+  const [editingTplCat, setEditingTplCat]           = useState<string | null>(null);
+  const [editingTplCatName, setEditingTplCatName]   = useState("");
 
   // ── Derived ─────────────────────────────────────────────────────────────────
   const packed = items.filter((i) => i.packed).length;
@@ -478,6 +483,12 @@ export default function PackingListSection({ tripId, initialItems }: Props) {
   ];
 
   const totalSelected = selBuiltin.size + selCustom.size;
+
+  // All categories available in the template editor: built-ins + user-defined extras
+  const allTplCategories = [
+    ...CATEGORIES,
+    ...tplExtraCategories.filter((c) => !CATEGORIES.includes(c)),
+  ];
 
   // ── Load custom templates ────────────────────────────────────────────────────
   async function loadTemplates() {
@@ -571,12 +582,18 @@ export default function PackingListSection({ tripId, initialItems }: Props) {
   // ── Template editor actions ──────────────────────────────────────────────────
   function openCreateTemplate() {
     setEditingTpl(null); setTplName(""); setTplItems([]);
-    setTplNewItem(""); setTplNewCat("Other"); setView("edit");
+    setTplNewItem(""); setTplNewCat("Other");
+    setTplExtraCategories([]); setTplNewCatName(""); setEditingTplCat(null);
+    setView("edit");
   }
 
   function openEditTemplate(tpl: CustomTemplate) {
     setEditingTpl(tpl); setTplName(tpl.name); setTplItems([...tpl.items]);
-    setTplNewItem(""); setTplNewCat("Other"); setView("edit");
+    setTplNewItem(""); setTplNewCat("Other");
+    // Restore any custom (non-built-in) categories from the existing template items
+    const extraCats = [...new Set(tpl.items.map((i) => i.category).filter((c) => !CATEGORIES.includes(c)))];
+    setTplExtraCategories(extraCats); setTplNewCatName(""); setEditingTplCat(null);
+    setView("edit");
   }
 
   function addTplItem(e: React.FormEvent) {
@@ -588,6 +605,32 @@ export default function PackingListSection({ tripId, initialItems }: Props) {
 
   function removeTplItem(idx: number) {
     setTplItems((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function addTplCategory() {
+    const name = tplNewCatName.trim();
+    if (!name || allTplCategories.map((c) => c.toLowerCase()).includes(name.toLowerCase())) return;
+    setTplExtraCategories((prev) => [...prev, name]);
+    setTplNewCat(name);
+    setTplNewCatName("");
+  }
+
+  function renameTplCategory(oldName: string, newName: string) {
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed === oldName) return;
+    if (allTplCategories.some((c) => c !== oldName && c.toLowerCase() === trimmed.toLowerCase())) return;
+    setTplItems((prev) => prev.map((item) => item.category === oldName ? { ...item, category: trimmed } : item));
+    setTplExtraCategories((prev) => prev.map((c) => c === oldName ? trimmed : c));
+    if (tplNewCat === oldName) setTplNewCat(trimmed);
+    setEditingTplCat(null);
+  }
+
+  function deleteTplCategory(cat: string) {
+    const count = tplItems.filter((i) => i.category === cat).length;
+    if (count > 0 && !confirm(`Delete "${cat}" and remove its ${count} item${count !== 1 ? "s" : ""} from the template?`)) return;
+    setTplItems((prev) => prev.filter((i) => i.category !== cat));
+    setTplExtraCategories((prev) => prev.filter((c) => c !== cat));
+    if (tplNewCat === cat) setTplNewCat("Other");
   }
 
   async function saveTemplate(e: React.FormEvent) {
@@ -866,12 +909,79 @@ export default function PackingListSection({ tripId, initialItems }: Props) {
                   className="input flex-1 min-w-0"
                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (tplNewItem.trim()) { setTplItems((p) => [...p, { name: tplNewItem.trim(), category: tplNewCat }]); setTplNewItem(""); } } }}
                 />
-                <select value={tplNewCat} onChange={(e) => setTplNewCat(e.target.value)} className="input w-32 shrink-0">
-                  {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                <select value={tplNewCat} onChange={(e) => setTplNewCat(e.target.value)} className="input w-36 shrink-0">
+                  {allTplCategories.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
                 <button type="button" onClick={(e) => { e.preventDefault(); if (tplNewItem.trim()) { setTplItems((p) => [...p, { name: tplNewItem.trim(), category: tplNewCat }]); setTplNewItem(""); } }} className="btn-secondary shrink-0">
                   Add
                 </button>
+              </div>
+            </div>
+
+            {/* ── Custom categories ── */}
+            <div>
+              <label className="label">Custom categories</label>
+              {tplExtraCategories.length > 0 && (
+                <div className="mb-2 space-y-1">
+                  {tplExtraCategories.map((cat) => (
+                    <div key={cat} className="flex items-center gap-2 rounded-lg border border-gray-100 dark:border-[#2e2e2e] px-3 py-2 group">
+                      {editingTplCat === cat ? (
+                        <>
+                          <input
+                            value={editingTplCatName}
+                            onChange={(e) => setEditingTplCatName(e.target.value)}
+                            className="input flex-1 min-w-0 py-0.5 text-sm"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") { e.preventDefault(); renameTplCategory(cat, editingTplCatName); }
+                              if (e.key === "Escape") setEditingTplCat(null);
+                            }}
+                          />
+                          <button type="button" onClick={() => renameTplCategory(cat, editingTplCatName)} className="shrink-0 text-xs font-medium text-[#9fb8b8] hover:text-[#7a9e9e] transition-colors">Save</button>
+                          <button type="button" onClick={() => setEditingTplCat(null)} className="shrink-0 text-xs text-gray-400 hover:text-gray-600 transition-colors">Cancel</button>
+                        </>
+                      ) : (
+                        <>
+                          <span className="flex-1 text-sm text-gray-700 dark:text-[#efefef]">{cat}</span>
+                          <span className="text-[10px] text-gray-400 dark:text-[#9fb8b8]">
+                            {tplItems.filter((i) => i.category === cat).length} item{tplItems.filter((i) => i.category === cat).length !== 1 ? "s" : ""}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => { setEditingTplCat(cat); setEditingTplCatName(cat); }}
+                            className="shrink-0 text-gray-300 hover:text-sky-500 transition-colors opacity-0 group-hover:opacity-100"
+                            title="Rename"
+                          >
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteTplCategory(cat)}
+                            className="shrink-0 text-gray-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                            title="Delete category"
+                          >
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={tplNewCatName}
+                  onChange={(e) => setTplNewCatName(e.target.value)}
+                  placeholder="New category name…"
+                  className="input flex-1 min-w-0 text-sm"
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTplCategory(); } }}
+                />
+                <button type="button" onClick={addTplCategory} className="btn-secondary shrink-0">+ Add</button>
               </div>
             </div>
 
@@ -882,7 +992,7 @@ export default function PackingListSection({ tripId, initialItems }: Props) {
                   {tplItems.length} item{tplItems.length !== 1 ? "s" : ""}
                 </p>
                 <div className="space-y-1 max-h-64 overflow-y-auto">
-                  {CATEGORIES.map((cat) => {
+                  {allTplCategories.map((cat) => {
                     const catItems = tplItems.map((item, idx) => ({ ...item, idx })).filter((i) => i.category === cat);
                     if (catItems.length === 0) return null;
                     return (
