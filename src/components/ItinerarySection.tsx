@@ -736,9 +736,15 @@ function ItinerarySection({
       day_number: idx + 1,
       date: tripStartDate ? dateForDayNum(idx + 1) : day.date,
     }));
-    updated.forEach((day) => {
-      void db.from("itinerary_days").update({ day_number: day.day_number, date: day.date }).eq("id", day.id);
-    });
+    // Two-phase update to avoid unique(trip_id, day_number) violations
+    const offset = 10000;
+    Promise.all(updated.map((day) =>
+      db.from("itinerary_days").update({ day_number: day.day_number + offset }).eq("id", day.id)
+    )).then(() =>
+      Promise.all(updated.map((day) =>
+        db.from("itinerary_days").update({ day_number: day.day_number, date: day.date }).eq("id", day.id)
+      ))
+    ).catch(() => {});
     setDays(updated.map((d) => ({ ...d, activities: sortActivities(d.activities) })));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // intentionally runs once on mount only
@@ -904,45 +910,53 @@ function ItinerarySection({
 
   async function handleDeleteDay(dayId: string) {
     await db.from("itinerary_days").delete().eq("id", dayId);
-    setDays((prev) => {
-      const remaining = prev.filter((d) => d.id !== dayId);
-      // Renumber sequentially so day_number and date stay consistent
-      remaining.forEach((day, idx) => {
-        const newNum = idx + 1;
-        const newDate = dateForDayNum(newNum);
-        void db.from("itinerary_days").update({ day_number: newNum, date: newDate }).eq("id", day.id);
-      });
-      return remaining.map((day, idx) => ({
-        ...day,
-        day_number: idx + 1,
-        date: dateForDayNum(idx + 1),
-      }));
-    });
+
+    const remaining = days
+      .filter((d) => d.id !== dayId)
+      .map((day, idx) => ({ ...day, day_number: idx + 1, date: dateForDayNum(idx + 1) }));
+
+    setDays(remaining);
     setDayNotes((prev) => { const n = { ...prev }; delete n[dayId]; return n; });
+
+    // Two-phase renumber to avoid unique(trip_id, day_number) violations
+    const offset = 10000;
+    await Promise.all(remaining.map((day) =>
+      db.from("itinerary_days").update({ day_number: day.day_number + offset }).eq("id", day.id)
+    ));
+    await Promise.all(remaining.map((day) =>
+      db.from("itinerary_days").update({ day_number: day.day_number, date: day.date }).eq("id", day.id)
+    ));
   }
 
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    setDays((prev) => {
-      const oldIndex = prev.findIndex((d) => d.id === active.id);
-      const newIndex = prev.findIndex((d) => d.id === over.id);
-      const reordered = arrayMove(prev, oldIndex, newIndex);
-      reordered.forEach((day, idx) => {
-        const newDayNum = idx + 1;
-        const newDate = dateForDayNum(newDayNum);
-        db.from("itinerary_days")
-          .update({ day_number: newDayNum, date: newDate })
-          .eq("id", day.id)
-          .then(() => {});
-      });
-      return reordered.map((day, idx) => ({
-        ...day,
-        day_number: idx + 1,
-        date: dateForDayNum(idx + 1),
-      }));
-    });
+    const oldIndex = days.findIndex((d) => d.id === active.id);
+    const newIndex = days.findIndex((d) => d.id === over.id);
+    const reordered = arrayMove(days, oldIndex, newIndex).map((day, idx) => ({
+      ...day,
+      day_number: idx + 1,
+      date: dateForDayNum(idx + 1),
+    }));
+
+    // Optimistic update
+    setDays(reordered);
+
+    // Two-phase DB update to avoid unique(trip_id, day_number) constraint violations.
+    // Phase 1: shift all to a high offset so no two rows clash during the transition.
+    const offset = 10000;
+    await Promise.all(
+      reordered.map((day) =>
+        db.from("itinerary_days").update({ day_number: day.day_number + offset }).eq("id", day.id)
+      )
+    );
+    // Phase 2: set the real final values.
+    await Promise.all(
+      reordered.map((day) =>
+        db.from("itinerary_days").update({ day_number: day.day_number, date: day.date }).eq("id", day.id)
+      )
+    );
   }
 
   // ── Activity CRUD ─────────────────────────────────────────────
