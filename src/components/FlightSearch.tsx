@@ -32,6 +32,13 @@ function formatTime(iso: string | null) {
   return `${hour12}:${String(m).padStart(2, "0")} ${period}`;
 }
 
+/** Auto-formats a time string as the user types: "1955" → "19:55" */
+function autoFormatTime(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length <= 2) return digits;
+  return digits.slice(0, 2) + ":" + digits.slice(2, 4);
+}
+
 /** Extracts HH:MM from any time string for use in <input type="time"> */
 function toTimeInput(iso: string | null): string {
   if (!iso) return "";
@@ -269,7 +276,7 @@ export default function FlightSearch({ tripId, onFlightAdded, defaultDate }: Fli
               <input
                 type="text"
                 value={editDepartureTime}
-                onChange={(e) => setEditDepartureTime(e.target.value)}
+                onChange={(e) => setEditDepartureTime(autoFormatTime(e.target.value))}
                 placeholder="HH:MM"
                 maxLength={5}
                 className="input text-center text-sm"
@@ -306,7 +313,7 @@ export default function FlightSearch({ tripId, onFlightAdded, defaultDate }: Fli
               <input
                 type="text"
                 value={editArrivalTime}
-                onChange={(e) => setEditArrivalTime(e.target.value)}
+                onChange={(e) => setEditArrivalTime(autoFormatTime(e.target.value))}
                 placeholder="HH:MM"
                 maxLength={5}
                 className="input text-center text-sm"
@@ -496,7 +503,7 @@ export function FlightCard({ flight, onDelete, onUpdated }: {
           <div className="flex-1 space-y-1">
             <input type="text" maxLength={3} value={depIata} onChange={(e) => { const val = e.target.value.toUpperCase(); setDepIata(val); if (val.length === 3) { const city = cityFromIata(val); if (city) setDepCity(city); } }} placeholder="DEP" className="input text-center text-xl font-bold uppercase tracking-widest" />
             <input type="text" value={depCity} onChange={(e) => setDepCity(e.target.value)} placeholder="City" className="input text-center text-xs" />
-            <input type="text" value={depTime} onChange={(e) => setDepTime(e.target.value)} placeholder="HH:MM" maxLength={5} className="input text-center text-sm" />
+            <input type="text" value={depTime} onChange={(e) => setDepTime(autoFormatTime(e.target.value))} placeholder="HH:MM" maxLength={5} className="input text-center text-sm" />
           </div>
           <div className="flex items-center justify-center pt-3 text-gray-300 shrink-0">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -506,7 +513,7 @@ export function FlightCard({ flight, onDelete, onUpdated }: {
           <div className="flex-1 space-y-1">
             <input type="text" maxLength={3} value={arrIata} onChange={(e) => { const val = e.target.value.toUpperCase(); setArrIata(val); if (val.length === 3) { const city = cityFromIata(val); if (city) setArrCity(city); } }} placeholder="ARR" className="input text-center text-xl font-bold uppercase tracking-widest" />
             <input type="text" value={arrCity} onChange={(e) => setArrCity(e.target.value)} placeholder="City" className="input text-center text-xs" />
-            <input type="text" value={arrTime} onChange={(e) => setArrTime(e.target.value)} placeholder="HH:MM" maxLength={5} className="input text-center text-sm" />
+            <input type="text" value={arrTime} onChange={(e) => setArrTime(autoFormatTime(e.target.value))} placeholder="HH:MM" maxLength={5} className="input text-center text-sm" />
           </div>
         </div>
 
