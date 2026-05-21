@@ -31,6 +31,7 @@ export default function FlightsSection({ tripId, initialFlights, tripStartDate }
             key={flight.id}
             flight={flight}
             onDelete={() => handleDelete(flight.id)}
+            onUpdated={(updated) => setFlights((prev) => prev.map((f) => f.id === updated.id ? updated : f))}
           />
         ))}
 
