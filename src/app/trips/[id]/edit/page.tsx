@@ -81,6 +81,7 @@ export default function EditTripPage() {
   async function handleDelete() {
     setDeleting(true);
     await db.from("trips").delete().eq("id", id);
+    router.refresh();
     router.push("/trips");
   }
 
