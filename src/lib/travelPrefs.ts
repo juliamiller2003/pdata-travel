@@ -6,10 +6,11 @@ export interface TravelPrefs {
   style: TravelStyle | "";
   interests: string[];
   dietary: string[];
-  daily_budget?: number | null;      // NEW
-  currency?: string;                  // NEW e.g. "USD", "THB"
-  fitness?: string;                   // NEW e.g. "happy to hike 20km", "prefer light days"
-  avoid?: string;                     // NEW e.g. "crowded tourist spots, early mornings"
+  dietaryOther?: string;              // Free-text when "Other" is selected
+  daily_budget?: number | null;
+  currency?: string;                  // e.g. "USD", "THB"
+  fitness?: string;                   // e.g. "happy to hike 20km", "prefer light days"
+  avoid?: string;                     // e.g. "crowded tourist spots, early mornings"
 }
 
 const KEY = "pathway-travel-prefs";
@@ -48,6 +49,9 @@ export const DIETARY_OPTIONS = [
   "Gluten-free",
   "Nut-free",
   "Dairy-free",
+  "No pork",
+  "No seafood",
+  "Other",
 ];
 
 export function getTravelPrefs(): TravelPrefs {
@@ -73,7 +77,12 @@ export function formatTravelPrefsForPrompt(prefs: TravelPrefs): string {
   if (prefs.style === "mid")     parts.push("Mid-range travel — mix of local and comfortable options");
   if (prefs.style === "comfort") parts.push("Comfort travel — prefer sit-down restaurants, private experiences");
   if (prefs.interests.length > 0) parts.push(`Interests: ${prefs.interests.join(", ")}`);
-  if (prefs.dietary.length > 0)   parts.push(`Dietary needs: ${prefs.dietary.join(", ")} — suggest restaurants and food that cater to this`);
+  if (prefs.dietary.length > 0) {
+    const dietaryList = prefs.dietary.map((d) =>
+      d === "Other" && prefs.dietaryOther?.trim() ? prefs.dietaryOther.trim() : d
+    );
+    parts.push(`Dietary needs: ${dietaryList.join(", ")} — suggest restaurants and food that cater to this`);
+  }
   if (prefs.daily_budget)         parts.push(`Daily budget: ${prefs.daily_budget} ${prefs.currency || "USD"} per day (all-in)`);
   if (prefs.fitness?.trim())      parts.push(`Physical fitness/mobility: ${prefs.fitness.trim()}`);
   if (prefs.avoid?.trim())        parts.push(`Things to avoid: ${prefs.avoid.trim()}`);

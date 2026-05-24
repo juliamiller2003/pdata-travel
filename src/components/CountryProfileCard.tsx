@@ -84,7 +84,7 @@ export default function CountryProfileCard({ countryName, month, homeCountryName
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {Array.from({ length: homeCountryName ? 5 : 4 }).map((_, i) => (
           <div key={i} className="h-14 rounded-lg bg-[#e0e0e0] dark:bg-[#2e2e2e] animate-pulse" />
         ))}

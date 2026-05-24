@@ -16,6 +16,11 @@ interface Props {
 
 const QUICK_AMOUNTS = [1, 5, 10, 50, 100, 500, 1000];
 
+const COMMON_CURRENCIES = [
+  "USD","EUR","GBP","AUD","CAD","NZD","JPY","KRW","TWD","HKD","CNY",
+  "SGD","THB","MYR","IDR","VND","PHP","INR","AED","SAR","MXN","BRL","ZAR",
+];
+
 function formatAmount(n: number): string {
   if (n === 0) return "0";
   if (n >= 1000) return n.toLocaleString("en-US", { maximumFractionDigits: 0 });
@@ -38,15 +43,24 @@ export default function CurrencySection({ countryCodes, homeCountryCode }: Props
     }
   }
 
-  const homeCurrencyCode =
+  const derivedHomeCurrency =
     (homeCountryCode ? CURRENCY_CODES[byAlpha2[homeCountryCode]?.name ?? ""] : null) ?? "USD";
 
   // Filter out dest currencies that are the same as home
-  const filteredDest = destOptions.filter((o) => o.code !== homeCurrencyCode);
+  const filteredDest = destOptions.filter((o) => o.code !== derivedHomeCurrency);
 
-  const [selectedDest, setSelectedDest] = useState<string>(filteredDest[0]?.code ?? "");
-  const [amount, setAmount]             = useState<string>("100");
-  const [flipped, setFlipped]           = useState(false); // false = home→dest, true = dest→home
+  const [selectedDest, setSelectedDest]         = useState<string>(filteredDest[0]?.code ?? "");
+  const [amount, setAmount]                     = useState<string>("100");
+  const [flipped, setFlipped]                   = useState(false); // false = home→dest, true = dest→home
+  const [homeCurrencyOverride, setHomeCurrencyOverride] = useState<string | null>(null);
+
+  const homeCurrencyCode = homeCurrencyOverride ?? derivedHomeCurrency;
+
+  // All available currency options for the "from" dropdown
+  const allCurrencyOptions = [
+    homeCurrencyCode,
+    ...COMMON_CURRENCIES.filter((c) => c !== homeCurrencyCode),
+  ];
   const [rate, setRate]                 = useState<number | null>(null);
   const [approximate, setApproximate]   = useState(false);
   const [rateLoading, setRateLoading]   = useState(false);
@@ -143,9 +157,22 @@ export default function CurrencySection({ countryCodes, homeCountryCode }: Props
             <div className="flex items-center gap-2">
               {/* From */}
               <div className="flex-1">
-                <label className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8] mb-1 block">
-                  {fromCode}
-                </label>
+                <select
+                  value={flipped ? selectedDest : homeCurrencyCode}
+                  onChange={(e) => {
+                    if (flipped) {
+                      setSelectedDest(e.target.value);
+                    } else {
+                      setHomeCurrencyOverride(e.target.value === derivedHomeCurrency ? null : e.target.value);
+                    }
+                    setRate(null);
+                  }}
+                  className="mb-1 w-full rounded bg-transparent text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8] focus:outline-none cursor-pointer hover:text-[#9fb8b8] transition-colors"
+                >
+                  {(flipped ? filteredDest.map((d) => d.code) : allCurrencyOptions).map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
                 <input
                   type="number"
                   min="0"
@@ -169,9 +196,22 @@ export default function CurrencySection({ countryCodes, homeCountryCode }: Props
 
               {/* To */}
               <div className="flex-1">
-                <label className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8] mb-1 block">
-                  {toCode}
-                </label>
+                <select
+                  value={flipped ? homeCurrencyCode : selectedDest}
+                  onChange={(e) => {
+                    if (flipped) {
+                      setHomeCurrencyOverride(e.target.value === derivedHomeCurrency ? null : e.target.value);
+                    } else {
+                      setSelectedDest(e.target.value);
+                    }
+                    setRate(null);
+                  }}
+                  className="mb-1 w-full rounded bg-transparent text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-[#9fb8b8] focus:outline-none cursor-pointer hover:text-[#9fb8b8] transition-colors"
+                >
+                  {(flipped ? allCurrencyOptions : filteredDest.map((d) => d.code)).map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
                 <div className="w-full rounded-lg border border-[#cadede] dark:border-[#9fb8b8]/30 bg-[#cadede]/20 dark:bg-[#9fb8b8]/10 px-3 py-2.5 min-h-[46px] flex items-center">
                   {rateLoading ? (
                     <span className="text-sm text-gray-400 animate-pulse">Loading…</span>

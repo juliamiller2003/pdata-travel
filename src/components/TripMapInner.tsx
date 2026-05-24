@@ -73,7 +73,7 @@ export default function TripMapInner({ data }: TripMapInnerProps) {
       : [20, 0];
 
   return (
-    <MapContainer center={center} zoom={3} style={{ height: "100%", width: "100%" }} zoomControl={true}>
+    <MapContainer center={center} zoom={3} style={{ height: "100%", width: "100%" }} zoomControl={true} scrollWheelZoom={false}>
       <TileLayer
         attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
         url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"

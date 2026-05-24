@@ -139,8 +139,10 @@ export default function TripPhotosSection({ tripId, initialPhotos, initialCaptio
                 onChange={(e) => updateCaption(url, e.target.value)}
                 onBlur={() => handleCaptionBlur(url)}
                 placeholder="Caption…"
-                className="w-full rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 placeholder-gray-300 focus:border-sky-400 focus:outline-none"
+                className="w-full rounded-md border border-gray-200 bg-white dark:bg-[#1e1e1e] dark:border-[#3a3a3a] dark:text-[#efefef] dark:placeholder-[#5a5a5a] px-2 py-1 text-xs text-gray-700 placeholder-gray-300 focus:border-sky-400 dark:focus:border-[#9fb8b8] focus:outline-none"
                 onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
               />
             </div>
           ))}

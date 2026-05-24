@@ -23,7 +23,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [travelPrefs, setTravelPrefsState] = useState<TravelPrefs>({ pace: "", style: "", interests: [], dietary: [], daily_budget: null, currency: "USD", fitness: "", avoid: "" });
+  const [travelPrefs, setTravelPrefsState] = useState<TravelPrefs>({ pace: "", style: "", interests: [], dietary: [], dietaryOther: "", daily_budget: null, currency: "USD", fitness: "", avoid: "" });
   const [sectionVisibility, setSectionVisibilityState] = useState<Record<SectionKey, boolean>>({
     itinerary: true, map: true, flights: true, expenses: true, journal: true,
   });
@@ -404,6 +404,15 @@ export default function SettingsPage() {
                 );
               })}
             </div>
+            {travelPrefs.dietary.includes("Other") && (
+              <input
+                type="text"
+                value={travelPrefs.dietaryOther ?? ""}
+                onChange={(e) => updateTravelPrefs({ dietaryOther: e.target.value })}
+                placeholder="Describe your dietary need…"
+                className="input mt-2 w-full text-sm"
+              />
+            )}
           </div>
 
           {/* Daily budget */}
@@ -430,12 +439,24 @@ export default function SettingsPage() {
                 <option value="EUR">EUR</option>
                 <option value="GBP">GBP</option>
                 <option value="AUD">AUD</option>
-                <option value="THB">THB</option>
+                <option value="CAD">CAD</option>
+                <option value="NZD">NZD</option>
                 <option value="JPY">JPY</option>
+                <option value="KRW">KRW</option>
+                <option value="TWD">TWD</option>
+                <option value="HKD">HKD</option>
+                <option value="CNY">CNY</option>
                 <option value="SGD">SGD</option>
+                <option value="THB">THB</option>
                 <option value="MYR">MYR</option>
                 <option value="IDR">IDR</option>
                 <option value="VND">VND</option>
+                <option value="PHP">PHP</option>
+                <option value="INR">INR</option>
+                <option value="AED">AED</option>
+                <option value="MXN">MXN</option>
+                <option value="BRL">BRL</option>
+                <option value="ZAR">ZAR</option>
               </select>
             </div>
             <p className="mt-1 text-xs text-gray-400">Per day, all-in — helps the AI avoid over-budget suggestions</p>

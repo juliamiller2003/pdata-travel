@@ -860,6 +860,7 @@ function ItinerarySection({
   const knownDays = computeDuration(tripStartDate, tripEndDate);
   const [numDaysInput, setNumDaysInput] = useState(String(knownDays ?? 3));
   const [generating, setGenerating] = useState(false);
+  const [generatingMsgIdx, setGeneratingMsgIdx] = useState(0);
   const [applying, setApplying] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [structuredSuggestion, setStructuredSuggestion] = useState<SuggestedDay[] | null>(null);
@@ -1222,6 +1223,26 @@ function ItinerarySection({
     </button>
   );
 
+  // ── Rotating generation messages ─────────────────────────────
+  const GENERATING_MESSAGES = [
+    "Writing your itinerary…",
+    "Finding the best local spots…",
+    "Checking what's worth seeing…",
+    "Planning your days…",
+    "Adding local tips…",
+    "Mapping out the route…",
+    "Crafting your adventure…",
+  ];
+  useEffect(() => {
+    if (!generating) return;
+    setGeneratingMsgIdx(0);
+    const interval = setInterval(() => {
+      setGeneratingMsgIdx((i) => (i + 1) % GENERATING_MESSAGES.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [generating]);
+
   // ── AI panel ──────────────────────────────────────────────────
 
   const aiPanel = showAI && (
@@ -1300,7 +1321,7 @@ function ItinerarySection({
           {generating ? (
             <span className="flex items-center justify-center gap-2">
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              Writing your itinerary…
+              <span className="transition-all">{GENERATING_MESSAGES[generatingMsgIdx]}</span>
             </span>
           ) : "Generate suggestions"}
         </button>
