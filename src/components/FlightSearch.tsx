@@ -133,16 +133,15 @@ export default function FlightSearch({ tripId, onFlightAdded, defaultDate }: Fli
         status: lookupResult.status,
         distance_miles: miles,
       })
-      .select()
-      .single();
+      .select();
 
     setSaving(false);
-    if (error || !data) {
+    if (error || !data?.[0]) {
       setSaveError(error?.message ?? "Failed to save flight — please try again.");
       return;
     }
 
-    onFlightAdded(data);
+    onFlightAdded(data[0]);
     setShowForm(false);
     resetForm();
   }
@@ -161,13 +160,12 @@ export default function FlightSearch({ tripId, onFlightAdded, defaultDate }: Fli
         flight_date: flightDate,
         distance_miles: miles,
       })
-      .select()
-      .single();
+      .select();
 
     setSaving(false);
-    if (error || !data) return;
+    if (error || !data?.[0]) return;
 
-    onFlightAdded(data);
+    onFlightAdded(data[0]);
     setShowForm(false);
     resetForm();
   }
@@ -438,29 +436,25 @@ export function FlightCard({ flight, onDelete, onUpdated }: {
     setSaveError(null);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = createClient() as any;
-    const { data, error } = await db
-      .from("flights")
-      .update({
-        flight_number: flightNumber.trim().toUpperCase(),
-        airline: airline.trim() || null,
-        flight_date: flightDate,
-        departure_iata: depIata.trim().toUpperCase() || null,
-        departure_city: depCity.trim() || null,
-        departure_time: depTime ? `${flightDate}T${depTime}:00` : null,
-        arrival_iata: arrIata.trim().toUpperCase() || null,
-        arrival_city: arrCity.trim() || null,
-        arrival_time: arrTime ? `${flightDate}T${arrTime}:00` : null,
-        distance_miles: distanceMiles ? parseInt(distanceMiles, 10) : null,
-      })
-      .eq("id", flight.id)
-      .select()
-      .single();
+    const updates = {
+      flight_number: flightNumber.trim().toUpperCase(),
+      airline: airline.trim() || null,
+      flight_date: flightDate,
+      departure_iata: depIata.trim().toUpperCase() || null,
+      departure_city: depCity.trim() || null,
+      departure_time: depTime ? `${flightDate}T${depTime}:00` : null,
+      arrival_iata: arrIata.trim().toUpperCase() || null,
+      arrival_city: arrCity.trim() || null,
+      arrival_time: arrTime ? `${flightDate}T${arrTime}:00` : null,
+      distance_miles: distanceMiles ? parseInt(distanceMiles, 10) : null,
+    };
+    const { error } = await db.from("flights").update(updates).eq("id", flight.id);
     setSaving(false);
-    if (error || !data) {
-      setSaveError(error?.message ?? "Failed to save — please try again.");
+    if (error) {
+      setSaveError(error.message ?? "Failed to save — please try again.");
       return;
     }
-    onUpdated?.(data);
+    onUpdated?.({ ...flight, ...updates });
     setEditing(false);
   }
 
