@@ -98,7 +98,72 @@ const MODE_ICONS: Record<TransportMode, JSX.Element> = {
 
 // ─── Transport Leg Card ────────────────────────────────────────────────────────
 
-function LegCard({ leg, onDelete }: { leg: TransportLeg; onDelete: () => void }) {
+function LegCard({ leg, onDelete, onUpdated }: {
+  leg: TransportLeg;
+  onDelete: () => void;
+  onUpdated: (leg: TransportLeg) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    mode: leg.mode,
+    from_location: leg.from_location,
+    to_location: leg.to_location,
+    travel_date: leg.travel_date,
+    departure_time: leg.departure_time ?? "",
+    arrival_time: leg.arrival_time ?? "",
+    duration: leg.duration ?? "",
+    cost: leg.cost != null ? String(leg.cost) : "",
+    booking_ref: leg.booking_ref ?? "",
+    notes: leg.notes ?? "",
+  });
+
+  function set(k: string, v: string) { setForm((f) => ({ ...f, [k]: v })); }
+
+  function openEdit() {
+    setForm({
+      mode: leg.mode,
+      from_location: leg.from_location,
+      to_location: leg.to_location,
+      travel_date: leg.travel_date,
+      departure_time: leg.departure_time ?? "",
+      arrival_time: leg.arrival_time ?? "",
+      duration: leg.duration ?? "",
+      cost: leg.cost != null ? String(leg.cost) : "",
+      booking_ref: leg.booking_ref ?? "",
+      notes: leg.notes ?? "",
+    });
+    setSaveError(null);
+    setEditing(true);
+  }
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setSaveError(null);
+    const { createClient } = await import("@/lib/supabase/client");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = createClient() as any;
+    const updates = {
+      mode: form.mode,
+      from_location: form.from_location.trim(),
+      to_location: form.to_location.trim(),
+      travel_date: form.travel_date,
+      departure_time: form.departure_time || null,
+      arrival_time: form.arrival_time || null,
+      duration: form.duration.trim() || null,
+      cost: form.cost ? parseFloat(form.cost) : null,
+      booking_ref: form.booking_ref.trim() || null,
+      notes: form.notes.trim() || null,
+    };
+    const { error } = await db.from("transport_legs").update(updates).eq("id", leg.id);
+    setSaving(false);
+    if (error) { setSaveError(error.message ?? "Failed to save."); return; }
+    onUpdated({ ...leg, ...updates });
+    setEditing(false);
+  }
+
   function fmt(t: string | null) {
     if (!t) return null;
     const [hStr, mStr] = t.split(":");
@@ -110,8 +175,82 @@ function LegCard({ leg, onDelete }: { leg: TransportLeg; onDelete: () => void })
     return `${h12}:${String(m).padStart(2, "0")} ${period}`;
   }
 
+  if (editing) {
+    return (
+      <form onSubmit={handleSave} className="rounded-xl border border-[#cadede] dark:border-[#2e2e2e] bg-[#cadede]/10 dark:bg-transparent p-4 space-y-3">
+        <h4 className="text-sm font-semibold text-gray-700 dark:text-[#cadede]">Edit transport</h4>
+
+        <div>
+          <label className="label">Mode</label>
+          <select value={form.mode} onChange={(e) => set("mode", e.target.value)} className="input">
+            {(Object.keys(MODE_LABELS) as TransportMode[]).map((m) => (
+              <option key={m} value={m}>{MODE_LABELS[m]}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">From</label>
+            <input required type="text" value={form.from_location} onChange={(e) => set("from_location", e.target.value)} placeholder="City or station" className="input" />
+          </div>
+          <div>
+            <label className="label">To</label>
+            <input required type="text" value={form.to_location} onChange={(e) => set("to_location", e.target.value)} placeholder="City or station" className="input" />
+          </div>
+        </div>
+
+        <div>
+          <label className="label">Date</label>
+          <input required type="date" value={form.travel_date} onChange={(e) => set("travel_date", e.target.value)} className="input" />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Departure <span className="text-gray-400 font-normal">(optional)</span></label>
+            <input type="time" value={form.departure_time} onChange={(e) => set("departure_time", e.target.value)} className="input" />
+          </div>
+          <div>
+            <label className="label">Arrival <span className="text-gray-400 font-normal">(optional)</span></label>
+            <input type="time" value={form.arrival_time} onChange={(e) => set("arrival_time", e.target.value)} className="input" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Duration <span className="text-gray-400 font-normal">(optional)</span></label>
+            <input type="text" value={form.duration} onChange={(e) => set("duration", e.target.value)} placeholder="e.g. 3h 30m" className="input" />
+          </div>
+          <div>
+            <label className="label">Cost <span className="text-gray-400 font-normal">(optional)</span></label>
+            <input type="number" min="0" step="0.01" value={form.cost} onChange={(e) => set("cost", e.target.value)} placeholder="0.00" className="input" />
+          </div>
+        </div>
+
+        <div>
+          <label className="label">Booking ref / ticket # <span className="text-gray-400 font-normal">(optional)</span></label>
+          <input type="text" value={form.booking_ref} onChange={(e) => set("booking_ref", e.target.value)} placeholder="e.g. ABC123" className="input" />
+        </div>
+
+        <div>
+          <label className="label">Notes <span className="text-gray-400 font-normal">(optional)</span></label>
+          <textarea rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Platform number, pickup spot, etc." className="input resize-none text-sm" />
+        </div>
+
+        {saveError && (
+          <p className="text-xs text-red-500 rounded-lg bg-red-50 dark:bg-transparent border border-red-200 dark:border-red-900 px-3 py-2">{saveError}</p>
+        )}
+
+        <div className="flex gap-2">
+          <button type="submit" disabled={saving} className="btn-primary flex-1">{saving ? "Saving…" : "Save changes"}</button>
+          <button type="button" onClick={() => setEditing(false)} className="btn-secondary">Cancel</button>
+        </div>
+      </form>
+    );
+  }
+
   return (
-    <div className="rounded-xl border border-[#e0e0e0] bg-[#efefef] dark:border-[#2e2e2e] dark:bg-transparent p-4">
+    <div className="rounded-xl border border-[#e0e0e0] bg-[#efefef] dark:border-[#2e2e2e] dark:bg-transparent p-4 group">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#cadede] dark:bg-[#2e2e2e] text-[#1e1e1e] dark:text-[#9fb8b8]">
@@ -126,11 +265,18 @@ function LegCard({ leg, onDelete }: { leg: TransportLeg; onDelete: () => void })
             </p>
           </div>
         </div>
-        <button onClick={onDelete} className="text-gray-300 hover:text-red-400 transition-colors" title="Remove">
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={openEdit} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-sky-500 transition-all" title="Edit">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+            </svg>
+          </button>
+          <button onClick={onDelete} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all" title="Remove">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Route */}
@@ -204,16 +350,15 @@ function AddLegForm({ tripId, tripStartDate, onAdded }: { tripId: string; tripSt
         booking_ref: form.booking_ref.trim() || null,
         notes: form.notes.trim() || null,
       })
-      .select()
-      .single();
+      .select();
 
     setSaving(false);
-    if (error || !data) {
+    if (error || !data?.[0]) {
       setSaveError(error?.message ?? "Could not save. Make sure you've run the transport_legs migration in Supabase.");
       return;
     }
 
-    onAdded(data);
+    onAdded(data[0]);
     setShow(false);
     setForm({ mode: "bus", from_location: "", to_location: "", travel_date: tripStartDate ?? "", departure_time: "", arrival_time: "", duration: "", cost: "", booking_ref: "", notes: "" });
   }
@@ -339,6 +484,10 @@ export default function TransportationSection({ tripId, tripStartDate, initialFl
     setLegs((prev) => prev.filter((l) => l.id !== id));
   }
 
+  function updateLeg(updated: TransportLeg) {
+    setLegs((prev) => prev.map((l) => l.id === updated.id ? updated : l));
+  }
+
   return (
     <section className="mb-8">
       <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-[#efefef]">Transportation</h2>
@@ -401,7 +550,7 @@ export default function TransportationSection({ tripId, tripStartDate, initialFl
             .slice()
             .sort((a, b) => a.travel_date.localeCompare(b.travel_date))
             .map((leg) => (
-              <LegCard key={leg.id} leg={leg} onDelete={() => deleteLeg(leg.id)} />
+              <LegCard key={leg.id} leg={leg} onDelete={() => deleteLeg(leg.id)} onUpdated={updateLeg} />
             ))}
           <AddLegForm tripId={tripId} tripStartDate={tripStartDate} onAdded={(leg) => setLegs((prev) => [...prev, leg])} />
         </div>
