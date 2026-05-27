@@ -723,13 +723,18 @@ function ItinerarySection({
     try { localStorage.setItem(`pathway-itinerary-${tripId}`, JSON.stringify(days)); } catch {}
   }, [days, tripId]);
 
-  // On mount: silently fix any gaps in day_number / date caused by prior deletions
+  // On mount: silently fix any gaps in day_number / date caused by prior deletions,
+  // and resync dates when the trip start date has changed since days were last saved.
   // (e.g. days stored as [1,2,5,6,7] get renumbered to [1,2,3,4,5])
   useEffect(() => {
     const sorted = [...initialDays].sort((a, b) => a.day_number - b.day_number);
     const hasGaps = sorted.some((d, i) => d.day_number !== i + 1);
     const missingDates = sorted.some((d) => !d.date && tripStartDate);
-    if (!hasGaps && !missingDates) return;
+    // Detect stale dates: Day 1's stored date doesn't match the current trip start date.
+    // This happens when the user edits the trip start date after days were already created.
+    const day1 = sorted.find((d) => d.day_number === 1);
+    const dateMismatch = !!(tripStartDate && day1?.date && day1.date !== tripStartDate);
+    if (!hasGaps && !missingDates && !dateMismatch) return;
 
     const updated = sorted.map((day, idx) => ({
       ...day,
