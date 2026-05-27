@@ -45,6 +45,7 @@ export default function EditTripPage() {
   const [coverUrl, setCoverUrl] = useState("");
   const [captions, setCaptions] = useState<Record<string, string>>({});
   const [itineraryStyle, setItineraryStyle] = useState<ItineraryStyle>("structured");
+  const [originalStartDate, setOriginalStartDate] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -62,6 +63,7 @@ export default function EditTripPage() {
       setDestination(trip.destination);
       setCountryCodes(trip.country_codes ?? (trip.country_code ? [trip.country_code] : []));
       setStartDate(trip.start_date ?? "");
+      setOriginalStartDate(trip.start_date ?? "");
       setEndDate(trip.end_date ?? "");
       setStatus(trip.status);
       setNotes(trip.notes ?? "");
@@ -123,6 +125,27 @@ export default function EditTripPage() {
     if (error) {
       setError(error.message);
       return;
+    }
+
+    // If the start date changed, recalculate every itinerary day's date so
+    // Day 1 = new start date, Day 2 = start + 1 day, etc.
+    if (startDate && startDate !== originalStartDate) {
+      const { data: itineraryDays } = await db
+        .from("itinerary_days")
+        .select("id, day_number")
+        .eq("trip_id", id)
+        .order("day_number");
+
+      if (itineraryDays?.length) {
+        const [y, m, d] = startDate.split("-").map(Number);
+        await Promise.all(
+          itineraryDays.map((day: { id: string; day_number: number }) => {
+            const dt = new Date(y, m - 1, d + day.day_number - 1);
+            const dateStr = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+            return db.from("itinerary_days").update({ date: dateStr }).eq("id", day.id);
+          })
+        );
+      }
     }
 
     // Hard navigate to bypass Next.js Router Cache — ensures the trip page
