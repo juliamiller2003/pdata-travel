@@ -345,7 +345,7 @@ function ActivityList({ day, clockFormat }: ActivityListProps) {
           </span>
           <div className="min-w-0">
             <p className="font-medium text-gray-800 dark:text-[#efefef]">{act.title}</p>
-            {act.place_name && <p className="text-xs text-gray-400 dark:text-[#9fb8b8]">{act.place_name}</p>}
+            {act.notes && <p className="text-xs text-gray-400 dark:text-[#9fb8b8]">{act.notes}</p>}
           </div>
         </li>
       ))}
@@ -521,7 +521,7 @@ interface AddActivityFormProps {
 function AddActivityForm({ dayId, orderIndex, onAdded, onCancel }: AddActivityFormProps) {
   const [time, setTime] = useState("");
   const [title, setTitle] = useState("");
-  const [place, setPlace] = useState("");
+  const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit() {
@@ -531,7 +531,7 @@ function AddActivityForm({ dayId, orderIndex, onAdded, onCancel }: AddActivityFo
     const db = createClient() as any;
     const { data, error } = await db
       .from("activities")
-      .insert({ day_id: dayId, time: time || null, title: title.trim(), place_name: place.trim() || null, order_index: orderIndex })
+      .insert({ day_id: dayId, time: time || null, title: title.trim(), notes: notes.trim() || null, order_index: orderIndex })
       .select().single();
     setSaving(false);
     if (!error && data) onAdded(data);
@@ -548,8 +548,8 @@ function AddActivityForm({ dayId, orderIndex, onAdded, onCancel }: AddActivityFo
         />
       </div>
       <input
-        type="text" value={place} onChange={(e) => setPlace(e.target.value)}
-        className="input w-full text-sm" placeholder="Place name (optional)"
+        type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
+        className="input w-full text-sm" placeholder="Notes (optional)"
         onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); if (e.key === "Escape") onCancel(); }}
       />
       <div className="flex gap-2">
@@ -576,7 +576,7 @@ interface EditActivityInlineProps {
 function EditActivityInline({ activity, currentDayId, availableDays, onUpdated, onCancel }: EditActivityInlineProps) {
   const [time, setTime] = useState(activity.time?.slice(0, 5) ?? "");
   const [title, setTitle] = useState(activity.title);
-  const [place, setPlace] = useState(activity.place_name ?? "");
+  const [notes, setNotes] = useState(activity.notes ?? "");
   const [selectedDayId, setSelectedDayId] = useState(currentDayId);
   const [saving, setSaving] = useState(false);
 
@@ -588,7 +588,7 @@ function EditActivityInline({ activity, currentDayId, availableDays, onUpdated, 
     const updates: Record<string, unknown> = {
       time: time || null,
       title: title.trim(),
-      place_name: place.trim() || null,
+      notes: notes.trim() || null,
     };
     if (selectedDayId !== currentDayId) updates.day_id = selectedDayId;
     const { data, error } = await db
@@ -611,8 +611,8 @@ function EditActivityInline({ activity, currentDayId, availableDays, onUpdated, 
         />
       </div>
       <input
-        type="text" value={place} onChange={(e) => setPlace(e.target.value)}
-        className="input w-full text-sm" placeholder="Place name (optional)"
+        type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
+        className="input w-full text-sm" placeholder="Notes (optional)"
         onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") onCancel(); }}
       />
       {availableDays.length > 1 && (
@@ -759,6 +759,8 @@ function ItinerarySection({
   const [addingActivity, setAddingActivity] = useState<string | null>(null);
   const [editingActivity, setEditingActivity] = useState<string | null>(null);
   const [movingAllFromDay, setMovingAllFromDay] = useState<string | null>(null);
+  const [selectModeDay, setSelectModeDay] = useState<string | null>(null);
+  const [selectedActivityIds, setSelectedActivityIds] = useState<Set<string>>(new Set());
 
   // Notes mode
   const [tripNotes, setTripNotes] = useState(initialNotes ?? "");
@@ -992,6 +994,21 @@ function ItinerarySection({
       return d;
     }));
     setMovingAllFromDay(null);
+  }
+
+  async function handleMoveSelectedActivities(fromDayId: string, toDayId: string, activityIds: string[]) {
+    if (activityIds.length === 0) return;
+    const fromDay = days.find((d) => d.id === fromDayId);
+    if (!fromDay) return;
+    const activitiesToMove = fromDay.activities.filter((a) => activityIds.includes(a.id));
+    await db.from("activities").update({ day_id: toDayId }).in("id", activityIds);
+    setDays((prev) => prev.map((d) => {
+      if (d.id === fromDayId) return { ...d, activities: d.activities.filter((a) => !activityIds.includes(a.id)) };
+      if (d.id === toDayId) return { ...d, activities: sortActivities([...d.activities, ...activitiesToMove.map((a) => ({ ...a, day_id: toDayId }))]) };
+      return d;
+    }));
+    setSelectModeDay(null);
+    setSelectedActivityIds(new Set());
   }
 
   // ── Notes saves ───────────────────────────────────────────────
@@ -1645,6 +1662,31 @@ function ItinerarySection({
                       }}
                       onCancel={() => setEditingActivity(null)}
                     />
+                  ) : selectModeDay === day.id ? (
+                    <li key={act.id} className="flex items-center gap-3 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={selectedActivityIds.has(act.id)}
+                        onChange={(e) => setSelectedActivityIds((prev) => {
+                          const next = new Set(prev);
+                          if (e.target.checked) next.add(act.id); else next.delete(act.id);
+                          return next;
+                        })}
+                        className="h-4 w-4 shrink-0 rounded border-gray-300 text-sky-500 cursor-pointer accent-[#215C5C]"
+                      />
+                      <span className="w-16 shrink-0 whitespace-nowrap font-mono text-xs text-gray-400 dark:text-[#9fb8b8]">{formatActivityTime(act.time, clockFormat)}</span>
+                      <div
+                        className="min-w-0 flex-1 cursor-pointer"
+                        onClick={() => setSelectedActivityIds((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(act.id)) next.delete(act.id); else next.add(act.id);
+                          return next;
+                        })}
+                      >
+                        <p className="font-medium text-gray-800 dark:text-[#efefef]">{act.title}</p>
+                        {act.notes && <p className="text-xs text-gray-400 dark:text-[#9fb8b8]">{act.notes}</p>}
+                      </div>
+                    </li>
                   ) : (
                     <li key={act.id} className="flex items-start gap-3 text-sm">
                       <span className="mt-0.5 w-16 shrink-0 whitespace-nowrap font-mono text-xs text-gray-400 dark:text-[#9fb8b8]">{formatActivityTime(act.time, clockFormat)}</span>
@@ -1654,7 +1696,7 @@ function ItinerarySection({
                         title="Edit activity"
                       >
                         <p className="font-medium text-gray-800 dark:text-[#efefef]">{act.title}</p>
-                        {act.place_name && <p className="text-xs text-gray-400 dark:text-[#9fb8b8]">{act.place_name}</p>}
+                        {act.notes && <p className="text-xs text-gray-400 dark:text-[#9fb8b8]">{act.notes}</p>}
                       </button>
                       <button
                         onClick={() => handleDeleteActivity(act.id, day.id)}
@@ -1685,11 +1727,51 @@ function ItinerarySection({
                 }}
                 onCancel={() => setAddingActivity(null)}
               />
+            ) : selectModeDay === day.id ? (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-gray-400 dark:text-[#9fb8b8] shrink-0">
+                  {selectedActivityIds.size === 0 ? "Select activities, then move to" : `${selectedActivityIds.size} selected — move to`}
+                </span>
+                <select
+                  className="input text-xs py-0.5 px-2 h-auto"
+                  defaultValue=""
+                  disabled={selectedActivityIds.size === 0}
+                  onChange={(e) => {
+                    if (e.target.value) handleMoveSelectedActivities(day.id, e.target.value, [...selectedActivityIds]);
+                  }}
+                >
+                  <option value="" disabled>Day…</option>
+                  {days.filter((d) => d.id !== day.id).map((d) => (
+                    <option key={d.id} value={d.id}>
+                      Day {d.day_number}{d.date ? ` · ${formatDayDate(d.date)}` : ""}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => { setSelectModeDay(null); setSelectedActivityIds(new Set()); }}
+                  className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-[#efefef] transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
             ) : (
               <div className="flex items-center justify-between gap-3">
-                <button onClick={() => { setAddingActivity(day.id); setEditingActivity(null); setMovingAllFromDay(null); }} className="text-xs text-gray-400 dark:text-[#9fb8b8] hover:text-[#9fb8b8] transition-colors">
-                  + Add activity
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => { setAddingActivity(day.id); setEditingActivity(null); setMovingAllFromDay(null); setSelectModeDay(null); setSelectedActivityIds(new Set()); }}
+                    className="text-xs text-gray-400 dark:text-[#9fb8b8] hover:text-[#9fb8b8] transition-colors"
+                  >
+                    + Add activity
+                  </button>
+                  {day.activities.length > 0 && (
+                    <button
+                      onClick={() => { setSelectModeDay(day.id); setSelectedActivityIds(new Set()); setAddingActivity(null); setEditingActivity(null); setMovingAllFromDay(null); }}
+                      className="text-xs text-gray-400 dark:text-[#9fb8b8] hover:text-[#9fb8b8] transition-colors"
+                    >
+                      Select
+                    </button>
+                  )}
+                </div>
                 {day.activities.length > 0 && days.length > 1 && (
                   movingAllFromDay === day.id ? (
                     <div className="flex items-center gap-1.5">
