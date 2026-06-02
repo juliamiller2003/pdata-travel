@@ -289,6 +289,36 @@ export interface Database {
           referencedColumns: string[];
         }[];
       };
+      food_items: {
+        Row: {
+          id: string;
+          trip_id: string;
+          name: string;
+          notes: string | null;
+          tried: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          trip_id: string;
+          name: string;
+          notes?: string | null;
+          tried?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          name?: string;
+          notes?: string | null;
+          tried?: boolean;
+        };
+        Relationships: {
+          foreignKeyName: string;
+          columns: string[];
+          isOneToOne: boolean;
+          referencedRelation: string;
+          referencedColumns: string[];
+        }[];
+      };
       user_settings: {
         Row: {
           user_id: string;
@@ -331,6 +361,7 @@ export type Activity = Database["public"]["Tables"]["activities"]["Row"];
 export type JournalEntry = Database["public"]["Tables"]["journal_entries"]["Row"];
 export type UserSettings = Database["public"]["Tables"]["user_settings"]["Row"];
 export type Flight = Database["public"]["Tables"]["flights"]["Row"];
+export type FoodItem = Database["public"]["Tables"]["food_items"]["Row"];
 
 // Transport legs (bus, train, ferry, etc.)
 export interface TransportLeg {

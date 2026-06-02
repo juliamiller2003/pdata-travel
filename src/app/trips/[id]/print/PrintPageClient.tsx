@@ -7,9 +7,7 @@ export default function PrintPageClient({ trip, days, flights, legs, accommodati
 
   function fmt12(time: string | null): string {
     if (!time) return "";
-    const t = time.includes("T")
-      ? (() => { try { const d = new Date(time); return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; } catch { return time.slice(11,16); } })()
-      : time.slice(0, 5);
+    const t = time.includes("T") ? time.slice(11, 16) : time.slice(0, 5);
     const [h, m] = t.split(":").map(Number);
     const ampm = h >= 12 ? "pm" : "am";
     const h12 = h % 12 || 12;
@@ -87,7 +85,7 @@ export default function PrintPageClient({ trip, days, flights, legs, accommodati
           <div className="mt-3 flex flex-wrap gap-4 text-sm text-gray-600">
             {trip.start_date && <span><span className="font-medium">From:</span> {fmtDate(trip.start_date)}</span>}
             {trip.end_date   && <span><span className="font-medium">To:</span> {fmtDate(trip.end_date)}</span>}
-            {trip.budget != null && <span><span className="font-medium">Budget:</span> ${Number(trip.budget).toLocaleString()}</span>}
+            {trip.budget != null && <span><span className="font-medium">Budget:</span> ${Number(trip.budget).toLocaleString("en-US")}</span>}
           </div>
           {trip.notes && <p className="mt-3 text-sm text-gray-600 italic">{trip.notes}</p>}
         </div>

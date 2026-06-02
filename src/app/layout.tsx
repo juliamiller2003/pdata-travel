@@ -14,6 +14,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import LoginAwareMain from "@/components/LoginAwareMain";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import OfflineBanner from "@/components/OfflineBanner";
+import ConditionalFooter from "@/components/ConditionalFooter";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://pdata-travel-two.vercel.app"),
@@ -75,13 +76,7 @@ export default async function RootLayout({
           </div>
           <Nav user={user} />
           <LoginAwareMain>{children}</LoginAwareMain>
-          <footer className="mt-16 border-t border-gray-100 dark:border-[#2e2e2e] px-4 py-6 text-center text-xs text-gray-400 dark:text-[#9fb8b8]">
-            <a href="/privacy" className="hover:text-[#9fb8b8] transition-colors underline underline-offset-2">
-              Privacy Policy
-            </a>
-            <span className="mx-2">·</span>
-            Pathway Travel beta
-          </footer>
+          <ConditionalFooter />
         </ThemeProvider>
       </body>
     </html>

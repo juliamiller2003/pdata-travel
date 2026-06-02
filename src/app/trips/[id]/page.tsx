@@ -13,6 +13,7 @@ import { byAlpha2 } from "@/lib/countries";
 import CountryProfileSection from "@/components/CountryProfileSection";
 import AccommodationSection from "@/components/AccommodationSection";
 import PackingListSection from "@/components/PackingListSection";
+import FoodSection from "@/components/FoodSection";
 import WhereNextSection from "@/components/WhereNextSection";
 import TransportationSection from "@/components/TransportationSection";
 import CurrencySection from "@/components/CurrencySection";
@@ -80,6 +81,7 @@ export default async function TripDetailPage({ params }: TripPageProps) {
     { data: accommodationsData },
     { data: packingData },
     { data: transportLegsData },
+    { data: foodData },
   ] = await Promise.all([
     db
       .from("itinerary_days")
@@ -121,6 +123,11 @@ export default async function TripDetailPage({ params }: TripPageProps) {
       .select("*")
       .eq("trip_id", id)
       .order("travel_date"),
+    db
+      .from("food_items")
+      .select("*")
+      .eq("trip_id", id)
+      .order("created_at"),
   ]);
 
   const itinerary = days ?? [];
@@ -318,6 +325,8 @@ export default async function TripDetailPage({ params }: TripPageProps) {
           homeCountryCode={homeCountryCode}
         />
       )}
+
+      <FoodSection tripId={id} initialItems={foodData ?? []} />
 
       <AccommodationSection tripId={id} initialAccommodations={accommodationsData ?? []} tripStartDate={trip.start_date ?? null} tripEndDate={trip.end_date ?? null} />
 

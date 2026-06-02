@@ -19,6 +19,7 @@ Avoid:
 - Recommending anything primarily aimed at resort or luxury tourists
 - Vague suggestions like "explore the old town" without specifics
 - Over-scheduling — backpackers need flex time and spontaneity
+- Parenthetical additions — never write "Place Name (description)" or add any (clarification) after a name or instruction. State things plainly without brackets.
 
 Never suggest:
 - Any restaurant or attraction that primarily caters to tourists (Hard Rock Cafe, rooftop bars in tourist districts, "international cuisine")
@@ -220,7 +221,8 @@ Rules:
 - TRAVEL EVENTS: If a day has a flight or transport in the fixed schedule above, only suggest activities that fit around it. Arrival day: start activities from the arrival time, choosing things close to the arrival airport or city centre. Departure day: only suggest activities before the departure time, allowing at least 2 hours to reach the airport or station. Transit day (departs and arrives): plan only at the destination after arrival. Do not suggest any activity that overlaps with or immediately precedes a departure
 - Realistic hours: morning markets early, night markets 18:00+, sunrise spots before 07:00, tea houses afternoon/evening, bars and clubs 21:00+. Never schedule a night market or bar before 17:00
 - Use 24-hour time strings (e.g. "09:00", "14:30")
-- place_name must be the exact venue or landmark name, never null for sightseeing activities`;
+- place_name must be the exact venue or landmark name, never null for sightseeing activities
+- NO PARENTHESES: never add (description), (clarification), (approximate), or any parenthetical text anywhere in the output. Write "Raohe Street Night Market" not "Raohe Street Night Market (one of Taipei's oldest)". Write "bus #8, 8 THB, 20 min" not "bus #8 (20 min, 8 THB)".`;
   }
 
   const paceLine = paceRule(user_pace, "notes");
@@ -244,7 +246,9 @@ Style rules:
 - GEOGRAPHIC COHERENCE: each day must be anchored to one zone or neighbourhood of ${destination}. All places that day must be reachable from each other without major backtracking. If the destination covers a large area, move through it systematically — one section per day, never bouncing between distant areas
 - TRAVEL EVENTS: if a day has a flight or transport in the fixed schedule above, mention it in the notes and only suggest activities that fit around it. Arrival day: activities from arrival time onward. Departure day: activities only before departure, with time to reach the airport/station
 - Realistic timing (night markets from 6pm+, sunrise spots before 7am)
-- Use \\n for line breaks`;
+- Use \\n for line breaks
+- NO PARENTHESES: never add (description) or (clarification) after any place name or instruction. Write place names and notes plainly without brackets.
+`;
   }
 
   if (style === "notes_day_night") {
@@ -273,7 +277,8 @@ Style rules:
 - GEOGRAPHIC ACCURACY IS MANDATORY: never describe a district or area as containing places that belong to a different district. If a day is labelled by a district, every place mentioned must actually be in that district. If uncertain of a location, omit it rather than guess.
 - GEOGRAPHIC COHERENCE: each day must be anchored to one zone or neighbourhood of ${destination}. All places that day must be reachable from each other without major backtracking. If the destination covers a large area, move through it systematically — one section per day, never bouncing between distant areas
 - TRAVEL EVENTS: if a day has a flight or transport in the fixed schedule above, note it and only fill sections with activities that fit around it. Arrival day: day/night activities from arrival time onward. Departure day: day activities only before departure
-- Include rough times where useful`;
+- Include rough times where useful
+- NO PARENTHESES: never add (description) or (clarification) after any place name or instruction. Write plainly without brackets.`;
   }
 
   // notes_day_afternoon_night
@@ -303,7 +308,9 @@ Style rules:
 - GEOGRAPHIC ACCURACY IS MANDATORY: never describe a district or area as containing places that belong to a different district. If a day is labelled by a district, every place mentioned must actually be in that district. If uncertain of a location, omit it rather than guess.
 - GEOGRAPHIC COHERENCE: each day must be anchored to one zone or neighbourhood of ${destination}. All places that day must be reachable from each other without major backtracking. If the destination covers a large area, move through it systematically — one section per day, never bouncing between distant areas
 - TRAVEL EVENTS: if a day has a flight or transport in the fixed schedule above, note it and only fill sections with activities that fit around it. Arrival day: populate only afternoon/night (or whichever sections fall after arrival). Departure day: populate only day/morning sections before departure
-- Include rough times where useful`;
+- Include rough times where useful
+- NO PARENTHESES: never add (description) or (clarification) after any place name or instruction. Write plainly without brackets.
+`;
 }
 
 export async function POST(req: NextRequest) {
